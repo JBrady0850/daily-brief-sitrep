@@ -242,9 +242,11 @@
   }
 
   // ------------------------------------------------------------ the run
-  /* Collects candidates for every category. GDELT goes one request at a time:
-     first each category's main search, then, only for categories still short of
-     fresh stories, the second search and finally a wider time window. */
+  /* Collects candidates for every category. Feeds come first, all at once. GDELT
+     then goes one request at a time, and only for categories the feeds left short
+     of fresh stories: first the main search, then the second search, then a wider
+     time window. After a refused search the pause doubles, and after three
+     refused searches in a row the rest of the run uses the feeds alone. */
   async function collect(cfg, ledger, opts) {
     opts = opts || {};
     const n = E.normalizeConfig(cfg);
@@ -297,12 +299,12 @@
     let failures = 0;  // searches in a row that failed even after the retry
     async function search(c, q, hours) {
       if (opts.cancelled && opts.cancelled()) throw new Error("cancelled");
-      if (failures >= 2) {
+      if (failures >= 3) {
         health[c.id].queries.push({ query: q, hours: hours, items: 0, added: 0, error: "skipped: the news index was busy, so this brief uses the feeds" });
         tick(c.name);
         return;
       }
-      if (!first) await wait(gap);
+      if (!first) await wait(failures ? gap * 2 : gap);
       first = false;
       let items = [], err = "";
       try { items = await gdelt(q, hours, n, { fetch: opts.fetch, sleep: wait, gap: gap, timeout: opts.timeout }); } catch (e) { err = String(e.message || e); }
@@ -312,7 +314,12 @@
     }
     for (const c of cats) {
       const qs = (c.queries || []).filter(q => E.collapse(q));
-      if (qs.length) await search(c, qs[0], b.window_hours);
+      if (!qs.length) continue;
+      if (freshShort(c)) await search(c, qs[0], b.window_hours);
+      else {
+        health[c.id].queries.push({ query: qs[0], hours: b.window_hours, items: 0, added: 0, error: "", note: "not needed: the feeds filled this category" });
+        tick(c.name);
+      }
     }
     // Second searches and the wider window only where a category is still short.
     const short = cats.filter(c => (c.queries || []).filter(q => E.collapse(q)).length && freshShort(c));

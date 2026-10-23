@@ -6,11 +6,13 @@
   allow it; the desktop app and the GitHub copy read those instead. A feed that
   refuses shows as "not readable from a web page" under Sources and filters.
 - The GDELT index sometimes turns requests away when it is busy (seen as HTTP
-  503 on 2026-10-23, including for some simple searches). The page asks one
-  search at a time, waits six seconds between searches, retries a refused
-  search once, and stops asking after two failed searches in a row; that
-  morning's brief then comes from the feeds alone. A run of fifteen categories
-  takes one to three minutes.
+  503 on 2026-10-23, about every other search in a live run). The page reads
+  the feeds first and searches GDELT only for categories the feeds left short.
+  It asks one search at a time, waits six seconds between searches (twelve
+  after a refusal), retries a refused search once, and after three refused
+  searches in a row uses the feeds alone for the rest of the run. A live run
+  of seven categories on 2026-10-23 took about three minutes and kept 28
+  stories, 17 with photos; one category came back empty.
 - GDELT and Google News give a headline only, so those stories show no summary.
   GDELT usually gives the story's share photo; feeds add a summary and often a
   photo. Photos load from the publishers' sites, and one that fails to load

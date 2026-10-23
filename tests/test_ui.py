@@ -48,6 +48,21 @@ def gdelt_answer(url, calls):
     return json.dumps({"articles": arts})
 
 
+def fresh_feed():
+    """A publisher feed with six stories from the last few hours, each with a photo."""
+    now = datetime.now(timezone.utc)
+    titles = ["Airlines add winter routes to sunny islands", "TSA tests faster lanes at three airports",
+              "National parks extend autumn hours", "Cruise lines report record bookings",
+              "Passport office clears its backlog", "Rail pass prices drop for families"]
+    items = "".join(
+        "<item><title>%s</title><link>https://feeds.example.com/story/%d</link>"
+        "<pubDate>%s</pubDate><media:content url=\"https://img.example.com/fresh%d.jpg\" medium=\"image\"/>"
+        "<description>A short summary. Second sentence.</description></item>"
+        % (t, k, (now - timedelta(hours=k + 1)).strftime("%a, %d %b %Y %H:%M:%S GMT"), k) for k, t in enumerate(titles))
+    return ('<?xml version="1.0"?><rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/"><channel>'
+            "<title>Example Travel Desk</title><link>https://feeds.example.com/</link>" + items + "</channel></rss>")
+
+
 def route_world(page, calls, gdelt_status=200):
     """Answers every outside request the way the real services would, with CORS."""
     def handle(route):
@@ -67,6 +82,9 @@ def route_world(page, calls, gdelt_status=200):
         if "img.example.com" in url or "github.io" in url:
             svg = (ROOT / "app" / "img" / "sample" / "markets.svg").read_bytes()
             return route.fulfill(status=200, body=svg, headers={"content-type": "image/svg+xml"})
+        if "fresh" in url:
+            calls.append("feed")
+            return route.fulfill(status=200, body=fresh_feed(), headers=dict(CORS, **{"content-type": "application/rss+xml"}))
         if url.startswith("http"):
             calls.append("feed")
             return route.fulfill(status=200, body=feed_bytes("rss_feed.xml"), headers=dict(CORS, **{"content-type": "application/rss+xml"}))
@@ -165,7 +183,7 @@ def test_a_busy_news_index_still_gives_a_brief_from_the_feeds(browser):
     ctx, page, errors = open_page(browser, APP, calls=calls, gdelt_status=503, state=state)
     page.click("text=Get today's brief")
     page.wait_for_selector("iframe.page", timeout=30000)
-    assert calls.count("refused") == 4, "two searches, each retried once, then the busy index is left alone"
+    assert calls.count("refused") == 6, "three searches, each retried once, then the busy index is left alone"
     page.click("text=Sources and filters")
     text = page.inner_text("#briefview")
     assert "the site answered 503" in text and "skipped: the news index was busy" in text
@@ -307,5 +325,25 @@ def test_type_a_topic_with_suggestions(browser):
     assert own[0]["queries"] == ['("electric cars" OR EVs OR "charging stations")']
     assert any(c["id"] == "cloud-infrastructure" for c in cats)
     assert page.evaluate("window.DB_ENGINE.validateConfig(DB_APP.state().config).errors") == []
+    assert errors == []
+    ctx.close()
+
+
+def test_a_category_the_feeds_fill_needs_no_news_search(browser):
+    calls = []
+    cfg = json.loads((ROOT / "examples" / "sample-settings.json").read_text())
+    cfg["categories"] = [c for c in cfg["categories"] if c["id"] == "travel"]
+    cfg["categories"][0]["feeds"] = ["https://feeds.example.com/fresh.xml"]
+    cfg["categories"][0]["require"] = []
+    state = {"version": 1, "tab": "brief", "config": cfg, "setup_done": True}
+    ctx, page, errors = open_page(browser, APP, calls=calls, state=state)
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=30000)
+    searches = [c for c in calls if c not in ("forecast", "feed")]
+    assert searches == [], searches
+    brief = page.evaluate("DB_APP.state().brief")
+    items = brief["categories"][0]["items"]
+    assert len(items) == 5 and all(i["image"].startswith("https://img.example.com/") for i in items)
+    assert items[0]["summary"] == "A short summary. Second sentence."
     assert errors == []
     ctx.close()
