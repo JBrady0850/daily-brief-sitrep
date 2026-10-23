@@ -1,0 +1,14 @@
+name: Suggest an improvement
+description: An idea that would make the brief more useful. See docs/ROADMAP.md first.
+labels: ["idea"]
+body:
+  - type: textarea
+    id: idea
+    attributes:
+      label: The idea, and what it would let you do
+    validations:
+      required: true
+  - type: input
+    id: roadmap
+    attributes:
+      label: Matching roadmap item, if any (for example R2)

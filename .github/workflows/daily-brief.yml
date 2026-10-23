@@ -1,0 +1,88 @@
+name: Daily brief
+# Collects the news, builds the newsletter and delivers it, all on GitHub's
+# servers, using free services only: Google News RSS and publisher feeds (no
+# keys), and either your mail account or a GitHub issue. Setup steps:
+# docs/GITHUB-CLOUD.md. Until daily-brief-settings.json is in this repository,
+# every run stops at the first step with a notice instead of failing.
+on:
+  schedule:
+    # Times are UTC; GitHub cannot follow a time zone. Two runs an hour apart
+    # cover daylight saving time, and the brief goes out on the first run at or
+    # after delivery.time in delivery.timezone. These two lines suit 06:15 in
+    # US Eastern time. The app's Email step gives the lines for your time.
+    # Minute 15, not 00, because GitHub delays and drops runs at the top of the hour.
+    - cron: "15 10 * * *"
+    - cron: "15 11 * * *"
+  workflow_dispatch:
+    inputs:
+      send:
+        description: "Deliver the brief now (untick for a test that only saves it)"
+        type: boolean
+        default: true
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: daily-brief
+  cancel-in-progress: false
+jobs:
+  brief:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      DAILY_BRIEF_HOME: ${{ github.workspace }}/.brief-history
+      SMTP_HOST: ${{ secrets.SMTP_HOST }}
+      SMTP_PORT: ${{ secrets.SMTP_PORT }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+      SMTP_SECURITY: ${{ secrets.SMTP_SECURITY }}
+      MAIL_FROM: ${{ secrets.MAIL_FROM }}
+      MAIL_TO: ${{ secrets.MAIL_TO }}
+      GITHUB_TOKEN: ${{ github.token }}
+      BRIEF_MENTION: ${{ github.repository_owner }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: ready
+        shell: bash
+        run: |
+          if [ ! -f daily-brief-settings.json ]; then
+            echo "::notice title=No settings yet::Add daily-brief-settings.json to this repository to start your brief (docs/GITHUB-CLOUD.md)."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.ready.outputs.ready == 'true'
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - if: steps.ready.outputs.ready == 'true'
+        uses: actions/cache/restore@v6
+        with:
+          path: .brief-history
+          key: brief-history-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: brief-history-
+      - if: steps.ready.outputs.ready == 'true'
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          FIRED: ${{ github.event.schedule }}
+          SEND_INPUT: ${{ inputs.send }}
+        run: |
+          args=(--config daily-brief-settings.json --out brief-output --quiet --summary "$GITHUB_STEP_SUMMARY")
+          if [ "$EVENT" = "schedule" ]; then
+            args+=(--send --scheduled --fired "$FIRED")
+          elif [ "$SEND_INPUT" = "true" ]; then
+            args+=(--send --force)
+          fi
+          python -m dailybrief run "${args[@]}"
+      - if: always() && steps.ready.outputs.ready == 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: .brief-history
+          key: brief-history-${{ github.run_id }}-${{ github.run_attempt }}
+      - if: steps.ready.outputs.ready == 'true' && vars.BRIEF_KEEP_FILES == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: daily-brief
+          path: brief-output
+          retention-days: 7

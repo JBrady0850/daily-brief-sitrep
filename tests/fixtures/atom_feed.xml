@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<title>Example Science Atom</title><link rel="alternate" href="https://science.example.org/"/>
+<entry><title>Researchers map a new sleep pathway in older adults</title>
+<link rel="alternate" href="https://science.example.org/sleep"/><published>2026-10-23T05:00:00Z</published>
+<summary type="html">&lt;p&gt;The team traced a brain signal. It shortens deep sleep.&lt;/p&gt;</summary></entry>
+<entry><title>Telescope finds water vapor on a distant planet</title>
+<link rel="alternate" href="https://science.example.org/water"/><updated>2026-10-22T20:00:00Z</updated>
+<content type="html">Readings point to water vapor.</content></entry>
+</feed>

@@ -1,0 +1,14 @@
+# personal data and credentials never belong in this repository
+*.env
+.env*
+smtp.json
+*secret*
+*credential*
+daily-brief-backup-*.json
+private-terms.txt
+.daily-brief/
+# generated output
+output/
+__pycache__/
+*.pyc
+.pytest_cache/

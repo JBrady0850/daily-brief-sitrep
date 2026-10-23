@@ -1,0 +1,346 @@
+{
+  "version": 1,
+  "brief": {
+    "title": "The Morning Brief",
+    "subject": "Daily Brief - {total}-Item SITREP | {date}",
+    "window_hours": 24,
+    "backfill_max_hours": 72,
+    "items_per_category": 5,
+    "summary_max_chars": 320,
+    "allow_reference": true,
+    "analysis": true,
+    "conversation_starters": false,
+    "watch_label": "Watch",
+    "language": "en",
+    "region": "US"
+  },
+  "reader": {
+    "role": "Operations manager",
+    "location": "Example City",
+    "local_terms": [
+      "Example County"
+    ],
+    "goals": [
+      "Plan a family trip next spring",
+      "Keep retirement savings on track"
+    ],
+    "watch_list": [
+      "interest rates",
+      "airfare",
+      "library hours"
+    ]
+  },
+  "countdown": {
+    "enabled": true,
+    "label": "Days to the spring trip",
+    "date": "2027-03-31",
+    "start": "2026-10-01",
+    "milestones": [
+      {
+        "date": "2026-11-15",
+        "label": "Book flights",
+        "note": "fares usually rise after this"
+      },
+      {
+        "date": "2027-01-10",
+        "label": "Renew passports",
+        "note": "allow eight weeks"
+      }
+    ]
+  },
+  "sources": {
+    "avoid_hosts": [
+      "instagram.com",
+      "facebook.com",
+      "fb.watch",
+      "tiktok.com",
+      "youtube.com",
+      "youtu.be",
+      "pinterest.com",
+      "twitter.com",
+      "x.com",
+      "threads.net",
+      "reddit.com"
+    ],
+    "prefer": []
+  },
+  "style": {
+    "no_em_dashes": true
+  },
+  "categories": [
+    {
+      "id": "markets-economy",
+      "name": "Markets and the Economy",
+      "description": "Stock market moves, interest rates, inflation, jobs and growth reports.",
+      "queries": [
+        "(stocks OR \"S&P 500\" OR Nasdaq OR Dow) (close OR rally OR selloff OR record)",
+        "(inflation OR \"jobs report\" OR GDP OR \"Federal Reserve\") economy"
+      ],
+      "require": [
+        [
+          "stocks",
+          "stock market",
+          "S&P 500",
+          "Nasdaq",
+          "Dow",
+          "Treasury",
+          "yields",
+          "inflation",
+          "jobs report",
+          "unemployment",
+          "GDP",
+          "Federal Reserve",
+          "economy",
+          "recession",
+          "earnings",
+          "interest rates"
+        ]
+      ],
+      "exclude": [
+        "sponsored content"
+      ],
+      "feeds": [],
+      "color": "#0f6e5c",
+      "skip_listicles": false,
+      "needs_location": false
+    },
+    {
+      "id": "health-science",
+      "name": "Health and Science",
+      "description": "New research, medical findings, public health and space science.",
+      "queries": [
+        "(study OR researchers OR scientists) (health OR medicine OR disease)",
+        "(NASA OR telescope OR space) discovery"
+      ],
+      "require": [
+        [
+          "study",
+          "researchers",
+          "scientists",
+          "research",
+          "trial",
+          "FDA",
+          "NIH",
+          "CDC",
+          "NASA",
+          "discovery",
+          "vaccine",
+          "disease",
+          "medicine",
+          "health"
+        ]
+      ],
+      "exclude": [
+        "sponsored content",
+        "supplement deal"
+      ],
+      "skip_listicles": true,
+      "feeds": [],
+      "color": "#0f6e5c",
+      "needs_location": false
+    },
+    {
+      "id": "travel",
+      "name": "Travel",
+      "description": "Airlines, airports, cruises, national parks, passports and travel advisories.",
+      "queries": [
+        "(airlines OR airports OR TSA OR \"national parks\") travelers",
+        "(cruise OR \"travel advisory\" OR passport) travelers"
+      ],
+      "require": [
+        [
+          "airline",
+          "airlines",
+          "airport",
+          "airports",
+          "TSA",
+          "flight",
+          "flights",
+          "travel",
+          "travelers",
+          "cruise",
+          "cruises",
+          "national park",
+          "national parks",
+          "passport",
+          "hotel",
+          "hotels"
+        ]
+      ],
+      "exclude": [
+        "sponsored content"
+      ],
+      "skip_listicles": true,
+      "feeds": [],
+      "color": "#7a2f5f",
+      "needs_location": false
+    },
+    {
+      "id": "ai-tools",
+      "name": "AI Tools and Prompting",
+      "description": "New features in AI assistants, prompting techniques and practical AI productivity tools.",
+      "queries": [
+        "(ChatGPT OR Claude OR Gemini OR Copilot OR Grok) (feature OR launches OR update OR tips)",
+        "(\"prompt engineering\" OR \"AI assistant\" OR \"AI tools\") (productivity OR workflow OR tips)"
+      ],
+      "require": [
+        [
+          "AI",
+          "A.I.",
+          "artificial intelligence",
+          "machine learning",
+          "generative AI",
+          "GenAI",
+          "LLM",
+          "large language model",
+          "agentic",
+          "AI agent",
+          "AI agents",
+          "chatbot",
+          "Claude",
+          "ChatGPT",
+          "Gemini",
+          "Copilot",
+          "Grok",
+          "Anthropic",
+          "OpenAI"
+        ],
+        [
+          "prompt",
+          "prompting",
+          "prompt engineering",
+          "tool",
+          "tools",
+          "assistant",
+          "workflow",
+          "automation",
+          "productivity",
+          "app",
+          "feature",
+          "features",
+          "launch",
+          "launches",
+          "launched",
+          "release",
+          "released",
+          "plugin",
+          "extension",
+          "update"
+        ]
+      ],
+      "exclude": [],
+      "skip_listicles": true,
+      "feeds": [],
+      "color": "#a04000",
+      "needs_location": false
+    },
+    {
+      "id": "inspiring",
+      "name": "Inspiring Personal Journeys",
+      "description": "True stories of people who overcame adversity, made a comeback or helped others.",
+      "queries": [
+        "(inspiring OR comeback OR overcame OR resilience) story",
+        "(\"against the odds\" OR \"beat the odds\" OR survivor OR perseverance) inspiring"
+      ],
+      "require": [
+        [
+          "comeback",
+          "overcame",
+          "overcome",
+          "overcomes",
+          "overcoming",
+          "resilience",
+          "resilient",
+          "inspiring",
+          "inspirational",
+          "against the odds",
+          "beat the odds",
+          "triumph",
+          "persevere",
+          "perseverance",
+          "persevered",
+          "survivor",
+          "turnaround",
+          "adversity",
+          "second chance",
+          "defied"
+        ]
+      ],
+      "exclude": [
+        "album",
+        "Reels",
+        "vlog",
+        "lyrics",
+        "trailer",
+        "episode",
+        "tour dates",
+        "recap",
+        "finale",
+        "spoiler",
+        "box office",
+        "climate resilience",
+        "cyber resilience",
+        "supply chain resilience",
+        "stocks",
+        "shares",
+        "market rally",
+        "novel",
+        "webtoon"
+      ],
+      "feeds": [],
+      "color": "#8a5a00",
+      "skip_listicles": false,
+      "needs_location": false
+    },
+    {
+      "id": "local-news",
+      "name": "Local Community ({location})",
+      "description": "Community events, openings, schools and initiatives in your area. Crime and sports are left out.",
+      "queries": [
+        "\"{location}\" (community OR council OR school OR event OR opens)",
+        "\"{location}\" (announces OR initiative OR project OR program)"
+      ],
+      "require": [
+        [
+          "{local_terms}"
+        ]
+      ],
+      "exclude": [
+        "football",
+        "basketball",
+        "baseball",
+        "softball",
+        "volleyball",
+        "soccer",
+        "touchdown",
+        "playoff",
+        "quarterback",
+        "shooting",
+        "arrested",
+        "arrest",
+        "homicide",
+        "deputies",
+        "sentenced",
+        "prison",
+        "jail",
+        "charged",
+        "crash",
+        "killed",
+        "fatal",
+        "burglary",
+        "robbery",
+        "theft",
+        "suspect",
+        "stabbing"
+      ],
+      "feeds": [],
+      "color": "#1d6aa0",
+      "needs_location": true,
+      "skip_listicles": false
+    }
+  ],
+  "email": {
+    "to": [],
+    "from_name": ""
+  }
+}

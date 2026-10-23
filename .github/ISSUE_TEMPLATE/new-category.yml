@@ -1,0 +1,24 @@
+name: New library category
+description: Suggest a category for the built-in library.
+labels: ["category"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Category name
+    validations:
+      required: true
+  - type: textarea
+    id: covers
+    attributes:
+      label: What should count, with two or three example headlines
+    validations:
+      required: true
+  - type: textarea
+    id: searches
+    attributes:
+      label: Searches, must-mention terms and leave-out terms (if you have them)
+  - type: input
+    id: feeds
+    attributes:
+      label: Publisher RSS feeds (optional)

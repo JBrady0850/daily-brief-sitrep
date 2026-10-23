@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel>
+<title>Example Federal Daily</title><link>https://federal.example.com</link>
+<item><title>Agencies weigh new buyout offers as hiring freeze continues</title>
+<link>https://federal.example.com/2026/10/buyouts?utm_source=rss&amp;utm_medium=feed</link>
+<pubDate>Fri, 23 Oct 2026 10:15:00 +0000</pubDate>
+<description>&lt;p&gt;Several agencies are weighing &lt;b&gt;voluntary&lt;/b&gt; separation offers. Officials expect decisions next month. A third sentence adds detail.&lt;/p&gt;</description></item>
+<item><title>Agency Information Collection Activities: Proposed Collection; Comment Request</title>
+<link>https://federal.example.com/2026/10/notice</link><pubDate>Fri, 23 Oct 2026 06:00:00 +0000</pubDate>
+<description>Paperwork.</description></item>
+<item><title>OPM explains the reduction in force rules for federal employees</title>
+<link>https://federal.example.com/rif-rules</link>
+<description>A standing page on how a reduction in force works.</description></item>
+</channel></rss>

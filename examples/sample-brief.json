@@ -1,0 +1,170 @@
+{
+  "schema": "daily-brief/v1",
+  "source": "sample",
+  "model": "",
+  "title": "The Morning Brief",
+  "date": "2026-10-23",
+  "generated_at": "2026-10-23T11:00:00Z",
+  "window_hours": 24,
+  "backfill_max_hours": 72,
+  "items_per_category": 5,
+  "total": 12,
+  "analysis": {
+    "top_three": [
+      "Spring airfare is rising early; booking soon could save money (Travel).",
+      "Cooler inflation raises the odds of a rate cut, which would trim savings yields (Markets and the Economy).",
+      "A new scheduled tasks feature can automate a morning summary (AI Tools and Prompting)."
+    ],
+    "connection": "Lower expected rates and higher spring fares both argue for acting on the trip budget this month.",
+    "watch": [
+      "Airfare: sample fares are up eight percent for spring.",
+      "Interest rates: deposit rates fell for a second month."
+    ],
+    "action": "Price the spring flights this week and compare against the November booking milestone."
+  },
+  "categories": [
+    {
+      "id": "markets-economy",
+      "name": "Markets and the Economy",
+      "signal": "Rate-cut expectations firmed after a cooler inflation reading.",
+      "so_what": "Savings yields may drift lower, so locking a rate now could pay.",
+      "items": [
+        {
+          "title": "Example index closes at a record as inflation cools",
+          "url": "https://example.com/sample/markets-record",
+          "source": "Example Business Daily",
+          "published": "2026-10-23T07:48:00Z",
+          "recency": "news",
+          "summary": "Stocks rose after a monthly price report came in below forecasts, and traders raised the odds of a rate cut before year end.",
+          "starter": "Would a rate cut change how you hold cash?"
+        },
+        {
+          "title": "Sample bank survey finds savings rates have peaked",
+          "url": "https://example.com/sample/savings-peak",
+          "source": "Example Money Wire",
+          "published": "2026-10-23T03:30:00Z",
+          "recency": "news",
+          "summary": "A survey of fifty sample banks shows the average one-year deposit rate fell for the second month in a row."
+        },
+        {
+          "title": "Fictional jobs report shows hiring steady in services",
+          "url": "https://example.com/sample/jobs-steady",
+          "source": "Example Labor News",
+          "published": "2026-10-22T15:00:00Z",
+          "recency": "news",
+          "summary": "Service employers added jobs at the same pace as last month while manufacturing hiring slowed."
+        }
+      ],
+      "color": "#0f6e5c"
+    },
+    {
+      "id": "health-science",
+      "name": "Health and Science",
+      "items": [
+        {
+          "title": "Researchers at an example university map a new sleep pathway",
+          "url": "https://example.com/sample/sleep-pathway",
+          "source": "Example Science Journal",
+          "published": "2026-10-23T06:00:00Z",
+          "recency": "news",
+          "summary": "The team traced how a brain signal shortens deep sleep in older adults, a step toward targeted treatments."
+        },
+        {
+          "title": "Sample space telescope spots water vapor on a distant world",
+          "url": "https://example.com/sample/telescope-water",
+          "source": "Example Space Desk",
+          "published": "2026-10-23T00:00:00Z",
+          "recency": "news",
+          "summary": "Readings from a sample observatory point to water vapor in the atmosphere of a planet forty light years away."
+        },
+        {
+          "title": "Example health agency publishes updated flu season guidance",
+          "url": "https://example.com/sample/flu-guidance",
+          "source": "Example Health Agency",
+          "published": null,
+          "recency": "reference",
+          "summary": "A standing guidance page lists who should get a flu shot this season and where to find one."
+        }
+      ],
+      "color": "#0f6e5c"
+    },
+    {
+      "id": "travel",
+      "name": "Travel",
+      "signal": "Airfare for spring travel is rising early.",
+      "so_what": "Booking before mid-November could save on the spring trip.",
+      "items": [
+        {
+          "title": "Example airline adds nonstop routes for next spring",
+          "url": "https://example.com/sample/airline-routes",
+          "source": "Example Travel Report",
+          "published": "2026-10-23T09:00:00Z",
+          "recency": "news",
+          "summary": "The carrier will fly four new nonstop routes from March, with introductory fares on sale this week."
+        },
+        {
+          "title": "Sample fare tracker says spring prices are up eight percent",
+          "url": "https://example.com/sample/fare-tracker",
+          "source": "Example Fare Watch",
+          "published": "2026-10-23T02:00:00Z",
+          "recency": "news",
+          "summary": "Average spring fares on fifty sample routes rose eight percent from last year, with the steepest gains on weekends."
+        },
+        {
+          "title": "Passport processing times hold at six weeks in sample data",
+          "url": "https://example.com/sample/passport-times",
+          "source": "Example Gov News",
+          "published": "2026-10-21T19:00:00Z",
+          "recency": "backfill",
+          "summary": "Routine passport applications are taking about six weeks, according to the latest weekly sample update."
+        }
+      ],
+      "color": "#7a2f5f"
+    },
+    {
+      "id": "ai-tools",
+      "name": "AI Tools and Prompting",
+      "items": [
+        {
+          "title": "Example assistant adds a scheduled tasks feature",
+          "url": "https://example.com/sample/assistant-tasks",
+          "source": "Example Tech Times",
+          "published": "2026-10-23T07:00:00Z",
+          "recency": "news",
+          "summary": "Users can now ask the sample assistant to repeat a request on a schedule, such as a weekday morning summary."
+        },
+        {
+          "title": "A practical guide to writing clearer AI prompts",
+          "url": "https://example.com/sample/prompt-guide",
+          "source": "Example Productivity Blog",
+          "published": "2026-10-22T20:00:00Z",
+          "recency": "news",
+          "summary": "The guide recommends stating the goal, the audience and the format up front, and giving one good example."
+        }
+      ],
+      "color": "#a04000"
+    },
+    {
+      "id": "inspiring",
+      "name": "Inspiring Personal Journeys",
+      "items": [
+        {
+          "title": "After losing her sight, a sample runner finishes her first marathon",
+          "url": "https://example.com/sample/runner-marathon",
+          "source": "Example Community Paper",
+          "published": "2026-10-23T05:00:00Z",
+          "recency": "news",
+          "summary": "With a guide runner and a year of training, she completed the course in just under five hours.",
+          "starter": "Who in your life made a comeback worth celebrating?"
+        }
+      ],
+      "color": "#8a5a00"
+    },
+    {
+      "id": "local-news",
+      "name": "Local Community (Example City)",
+      "items": [],
+      "color": "#1d6aa0"
+    }
+  ]
+}
