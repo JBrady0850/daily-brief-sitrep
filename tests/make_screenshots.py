@@ -2,58 +2,74 @@
 
     python tests/make_screenshots.py
 
-The brief shown is the invented sample, so no real news or personal data ever
-appears in the pictures.
+Every outside request is answered from recorded, invented data (the same fake
+news index and forecast the browser tests use), so no real news or personal
+data ever appears in the pictures.
 """
+import json
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "tests"))
 
 from playwright.sync_api import sync_playwright  # noqa: E402
 
 from dailybrief import render  # noqa: E402
-import json  # noqa: E402
+import test_ui as T  # noqa: E402
 
 OUT = ROOT / "docs" / "images"
 
 
+def eager(page):
+    """Loads every lazy photo so a full-page picture shows them."""
+    page.evaluate("document.querySelectorAll('img').forEach(i => { i.loading = 'eager'; i.src = i.src; })")
+    page.wait_for_timeout(600)
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    url = (ROOT / "app" / "index.html").as_uri()
+    for old in OUT.glob("*.png"):
+        old.unlink()
     brief = json.loads((ROOT / "examples" / "sample-brief.json").read_text(encoding="utf-8"))
     settings = json.loads((ROOT / "examples" / "sample-settings.json").read_text(encoding="utf-8"))
-    news_html = ROOT / "output" / "sample-newsletter.html"
-    news_html.parent.mkdir(exist_ok=True)
-    news_html.write_text(render.render(brief, settings)["html"], encoding="utf-8")
+    page_html = ROOT / "output" / "sample-brief-page.html"
+    page_html.parent.mkdir(exist_ok=True)
+    page_html.write_text(render.render(brief, settings)["html"], encoding="utf-8")
     with sync_playwright() as p:
         b = p.chromium.launch()
-        page = b.new_page(viewport={"width": 1100, "height": 820})
-        page.on("dialog", lambda d: d.accept())
-        page.goto(url)
-        page.wait_for_selector(".interview")
+        ctx, page, _ = T.open_page((p, b), T.APP)
+        page.set_viewport_size({"width": 1200, "height": 860})
+        page.wait_for_selector(".hero")
         page.screenshot(path=str(OUT / "01-setup.png"))
         page.click("text=Next question")
-        page.screenshot(path=str(OUT / "02-pick-categories.png"))
-        page.click('#tabs button[data-tab="categories"]')
-        page.click("#tab-categories details >> nth=0")
-        page.screenshot(path=str(OUT / "03-categories.png"))
-        page.click('#tabs button[data-tab="brief"]')
-        page.click("text=Show the sample brief")
-        page.wait_for_selector("iframe.preview")
-        page.wait_for_timeout(400)
-        page.locator("#briefview").scroll_into_view_if_needed()
-        page.screenshot(path=str(OUT / "04-brief.png"))
-        page.click('#tabs button[data-tab="ai"]')
-        page.screenshot(path=str(OUT / "05-ai-assistants.png"))
-        nl = b.new_page(viewport={"width": 760, "height": 1300})
-        nl.goto(news_html.as_uri())
-        nl.screenshot(path=str(OUT / "06-newsletter.png"))
-        phone = b.new_context(**p.devices["iPhone 13"]).new_page()
-        phone.goto(url)
-        phone.wait_for_selector(".interview")
-        phone.screenshot(path=str(OUT / "07-phone.png"))
+        page.screenshot(path=str(OUT / "02-pick-categories.png"), full_page=False)
+        page.locator("details.group >> nth=2").scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "03-category-tiles.png"))
+        page.click("text=Next question")
+        page.fill(".wxpick input", "Springfield")
+        page.click("text=Find my town")
+        page.click(".wxpick .chip >> text=Springfield, Illinois")
+        page.locator(".wxpick").scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "04-town-and-weather.png"))
+        for _ in range(5):
+            page.click("text=Next question")
+        page.click("text=Save and get my brief")
+        page.wait_for_selector("iframe.page", timeout=30000)
+        page.wait_for_timeout(800)
+        page.screenshot(path=str(OUT / "05-today.png"))
+        page.click('#tabs button[data-tab="daily"]')
+        page.screenshot(path=str(OUT / "06-every-day.png"))
+        ctx.close()
+        full = b.new_page(viewport={"width": 1280, "height": 900})
+        T.route_world(full, [])
+        full.goto(page_html.as_uri())
+        eager(full)
+        full.screenshot(path=str(OUT / "07-brief-page.png"), full_page=True)
+        phone_ctx, phone, _ = T.open_page((p, b), page_html.as_uri(), device="iPhone 13")
+        eager(phone)
+        phone.screenshot(path=str(OUT / "08-phone.png"))
         b.close()
     for f in sorted(OUT.glob("*.png")):
         print(f.relative_to(ROOT), f.stat().st_size, "bytes")

@@ -12,7 +12,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Daily Brief">
-<meta name="description" content="Free morning news SITREP: a setup interview, categories you choose, no repeats, and a newsletter you can email.">
+<meta name="description" content="Your free morning news page: pick from 67 categories, get fresh stories, photos and your forecast every day. No account, no keys.">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -22,8 +22,8 @@
   <nav id="tabs" role="tablist" aria-label="Sections">
     <button data-tab="setup" role="tab"><span class="stepno" aria-hidden="true">1</span>Setup</button>
     <button data-tab="categories" role="tab"><span class="stepno" aria-hidden="true">2</span>Categories</button>
-    <button data-tab="brief" role="tab"><span class="stepno" aria-hidden="true">3</span>Brief</button>
-    <button data-tab="email" role="tab"><span class="stepno" aria-hidden="true">4</span>Email</button>
+    <button data-tab="brief" role="tab"><span class="stepno" aria-hidden="true">3</span>Today</button>
+    <button data-tab="daily" role="tab"><span class="stepno" aria-hidden="true">4</span>Every day</button>
     <button data-tab="ai" role="tab"><span class="stepno" aria-hidden="true">5</span>AI assistants</button>
     <span class="tab-gap" aria-hidden="true"></span>
     <button data-tab="settings" role="tab">Settings</button>
@@ -34,8 +34,8 @@
 <main id="main" tabindex="-1">
   <section id="tab-setup" class="tab" role="tabpanel" aria-label="Setup"></section>
   <section id="tab-categories" class="tab" role="tabpanel" aria-label="Categories"></section>
-  <section id="tab-brief" class="tab" role="tabpanel" aria-label="Brief"></section>
-  <section id="tab-email" class="tab" role="tabpanel" aria-label="Email"></section>
+  <section id="tab-brief" class="tab" role="tabpanel" aria-label="Today"></section>
+  <section id="tab-daily" class="tab" role="tabpanel" aria-label="Every day"></section>
   <section id="tab-ai" class="tab" role="tabpanel" aria-label="AI assistants"></section>
   <section id="tab-settings" class="tab" role="tabpanel" aria-label="Settings"></section>
   <section id="tab-help" class="tab" role="tabpanel" aria-label="Help"></section>
@@ -45,8 +45,10 @@
 <script src="data/library.js"></script>
 <script src="data/prompts.js"></script>
 <script src="data/sample.js"></script>
+<script src="data/icons.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/newsletter.js"></script>
+<script src="js/collect.js"></script>
 <script src="js/services.js"></script>
 <script src="js/app.js"></script>
 </body>

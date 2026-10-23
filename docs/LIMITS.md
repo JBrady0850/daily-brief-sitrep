@@ -1,27 +1,41 @@
-# Limits (v0.1.0)
+# Limits (v0.2.0)
 
-- The web version cannot fetch news: Google News and most publisher feeds do
-  not allow web pages to read them. Use the desktop app or an AI assistant.
-- Desktop briefs have no Lead Analysis, because that needs an AI. Google News
-  gives no summary, so those stories show their headline only; publisher feeds
-  usually include one or two sentences.
+- The web page reads only the sources that allow web pages to read them: the
+  GDELT news index, and publisher feeds such as ESPN, CBS Sports, NASA, The New
+  York Times, Fox News, CNBC and Wired. Google News and most other feeds do not
+  allow it; the desktop app and the GitHub copy read those instead. A feed that
+  refuses shows as "not readable from a web page" under Sources and filters.
+- The GDELT index sometimes turns requests away when it is busy (seen as HTTP
+  503 on 2026-10-23, including for some simple searches). The page asks one
+  search at a time, waits six seconds between searches, retries a refused
+  search once, and stops asking after two failed searches in a row; that
+  morning's brief then comes from the feeds alone. A run of fifteen categories
+  takes one to three minutes.
+- GDELT and Google News give a headline only, so those stories show no summary.
+  GDELT usually gives the story's share photo; feeds add a summary and often a
+  photo. Photos load from the publishers' sites, and one that fails to load
+  leaves an empty frame.
+- Briefs collected without an AI have no Lead Analysis.
 - Google News links open through a Google redirect page.
-- The desktop app's schedule runs only while the computer is on. The GitHub
-  copy needs no computer, but GitHub may delay or drop scheduled runs at busy
-  times, and its history cache is removed after 7 days without a run.
-- Checked 2026-10-23: Google News answered every search from a home connection
-  and from GitHub's servers (the first cloud run kept 25 stories and opened the
-  brief issue), and 11 of 12 publisher feeds answered. Still UNVERIFIED: sending
-  mail from GitHub's servers, and the notification email GitHub sends for the
-  brief issue.
-- Some sites refuse scripted requests (CISA's feed returned HTTP 403). The
-  source health report lists any such feed by name.
+- Choices and the no-repeat history live in one browser. Clearing site data, a
+  private window, or another device starts fresh; move with the settings file.
+- The once-a-day collection runs only when you open the page. For a brief with
+  no browser open, set up the optional GitHub copy; GitHub may delay or drop
+  scheduled runs at busy times, and its history cache is removed after 7 days
+  without a run.
+- The forecast covers four days from Open-Meteo, for non-commercial use under
+  its terms (fewer than 10,000 calls a day; this page makes one per brief).
+- Checked 2026-10-23 from a browser on the published page: GDELT, Open-Meteo,
+  and feeds from ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC,
+  MarketWatch, Wired and K-12 Dive answered; Google News, BBC, NPR, Reuters-style
+  wire feeds and most WordPress sites refused. Google News answered every search
+  from a home connection and from GitHub's servers.
 - On a Mac, Python from python.org cannot check web certificates until you run
   Install Certificates.command in its Applications folder; the app says so.
 - AI assistants can still make mistakes. The prompt demands links from a live
   search and the app checks ages, labels, links and duplicates, but read the
   source before you act on a story.
-- UNVERIFIED: how the newsletter looks in every mail program (tested in
-  Chromium only), and installation on real iPad and Android devices.
+- UNVERIFIED: installation on real iPad and Android devices, and the
+  notification email GitHub sends for a brief issue.
 - The no-repeat history keeps the newest 20,000 links and headlines, and
   compares near-duplicate headlines against the newest 3,000.

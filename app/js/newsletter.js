@@ -1,76 +1,124 @@
-/* Daily Brief newsletter theme: turns a brief into an email-ready HTML page, a
-   plain-text copy and a subject line. Table layout and solid colour cells only,
-   because email programs strip scripts, SVG and background images.
-   dailybrief/render.py mirrors this file and reads the stylesheet below from it,
-   so the desktop email and the in-app preview are the same document. */
+/* Daily Brief page theme: turns a brief into a self-contained web page (no
+   scripts; story photos load from their publishers), a plain-text copy and a
+   title line. dailybrief/render.py mirrors this file and reads the stylesheet
+   below and the icons in data/icons.js, so the saved page and the in-app view
+   are the same document. */
 (function (root, factory) {
-  const engine = typeof module === "object" && module.exports ? require("./engine.js") : root.DB_ENGINE;
-  const api = factory(engine);
-  if (typeof module === "object" && module.exports) module.exports = api;
+  const node = typeof module === "object" && module.exports;
+  const engine = node ? require("./engine.js") : root.DB_ENGINE;
+  let icons = root && root.DB_ICONS;
+  if (node) {
+    const txt = require("fs").readFileSync(require("path").join(__dirname, "..", "data", "icons.js"), "utf8");
+    icons = JSON.parse(txt.slice(txt.indexOf("window.DB_ICONS = ") + 18, txt.lastIndexOf(";")));
+  }
+  const api = factory(engine, icons || { icons: {}, weather: {}, art: {}, weather_codes: {}, weather_words: {} });
+  if (node) module.exports = api;
   else root.DB_NEWSLETTER = api;
-})(typeof self !== "undefined" ? self : this, function (E) {
+})(typeof self !== "undefined" ? self : this, function (E, ICONS) {
   "use strict";
 
   /*CSS-START*/
   const CSS = `
-body{margin:0;padding:0;background:#eef1f5;font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;font-size:14px;line-height:1.5;color:#1a1a1a;}
-table.wrap{width:100%;max-width:680px;margin:0 auto;border-collapse:collapse;}
-td.mast{background:#0f2744;padding:22px 24px 16px;}
-div.kick{font-size:11px;font-weight:bold;letter-spacing:.18em;text-transform:uppercase;color:#e0b43a;}
-div.ttl{font-family:Georgia,'Times New Roman',serif;font-size:28px;line-height:1.15;font-weight:bold;color:#ffffff;margin:6px 0 4px;}
-div.dl{font-size:13px;color:#d3dbe6;}
-td.rule{background:#d4a017;height:4px;font-size:0;line-height:0;padding:0;}
-td.body{background:#ffffff;padding:18px 22px 6px;}
-table.cd{width:100%;border-collapse:collapse;background:#fff8e1;border-left:5px solid #d4a017;margin:0 0 16px;}
-td.cdn{padding:14px 10px 14px 16px;font-family:Georgia,serif;font-size:44px;line-height:1;font-weight:bold;color:#0f2744;white-space:nowrap;vertical-align:top;width:1%;}
-td.cdt{padding:16px 16px 10px 6px;vertical-align:top;}
-div.cdk{font-size:11px;font-weight:bold;letter-spacing:.14em;color:#6e5426;text-transform:uppercase;}
+*{box-sizing:border-box;}
+body{margin:0;background:#eef1f5;font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;}
+.in{max-width:1180px;margin:0 auto;padding:0 20px;}
+nav.site{background:#0a1c33;font-size:13px;}
+nav.site .in{display:flex;flex-wrap:wrap;gap:6px 20px;padding-top:9px;padding-bottom:9px;}
+nav.site a{color:#e0b43a;font-weight:bold;text-decoration:none;}
+nav.site a:hover,nav.site a:focus{text-decoration:underline;}
+header.mast{background:#0f2744;color:#ffffff;}
+header.mast .in{padding-top:28px;padding-bottom:22px;}
+div.kick{font-size:12px;font-weight:bold;letter-spacing:.18em;text-transform:uppercase;color:#e0b43a;}
+h1.ttl{font-family:Georgia,'Times New Roman',serif;font-size:34px;line-height:1.15;font-weight:bold;margin:8px 0 6px;}
+p.dl{font-size:14px;color:#d3dbe6;margin:0;}
+div.rule{background:#d4a017;height:4px;}
+main{padding-top:20px;padding-bottom:28px;}
+section.cd{background:#fff8e1;border-left:5px solid #d4a017;padding:14px 16px;margin:0 0 18px;}
+div.cdtop{display:flex;gap:16px;align-items:flex-start;}
+div.cdn{font-family:Georgia,serif;font-size:46px;line-height:1;font-weight:bold;color:#0f2744;white-space:nowrap;}
+div.cdt{flex:1;min-width:0;}
+div.cdk{font-size:12px;font-weight:bold;letter-spacing:.14em;color:#6e5426;text-transform:uppercase;}
 div.cds{font-size:13px;color:#4a4a4a;margin:2px 0 8px;}
-table.bar{width:100%;border-collapse:collapse;}
-td.barf{background:#d4a017;height:9px;font-size:0;line-height:0;}
-td.bare{background:#ece4c8;height:9px;font-size:0;line-height:0;}
-td.mst{padding:0 16px 12px;}
-table.ms{width:100%;border-collapse:collapse;font-size:13px;}
-table.ms td{padding:5px 0;border-top:1px solid #efe6c7;vertical-align:top;}
-table.ms td.msd{width:1%;white-space:nowrap;padding-right:10px;}
-span.msn{display:block;font-size:11px;color:#666666;}
-span.pill{display:inline-block;font-size:10px;font-weight:bold;color:#ffffff;padding:2px 7px;border-radius:10px;letter-spacing:.03em;vertical-align:middle;margin-right:6px;}
+div.bar{background:#ece4c8;height:9px;}
+div.barf{background:#d4a017;height:9px;}
+ul.ms{list-style:none;margin:12px 0 0;padding:0;font-size:13px;}
+ul.ms li{display:flex;gap:10px;padding:6px 0;border-top:1px solid #efe6c7;}
+span.msn{display:block;font-size:12px;color:#666666;}
+span.pill{display:inline-block;font-size:11px;font-weight:bold;color:#ffffff;padding:2px 8px;border-radius:10px;letter-spacing:.03em;vertical-align:middle;margin-right:6px;white-space:nowrap;}
 span.ms-hot{background:#b03a2e;} span.ms-warm{background:#a04000;}
 span.ms-cool{background:#34495e;} span.ms-mark{background:#d4a017;color:#0f2744;}
 span.f1{background:#1b6e3d;} span.f2{background:#0f6e5c;} span.f3{background:#8a5a00;}
 span.old{background:#6e5426;} span.ref{background:#5b3485;}
-table.tiles{width:100%;border-collapse:separate;border-spacing:6px 0;margin:0 0 14px;}
-td.tile{background:#f4f6f9;border-top:3px solid #0f2744;padding:10px 6px;text-align:center;width:25%;}
-div.tn{font-family:Georgia,serif;font-size:24px;font-weight:bold;color:#0f2744;line-height:1.1;}
-div.tl{font-size:11px;color:#555555;margin-top:2px;}
-table.srcbar{width:100%;border-collapse:collapse;margin:0 0 4px;}
-table.srcbar td.seg{height:8px;font-size:0;line-height:0;}
-div.lgd{font-size:11px;color:#555555;margin:0 0 18px;}
-span.lg{display:inline-block;margin:2px 12px 2px 0;white-space:nowrap;}
-span.sw{display:inline-block;width:9px;height:9px;margin-right:4px;vertical-align:middle;border-radius:2px;}
-table.card{width:100%;border-collapse:collapse;margin:0 0 16px;background:#ffffff;border:1px solid #e3e8ee;}
-td.ch{padding:10px 14px;border-bottom:1px solid #e3e8ee;background:#f8f9fb;}
-span.tag{display:inline-block;font-size:11px;font-weight:bold;color:#ffffff;padding:2px 7px;border-radius:3px;margin-right:8px;vertical-align:middle;letter-spacing:.04em;}
-span.cn{font-family:Georgia,serif;font-size:17px;font-weight:bold;color:#0f2744;vertical-align:middle;}
-span.mix{float:right;font-size:11px;color:#666666;margin-top:3px;}
-td.sig{padding:9px 14px;border-bottom:1px solid #f0f2f5;background:#fbfaf4;font-size:13px;line-height:1.5;color:#333333;}
-td.it{padding:11px 14px;border-bottom:1px solid #f0f2f5;}
-a.hl{font-size:15px;font-weight:bold;line-height:1.35;color:#0f2744;text-decoration:none;}
+div.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px;}
+div.tile{background:#ffffff;border-top:3px solid #0f2744;padding:12px 8px;text-align:center;}
+div.tn{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:#0f2744;line-height:1.1;}
+div.tl{font-size:12px;color:#555555;margin-top:2px;}
+div.srcbar{display:flex;height:9px;margin:0 0 4px;background:#dfe4ea;}
+span.seg{display:block;height:9px;}
+div.lgd{font-size:12px;color:#555555;margin:0 0 18px;}
+span.lg{display:inline-block;margin:2px 14px 2px 0;white-space:nowrap;}
+span.sw{display:inline-block;width:10px;height:10px;margin-right:5px;vertical-align:middle;border-radius:2px;}
+div.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(440px,1fr));gap:18px;align-items:start;}
+section.card{background:#ffffff;border:1px solid #e3e8ee;border-left:5px solid var(--c);}
+h2.ch{margin:0;padding:11px 14px;border-bottom:1px solid #e3e8ee;background:#f8f9fb;display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;font-weight:normal;}
+span.tag{display:inline-block;font-size:11px;font-weight:bold;color:#ffffff;background:var(--c);padding:2px 8px;border-radius:3px;letter-spacing:.04em;}
+span.cn{font-family:Georgia,serif;font-size:19px;font-weight:bold;color:#0f2744;flex:1;}
+span.mix{font-size:12px;color:#666666;}
+p.sig{margin:0;padding:10px 14px;border-bottom:1px solid #f0f2f5;background:#fbfaf4;font-size:14px;color:#333333;}
+ul.items{list-style:none;margin:0;padding:0;}
+li.it{padding:12px 14px;border-bottom:1px solid #f0f2f5;}
+li.it:last-child{border-bottom:0;}
+a.hl{font-size:16px;font-weight:bold;line-height:1.35;color:#0f2744;text-decoration:none;}
+a.hl:hover,a.hl:focus{text-decoration:underline;}
+span.hl{font-size:16px;font-weight:bold;color:#0f2744;}
 div.meta{margin:5px 0 4px;}
-span.src{font-size:11px;color:#666666;vertical-align:middle;}
-div.sum{font-size:13px;line-height:1.55;color:#3d3d3d;}
-div.st{font-size:12px;line-height:1.5;color:#5b3485;margin-top:4px;}
-div.none{font-size:13px;color:#666666;font-style:italic;}
-div.gap{background:#fdecea;border-left:4px solid #b03a2e;padding:10px 12px;font-size:12px;color:#7b241c;margin:0 0 16px;}
-div.sample{background:#fff8e1;border-left:4px solid #d4a017;padding:10px 12px;font-size:12px;color:#5c4510;margin:0 0 16px;}
-div.legend{background:#f4f6f9;border-left:4px solid #0f2744;padding:10px 12px;font-size:12px;line-height:1.55;color:#333333;margin:8px 0 14px;}
-div.an{border:1px solid #e3e8ee;border-top:4px solid #0f2744;background:#f8f9fb;padding:12px 14px;margin:0 0 16px;}
-div.anh{font-size:11px;font-weight:bold;letter-spacing:.14em;color:#0f2744;text-transform:uppercase;margin-bottom:8px;}
-div.anb{font-size:14px;line-height:1.55;}
-div.anb ol,div.anr ul{margin:4px 0 0;padding-left:20px;}
-div.anr{margin-top:10px;font-size:13px;line-height:1.5;}
-div.anf{font-size:11px;color:#666666;margin-top:10px;}
-td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;color:#c3cdd9;}
+span.src{font-size:12px;color:#666666;vertical-align:middle;}
+p.sum{margin:0;font-size:14px;line-height:1.55;color:#3d3d3d;}
+p.st{margin:4px 0 0;font-size:13px;color:#5b3485;}
+p.none{margin:0;padding:12px 14px;font-size:14px;color:#666666;font-style:italic;}
+div.gap{background:#fdecea;border-left:4px solid #b03a2e;padding:10px 12px;font-size:13px;color:#7b241c;margin:0 0 18px;}
+div.sample{background:#fff8e1;border-left:4px solid #d4a017;padding:10px 12px;font-size:13px;color:#5c4510;margin:0 0 18px;}
+div.legend{background:#ffffff;border-left:4px solid #0f2744;padding:10px 12px;font-size:13px;line-height:1.55;color:#333333;margin:22px 0 0;}
+section.an{border:1px solid #e3e8ee;border-top:4px solid #0f2744;background:#ffffff;padding:14px 16px;margin:0 0 18px;}
+h2.anh{margin:0 0 8px;font-size:12px;font-weight:bold;letter-spacing:.14em;color:#0f2744;text-transform:uppercase;}
+div.anb{font-size:15px;line-height:1.55;}
+div.anb ol,div.anr ul{margin:4px 0 0;padding-left:22px;}
+div.anr{margin-top:10px;font-size:14px;line-height:1.5;}
+p.anf{font-size:12px;color:#666666;margin:10px 0 0;}
+section.arch{margin:22px 0 0;background:#ffffff;border:1px solid #e3e8ee;padding:12px 16px;}
+section.arch h2{margin:0 0 6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:#0f2744;}
+section.arch ul{margin:0;padding-left:20px;columns:2 220px;font-size:14px;}
+footer.foot{background:#0f2744;font-size:12px;line-height:1.6;color:#c3cdd9;}
+footer.foot .in{padding-top:14px;padding-bottom:14px;}
+header.mast{position:relative;overflow:hidden;}
+header.mast .in{position:relative;}
+div.art{position:absolute;top:0;right:0;bottom:0;width:62%;max-width:640px;pointer-events:none;}
+div.art svg{display:block;width:100%;height:100%;}
+svg.ki{width:16px;height:16px;vertical-align:-3px;margin-right:7px;}
+span.ico{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:var(--c);color:#ffffff;flex:none;}
+span.ico svg{width:18px;height:18px;}
+li.lead .ph{display:block;margin:-12px -14px 10px;aspect-ratio:2/1;background:#e9edf2;overflow:hidden;}
+li.lead img{display:block;width:100%;height:100%;object-fit:cover;}
+li.th{display:flex;gap:12px;align-items:flex-start;}
+li.th div.tx{flex:1;min-width:0;}
+.thumb{flex:none;display:block;width:96px;height:64px;border-radius:6px;overflow:hidden;background:#e9edf2;}
+.thumb img{display:block;width:100%;height:100%;object-fit:cover;}
+section.wx{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;background:linear-gradient(135deg,#e6f0fb,#ffffff);border:1px solid #d3e0ef;border-left:5px solid #2b6cc4;padding:14px 16px;margin:0 0 18px;}
+div.wxnow{display:flex;align-items:center;gap:12px;min-width:220px;}
+svg.wxi{width:40px;height:40px;}
+svg.wxi.big{width:64px;height:64px;}
+div.wxk{font-size:12px;font-weight:bold;letter-spacing:.14em;text-transform:uppercase;color:#2b6cc4;}
+div.wxt{font-family:Georgia,'Times New Roman',serif;font-size:34px;font-weight:bold;color:#0f2744;line-height:1.1;}
+div.wxw{font-size:14px;color:#3d3d3d;}
+ol.wxd{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:10px;flex:1;}
+ol.wxd li{flex:1;min-width:92px;background:#ffffff;border:1px solid #e3e8ee;border-radius:8px;padding:8px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:2px;}
+span.wxdn{font-size:12px;font-weight:bold;color:#0f2744;text-transform:uppercase;letter-spacing:.08em;}
+span.wxhl{font-size:14px;}
+span.wxr{font-size:12px;color:#2b6cc4;min-height:16px;}
+p.wxs{flex-basis:100%;margin:0;font-size:11px;color:#666666;}
+p.wxs a{color:#2b6cc4;}
+@media (max-width:760px){h1.ttl{font-size:26px;} div.tiles{grid-template-columns:repeat(2,1fr);} div.grid{grid-template-columns:1fr;} .in{padding:0 14px;} div.art{width:100%;opacity:.22;} ol.wxd{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;flex-basis:100%;} ol.wxd li{min-width:0;padding:6px 2px;} svg.wxi{width:30px;height:30px;} span.wxhl{font-size:13px;} div.wxnow{min-width:0;}}
+@media print{nav.site{display:none;} body{background:#ffffff;} div.grid{display:block;} section.card{break-inside:avoid;margin:0 0 12px;}}
 `;
   /*CSS-END*/
 
@@ -78,7 +126,6 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
   const MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August",
     "September", "October", "November", "December"];
   const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-  const TBL = 'role="presentation" width="100%" cellpadding="0" cellspacing="0"';
   const MIX_COLORS = { news: "#1b6e3d", backfill: "#6e5426", reference: "#5b3485" };
 
   function esc(v) {
@@ -113,6 +160,59 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
   }
 
   function safeHref(u) { return E.validUrl(u) ? String(u).trim() : ""; }
+
+  /* Icons and artwork come from data/icons.js and are drawn for this project. */
+  function iconSvg(name, cls) {
+    const inner = ICONS.icons[name] || ICONS.icons.news || "";
+    return '<svg class="' + cls + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + "</svg>";
+  }
+
+  function iconOf(cat, cfg) {
+    const own = E.collapse(cat.icon);
+    if (own && ICONS.icons[own]) return own;
+    const match = (cfg.categories || []).filter(c => c.id === cat.id)[0];
+    if (match && ICONS.icons[match.icon]) return match.icon;
+    return "news";
+  }
+
+  function wxKind(code) {
+    for (const k of Object.keys(ICONS.weather_codes)) if (ICONS.weather_codes[k].indexOf(code) >= 0) return k;
+    return "cloudy";
+  }
+
+  function wxSvg(kind, cls) {
+    return '<svg class="' + cls + '" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (ICONS.weather[kind] || "") + "</svg>";
+  }
+
+  function rnd(x) { return Math.floor(x + 0.5); }
+
+  /* The forecast panel. Numbers are checked before they are written, so a
+     pasted brief cannot put markup into the page through them. */
+  function weatherHtml(wx, day) {
+    if (!wx || typeof wx !== "object" || Array.isArray(wx) || !Array.isArray(wx.days)) return "";
+    const days = wx.days.filter(d => d && typeof d === "object" && E.isDateStr(d.date)).slice(0, 4);
+    if (!days.length) return "";
+    const unit = wx.units === "celsius" ? "C" : "F";
+    const cur = wx.current && typeof wx.current === "object" && isNum(wx.current.temp) ? wx.current : null;
+    const nowKind = wxKind(cur ? cur.code : days[0].code);
+    const place = E.collapse(wx.place) || "your area";
+    let h = '<section class="wx"><div class="wxnow">' + wxSvg(nowKind, "wxi big") + '<div><div class="wxk">Weather &middot; ' + esc(place) + "</div>" +
+      (cur ? '<div class="wxt">' + rnd(cur.temp) + "&deg;" + unit + "</div>" : "") + '<div class="wxw">' + esc(ICONS.weather_words[nowKind] || "") +
+      (cur ? " now" : " today") + '</div></div></div><ol class="wxd">';
+    days.forEach(d => {
+      const k = wxKind(d.code);
+      const label = d.date === day ? "Today" : DAYS[new Date(d.date + "T00:00:00Z").getUTCDay()].slice(0, 3);
+      const hi = isNum(d.hi) ? rnd(d.hi) + "&deg;" : "&ndash;";
+      const lo = isNum(d.lo) ? rnd(d.lo) + "&deg;" : "&ndash;";
+      const rain = isNum(d.rain) && d.rain > 0 ? rnd(d.rain) + "% rain" : "";
+      h += '<li title="' + esc(ICONS.weather_words[k] || "") + '"><span class="wxdn">' + label + "</span>" + wxSvg(k, "wxi") +
+        '<span class="wxhl"><b>' + hi + "</b> / " + lo + '</span><span class="wxr">' + rain + "</span></li>";
+    });
+    const when = stamp(wx.fetched_at);
+    return h + '</ol><p class="wxs">Forecast by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0)' +
+      (when ? " &middot; updated " + when : "") + "</p></section>";
+  }
 
   function stats(brief) {
     const cats = Array.isArray(brief.categories) ? brief.categories : [];
@@ -168,15 +268,14 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
       const cls = m.mark ? "ms-mark" : dd <= 30 ? "ms-hot" : dd <= 120 ? "ms-warm" : "ms-cool";
       const when = dd === 0 ? "today" : dd + " d";
       const note = m.note ? " &middot; " + esc(m.note) : "";
-      return '<tr><td class="msd"><span class="pill ' + cls + '">' + when + '</span></td><td>' + esc(m.label) +
-        '<span class="msn">' + shortDate(m.date) + note + '</span></td></tr>';
+      return '<li><span class="pill ' + cls + '">' + when + '</span><span>' + esc(m.label) +
+        '<span class="msn">' + shortDate(m.date) + note + '</span></span></li>';
     }).join("");
     const sub = prettyDate(c.date) + (c.pct === null ? "" : " &middot; " + c.pct + "% of the countdown elapsed");
-    const bar = c.pct === null ? "" : '<table class="bar" ' + TBL + '><tr><td class="barf" width="' + Math.max(c.pct, 1) +
-      '%"></td><td class="bare" width="' + (100 - Math.max(c.pct, 1)) + '%"></td></tr></table>';
-    return '<table class="cd" ' + TBL + '><tr><td class="cdn">' + c.days + '</td><td class="cdt"><div class="cdk">' +
-      esc(c.label) + '</div><div class="cds">' + sub + '</div>' + bar + '</td></tr>' +
-      (rows ? '<tr><td class="mst" colspan="2"><table class="ms" ' + TBL + '>' + rows + '</table></td></tr>' : "") + '</table>';
+    const bar = c.pct === null ? "" : '<div class="bar"><div class="barf" style="width:' + Math.max(c.pct, 1) + '%"></div></div>';
+    return '<section class="cd"><div class="cdtop"><div class="cdn">' + c.days + '</div><div class="cdt"><div class="cdk">' +
+      esc(c.label) + '</div><div class="cds">' + sub + '</div>' + bar + '</div></div>' +
+      (rows ? '<ul class="ms">' + rows + '</ul>' : "") + '</section>';
   }
 
   function pill(item, age) {
@@ -205,17 +304,18 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
     if (!a || typeof a !== "object") return "";
     const { top, watch, conn, act } = analysisParts(a);
     if (!top.length && !watch.length && !conn && !act) return "";
-    let h = '<div class="an"><div class="anh">Lead analysis</div>';
+    let h = '<section class="an"><h2 class="anh">Lead analysis</h2>';
     if (top.length) h += '<div class="anb"><b>Top three</b><ol>' + top.map(t => "<li>" + esc(t) + "</li>").join("") + "</ol></div>";
     if (conn) h += '<div class="anr"><b>Connection:</b> ' + esc(conn) + "</div>";
     if (watch.length) h += '<div class="anr"><b>' + esc(cfg.brief.watch_label) + ':</b><ul>' + watch.map(t => "<li>" + esc(t) + "</li>").join("") + "</ul></div>";
     if (act) h += '<div class="anr"><b>Action:</b> ' + esc(act) + "</div>";
-    return h + '<div class="anf">Analysis is inference from the headlines below, not reporting. Check the linked sources before acting.</div></div>';
+    return h + '<p class="anf">Analysis is inference from the headlines below, not reporting. Check the linked sources before acting.</p></section>';
   }
 
   function cardHtml(cat, brief, cfg, index, win) {
     const color = /^#[0-9a-fA-F]{6}$/.test(String(cat.color || "")) ? cat.color : E.PALETTE[index % E.PALETTE.length];
     const items = Array.isArray(cat.items) ? cat.items : [];
+    let lead = false;
     const rows = items.map(it => {
       const age = ageOf(it, brief);
       const href = safeHref(it.url);
@@ -224,25 +324,28 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
       let src = esc(E.collapse(it.source));
       if (it.published && it.recency !== "reference" && stamp(it.published)) src += (src ? " &middot; " : "") + stamp(it.published);
       const sum = E.collapse(it.summary);
-      const st = cfg.brief.conversation_starters && E.collapse(it.starter) ? '<div class="st">Ask: ' + esc(E.collapse(it.starter)) + "</div>" : "";
-      return '<tr><td class="it">' + head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src + "</span></div>" +
-        (sum ? '<div class="sum">' + esc(sum) + "</div>" : "") + st + "</td></tr>";
+      const st = cfg.brief.conversation_starters && E.collapse(it.starter) ? '<p class="st">Ask: ' + esc(E.collapse(it.starter)) + "</p>" : "";
+      const text = head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src + "</span></div>" +
+        (sum ? '<p class="sum">' + esc(sum) + "</p>" : "") + st;
+      const img = E.validImage(it.image) ? '<img src="' + esc(it.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : "";
+      if (!img) return '<li class="it">' + text + "</li>";
+      // The first story with a photo leads the card; later ones get a thumbnail.
+      const wrap = cls => href ? '<a class="' + cls + '" href="' + esc(href) + '" tabindex="-1" aria-hidden="true">' + img + "</a>" : '<span class="' + cls + '">' + img + "</span>";
+      if (!lead) { lead = true; return '<li class="it lead">' + wrap("ph") + text + "</li>"; }
+      return '<li class="it th"><div class="tx">' + text + "</div>" + wrap("thumb") + "</li>";
     });
-    if (!rows.length) {
-      rows.push('<tr><td class="it"><div class="none">No new items. Nothing was published in the last ' + win +
-        " hours that you have not already been sent.</div></td></tr>");
-    }
+    const body = rows.length ? '<ul class="items">' + rows.join("") + "</ul>"
+      : '<p class="none">No new items. Nothing was published in the last ' + win + " hours that you have not already been sent.</p>";
     const nNews = items.filter(i => i.recency === "news").length;
     const nBack = items.filter(i => i.recency === "backfill").length;
     const nRef = items.filter(i => i.recency === "reference").length;
     const mix = nNews + " fresh" + (nBack ? ", " + nBack + " older" : "") + (nRef ? ", " + nRef + " reference" : "");
     const sig = E.collapse(cat.signal);
     const so = E.collapse(cat.so_what);
-    const sigRow = sig || so ? '<tr><td class="sig">' + (sig ? "<b>Signal:</b> " + esc(sig) : "") + (sig && so ? "<br>" : "") +
-      (so ? "<b>So what:</b> " + esc(so) : "") + "</td></tr>" : "";
-    return '<table class="card" ' + TBL + ' style="border-left:5px solid ' + color + '"><tr><td class="ch"><span class="tag" style="background:' +
-      color + '">' + esc(tagOf(cat, index)) + '</span><span class="cn">' + esc(cat.name) + '</span><span class="mix">' + mix + "</span></td></tr>" +
-      sigRow + '<tr><td style="padding:0"><table ' + TBL + ">" + rows.join("") + "</table></td></tr></table>";
+    const sigRow = sig || so ? '<p class="sig">' + (sig ? "<b>Signal:</b> " + esc(sig) : "") + (sig && so ? "<br>" : "") +
+      (so ? "<b>So what:</b> " + esc(so) : "") + "</p>" : "";
+    return '<section class="card" style="--c:' + color + '"><h2 class="ch"><span class="ico">' + iconSvg(iconOf(cat, cfg), "i") + '</span><span class="tag">' + esc(tagOf(cat, index)) +
+      '</span><span class="cn">' + esc(cat.name) + '</span><span class="mix">' + mix + "</span></h2>" + sigRow + body + "</section>";
   }
 
   /* Short desk label on each card: the category's own tag, else T1, T2 and so on. */
@@ -254,7 +357,8 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
   function sourceLabel(brief) {
     if (brief.source === "sample") return "sample data, not real news";
     if (brief.source === "ai") return "written by an AI assistant with web search" + (E.collapse(brief.model) ? " (" + E.collapse(brief.model) + ")" : "");
-    return "collected by the Daily Brief desktop app from Google News and publisher feeds";
+    if (brief.source === "web") return "collected in your browser from the GDELT news index and publisher feeds";
+    return "collected by the Daily Brief from Google News and publisher feeds";
   }
 
   function render(brief, cfg) {
@@ -270,29 +374,33 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
     if (brief.ledger_applied) dek += withheld ? " &middot; " + withheld + " withheld as already sent" : " &middot; nothing here has been sent to you before";
     const tiles = [[s.total, "stories"], [s.news, "fresh, under " + win + "h"], [s.filled + " of " + s.cats, "categories filled"],
       brief.ledger_applied ? [withheld || 0, "withheld as already sent"] : [s.outlets, "outlets"]];
-    const tilesHtml = '<table class="tiles" ' + TBL + "><tr>" + tiles.map(t => '<td class="tile"><div class="tn">' + esc(t[0]) +
-      '</div><div class="tl">' + esc(t[1]) + "</div></td>").join("") + "</tr></table>";
+    const tilesHtml = '<div class="tiles">' + tiles.map(t => '<div class="tile"><div class="tn">' + esc(t[0]) +
+      '</div><div class="tl">' + esc(t[1]) + "</div></div>").join("") + "</div>";
     const segs = [["Fresh", s.news, MIX_COLORS.news], ["Older", s.backfill, MIX_COLORS.backfill], ["Reference", s.reference, MIX_COLORS.reference]];
-    const cells = segs.filter(x => x[1] > 0).map(x => '<td class="seg" width="' + Math.max(1, Math.floor(100 * x[1] / Math.max(s.total, 1) + 0.5)) +
-      '%" style="background:' + x[2] + '"></td>').join("");
+    const cells = segs.filter(x => x[1] > 0).map(x => '<span class="seg" style="width:' + Math.max(1, Math.floor(100 * x[1] / Math.max(s.total, 1) + 0.5)) +
+      '%;background:' + x[2] + '"></span>').join("");
     const legend = segs.map(x => '<span class="lg"><span class="sw" style="background:' + x[2] + '"></span>' + x[0] + " " + x[1] + "</span>").join("");
-    const bar = cells ? '<table class="srcbar" ' + TBL + "><tr>" + cells + '</tr></table><div class="lgd">Today\'s stories by age: ' + legend + "</div>" : "";
+    const bar = cells ? '<div class="srcbar">' + cells + '</div><div class="lgd">Today\'s stories by age: ' + legend + "</div>" : "";
     const cd = countdownData(n, day);
     const gap = s.empty.length ? '<div class="gap">No new items for: ' + s.empty.map(c => esc(c.name)).join(", ") + ". Nothing was published in the last " +
       win + " hours that had not already been sent in an earlier brief.</div>" : "";
     const sample = brief.source === "sample" ? '<div class="sample">Sample brief: invented headlines that show the layout. Nothing here is real news and the links go to example.com.</div>' : "";
     const cards = (brief.categories || []).map((c, i) => cardHtml(c, brief, n, i, win)).join("");
+    const subject = subjectLine(brief, n);
+    // No script can run in the page, wherever it is opened, even if something slipped past the escaping.
     const html = '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">' +
-      "<title>" + esc(title + ", " + day) + "</title><style>" + CSS + "</style></head><body>" +
-      '<table class="wrap" ' + TBL + '><tr><td class="mast"><div class="kick">' + esc(title) + " &middot; Edition " + esc(day) + '</div><div class="ttl">' +
-      esc(prettyDate(day)) + '</div><div class="dl">' + dek + '</div></td></tr><tr><td class="rule"></td></tr><tr><td class="body">' +
-      sample + (cd ? countdownHtml(cd, day) : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + cards +
+      "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">" +
+      "<title>" + esc(subject) + "</title><style>" + CSS + "</style></head><body>" +
+      '<header class="mast"><div class="art">' + (ICONS.art.masthead || "") + '</div><div class="in"><div class="kick">' + iconSvg("sunrise", "ki") + esc(title) + " &middot; Edition " + esc(day) + '</div><h1 class="ttl">' +
+      esc(prettyDate(day)) + '</h1><p class="dl">' + dek + '</p></div></header><div class="rule"></div><main class="in">' +
+      sample + weatherHtml(brief.weather, day) + (cd ? countdownHtml(cd, day) : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + '<div class="grid">' + cards + "</div>" +
       '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + win +
       '-hour window (under 6h, under 12h, under ' + win + 'h). <span class="pill old">OLDER</span> is beyond ' + win +
       'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span> is an undated authoritative page, never presented as an event.</div>' +
-      '</td></tr><tr><td class="foot">Generated ' + esc(brief.generated_at || "") + " &middot; " + esc(sourceLabel(brief)) + " &middot; " + win +
-      "-hour window &middot; summaries capped at " + esc(cap) + " characters &middot; Daily Brief " + E.VERSION + "</td></tr></table></body></html>";
-    return { subject: subjectLine(brief, n), html: html, text: plainText(brief, n, s, cd, win, title, day, withheld) };
+      '</main><footer class="foot"><div class="in">Generated ' + esc(brief.generated_at || "") + " &middot; " + esc(sourceLabel(brief)) + " &middot; " + win +
+      "-hour window &middot; summaries capped at " + esc(cap) + " characters &middot; Daily Brief " + E.VERSION +
+      "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story.</div></footer></body></html>";
+    return { subject: subject, html: html, text: plainText(brief, n, s, cd, win, title, day, withheld) };
   }
 
   function plainText(brief, n, s, cd, win, title, day, withheld) {
@@ -302,6 +410,14 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
     L.push(s.total + " stories across " + s.cats + " categories | " + s.news + " fresh under " + win + "h" +
       (brief.ledger_applied ? " | " + (withheld || 0) + " withheld as already sent" : ""));
     if (brief.source === "sample") L.push("SAMPLE: invented headlines that show the layout. Nothing here is real news.");
+    const wx = brief.weather;
+    if (wx && typeof wx === "object" && !Array.isArray(wx) && Array.isArray(wx.days)) {
+      const unit = wx.units === "celsius" ? "C" : "F";
+      const parts = wx.days.filter(d => d && typeof d === "object" && E.isDateStr(d.date)).slice(0, 4).map(d =>
+        (d.date === day ? "Today" : DAYS[new Date(d.date + "T00:00:00Z").getUTCDay()].slice(0, 3)) + " " + (ICONS.weather_words[wxKind(d.code)] || "") +
+        (isNum(d.hi) ? " " + rnd(d.hi) + unit : "") + (isNum(d.lo) ? "/" + rnd(d.lo) + unit : "") + (isNum(d.rain) && d.rain > 0 ? " " + rnd(d.rain) + "% rain" : ""));
+      if (parts.length) L.push("", "WEATHER, " + (E.collapse(wx.place) || "your area").toUpperCase() + ": " + parts.join(" | "));
+    }
     if (cd) {
       L.push("", cd.label.toUpperCase() + ": " + cd.days + " days to " + prettyDate(cd.date) + (cd.pct === null ? "" : " (" + cd.pct + "% elapsed)"));
       for (const m of cd.upcoming) L.push("  " + String(E.daysBetween(day, m.date)).padStart(4) + " d  " + m.date + "  " + m.label + (m.note ? "  [" + m.note + "]" : ""));
@@ -337,29 +453,5 @@ td.foot{background:#0f2744;padding:14px 22px;font-size:11px;line-height:1.6;colo
     return L.join("\n") + "\n";
   }
 
-  function b64(str) {
-    if (typeof Buffer !== "undefined") return Buffer.from(str, "utf-8").toString("base64");
-    const bytes = new TextEncoder().encode(str);
-    let bin = "";
-    for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
-    return btoa(bin);
-  }
-
-  function wrap76(s) { return s.replace(/(.{76})/g, "$1\r\n"); }
-
-  /* An unsent email file. Outlook opens it as a ready-to-send draft; other mail
-     programs open it as a message you can forward. */
-  function buildEml(out, to, fromName) {
-    const boundary = "db-" + E.VERSION.replace(/\./g, "") + "-boundary";
-    const subj = "=?UTF-8?B?" + b64(out.subject) + "?=";
-    const head = ["X-Unsent: 1", "To: " + (to || []).join(", "), "Subject: " + subj, "MIME-Version: 1.0",
-      'Content-Type: multipart/alternative; boundary="' + boundary + '"'];
-    if (fromName) head.splice(1, 0, "X-Daily-Brief-From-Name: " + "=?UTF-8?B?" + b64(fromName) + "?=");
-    return head.join("\r\n") + "\r\n\r\n" +
-      "--" + boundary + "\r\nContent-Type: text/plain; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" + wrap76(b64(out.text)) + "\r\n" +
-      "--" + boundary + "\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" + wrap76(b64(out.html)) + "\r\n" +
-      "--" + boundary + "--\r\n";
-  }
-
-  return { CSS, esc, prettyDate, stamp, stats, subjectLine, countdownData, render, buildEml };
+  return { CSS, ICONS, esc, prettyDate, stamp, stats, subjectLine, countdownData, iconSvg, wxKind, wxSvg, weatherHtml, render };
 });

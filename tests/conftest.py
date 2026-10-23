@@ -30,10 +30,10 @@ def sample_settings():
 
 @pytest.fixture(autouse=True)
 def private_home(tmp_path, monkeypatch):
-    """Every test gets its own empty data folder and no mail variables."""
+    """Every test gets its own empty data folder and no GitHub delivery variables."""
     home = tmp_path / "home"
     monkeypatch.setenv("DAILY_BRIEF_HOME", str(home))
-    for k in ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_SECURITY", "MAIL_FROM", "MAIL_TO"):
+    for k in ("GITHUB_TOKEN", "GITHUB_REPOSITORY", "BRIEF_MENTION"):
         monkeypatch.delenv(k, raising=False)
     return home
 

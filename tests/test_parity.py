@@ -42,6 +42,11 @@ def test_small_functions_agree():
         reqs.append({"fn": "normUrl", "args": [u]}); pys.append(E.norm_url(u))
         reqs.append({"fn": "validUrl", "args": [u]}); pys.append(E.valid_url(u))
         reqs.append({"fn": "hostOf", "args": [u]}); pys.append(E.host_of(u))
+    images = ["https://img.example.com/a.jpg?w=600&h=400", "http://img.example.com/a.jpg", "https://img.example.com/a b.jpg",
+              'https://img.example.com/a.jpg"onerror="x', "https://localhost/a.png", "javascript:alert(1)", "https://x.example.org",
+              None, 7, "https://" + "a" * 2000 + ".com/x.png", "HTTPS://IMG.EXAMPLE.COM/Y.PNG", "https://img.example.com\\a.png"]
+    for u in images:
+        reqs.append({"fn": "validImage", "args": [u]}); pys.append(E.valid_image(u))
     for t in TITLES:
         reqs.append({"fn": "normTitle", "args": [t]}); pys.append(E.norm_title(t))
         reqs.append({"fn": "titleTokens", "args": [t]}); pys.append(E.title_tokens(t))
@@ -252,5 +257,59 @@ def test_newsletter_numbers_are_escaped_and_none_is_hidden(sample_brief, sample_
     py = R.render(b, cfg)
     js = js_calls([{"fn": "render", "args": [b, cfg]}])[0]
     assert py == js
-    assert "<img" not in py["html"] and "onerror" not in py["html"].replace("&lt;img src=x onerror", "")
+    assert "<img src=x" not in py["html"] and "onerror" not in py["html"].replace("&lt;img src=x onerror", "")
     assert "Connection:" not in py["html"] and "Connection:" not in py["text"] and "Act now" in py["text"]
+
+
+def test_collector_helpers_agree():
+    """The forecast block and its address come out the same from both collectors."""
+    from dailybrief import collect as C
+    w = {"enabled": True, "place": " Example  City ", "latitude": 41.0, "longitude": -87.63, "units": "celsius"}
+    answers = [
+        {"current": {"temperature_2m": 51.4, "weather_code": 3},
+         "daily": {"time": ["2026-10-23", None, 7], "weather_code": [3, "61", True], "temperature_2m_max": [58.2, None],
+                   "temperature_2m_min": "x", "precipitation_probability_max": [10, 80, 0]}},
+        {"current": [1, 2], "daily": {"time": ["2026-10-23"] * 6}},
+        {"daily": {"time": ["2026-10-23"], "weather_code": [95]}, "current": {"temperature_2m": "warm"}},
+    ]
+    reqs = [{"fn": "collect.forecastUrl", "args": [w]}]
+    pys = [C.forecast_url(w)]
+    for a in answers:
+        reqs.append({"fn": "collect.weatherFrom", "args": [a, w, NOW]})
+        pys.append(C.weather_from(a, w, NOW))
+    for k, (req, js) in enumerate(zip(reqs, js_calls(reqs))):
+        assert same(pys[k], js), (req["fn"], pys[k], js)
+
+
+def test_pages_with_photos_and_weather_are_identical(sample_brief, sample_settings):
+    b = copy.deepcopy(sample_brief)
+    b["weather"] = {"place": "<b>Example</b> City", "units": "fahrenheit", "fetched_at": "2026-10-23T10:58:00Z",
+                    "current": {"temp": 51.5, "code": 3},
+                    "days": [{"date": "2026-10-23", "code": 61, "hi": 58.5, "lo": -0.5, "rain": 80},
+                             {"date": "2026-10-24", "code": True, "hi": "<i>", "lo": None, "rain": 0},
+                             {"date": "nope", "code": 0}, "x",
+                             {"date": "2026-10-25", "code": 95, "hi": -2.5, "lo": -10.49, "rain": 12.5},
+                             {"date": "2026-10-26", "code": 71, "hi": 1e3, "lo": 0, "rain": None},
+                             {"date": "2026-10-27", "code": 0, "hi": 70, "lo": 60, "rain": 5}]}
+    items = b["categories"][0]["items"]
+    items[0]["image"] = "https://img.example.com/a.jpg?w=600&h=400"
+    items[1]["image"] = 'https://img.example.com/b.jpg" onerror="alert(1)'
+    items[2]["image"] = "https://img.example.com/c.jpg"
+    b["categories"][1]["items"][0]["image"] = "http://img.example.com/plain.jpg"
+    b["categories"][1]["icon"] = "<svg onload=x>"
+    celsius = copy.deepcopy(b)
+    celsius["weather"]["units"] = "celsius"
+    celsius["weather"]["current"] = None
+    odd = copy.deepcopy(b)
+    odd["weather"] = ["not", "a", "block"]
+    cases = [(b, sample_settings), (celsius, None), (odd, sample_settings), (dict(b, source="web"), None)]
+    got = js_calls([{"fn": "render", "args": [x, c]} for x, c in cases])
+    for (x, c), j in zip(cases, got):
+        p = R.render(x, c)
+        for k in ("subject", "text", "html"):
+            assert p[k] == j[k], k
+    html = got[0]["html"]
+    assert 'class="it lead"' in html and 'class="it th"' in html and "onerror" not in html and "http://img" not in html
+    assert 'class="wx"' in html and "&lt;b&gt;Example&lt;/b&gt; City" in html and "<svg onload" not in html
+    assert "59&deg;F" not in html and "52&deg;F" in html and "WEATHER, <B>EXAMPLE</B> CITY:" in got[0]["text"]
+    assert 'class="wx"' not in got[2]["html"]

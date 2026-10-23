@@ -1,5 +1,5 @@
 name: Something is wrong
-description: The app, the desktop app, the email or the AI prompt did not do what you expected.
+description: The app, the desktop app, the GitHub run or the AI prompt did not do what you expected.
 labels: ["bug"]
 body:
   - type: markdown
@@ -9,7 +9,7 @@ body:
     id: where
     attributes:
       label: Where
-      options: [Web version, Desktop app, Email, AI prompt, Command line]
+      options: [Web version, Desktop app, GitHub run, AI prompt, Command line]
     validations:
       required: true
   - type: textarea

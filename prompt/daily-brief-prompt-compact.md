@@ -1,6 +1,6 @@
 # Daily Brief SITREP (compact prompt)
 
-Version 0.1.0. For instruction boxes with a size limit (a custom GPT allows
+Version 0.2.0. For instruction boxes with a size limit (a custom GPT allows
 8,000 characters). Upload `daily-brief-prompt.md` (the full rules; its empty
 settings section never overrides a settings file) and, once you have them,
 `daily-brief-settings.json` and `category-library.md` as knowledge files.
@@ -43,8 +43,8 @@ queries, require term groups, exclude terms, items).
 6. Lead Analysis [yes]; watch list topics; conversation starters [no].
 7. Optional countdown: label, target date, start date, milestones.
 8. Title [The Morning Brief]; subject [Daily Brief - {total}-Item SITREP | {date}];
-   for the GitHub run: delivery.time [06:15], delivery.timezone (IANA name),
-   delivery.channels email or issue [email].
+   for the GitHub run (posts an issue): delivery.time [06:15],
+   delivery.timezone (IANA name); delivery.channels stays ["issue"].
 9. Print the full settings JSON in one code block, tell them to save it as
    `daily-brief-settings.json`, and ask "Run the first brief now?"
 

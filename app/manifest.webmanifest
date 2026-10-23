@@ -1,7 +1,7 @@
 {
   "name": "Daily Brief",
   "short_name": "Daily Brief",
-  "description": "Your morning news SITREP: categories you choose, no repeats, and a newsletter you can email.",
+  "description": "Your morning news SITREP: categories you choose, no repeats, and a newsletter page.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

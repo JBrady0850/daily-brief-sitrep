@@ -1,7 +1,7 @@
 name: Daily brief
-# Collects the news, builds the newsletter and delivers it, all on GitHub's
-# servers, using free services only: Google News RSS and publisher feeds (no
-# keys), and either your mail account or a GitHub issue. Setup steps:
+# Collects the news, builds the newsletter and posts it as an issue in this
+# repository, all on GitHub's servers, using free services only: Google News
+# RSS and publisher feeds (no keys) and GitHub's own token. Setup steps:
 # docs/GITHUB-CLOUD.md. Until daily-brief-settings.json is in this repository,
 # every run stops at the first step with a notice instead of failing.
 on:
@@ -9,7 +9,7 @@ on:
     # Times are UTC; GitHub cannot follow a time zone. Two runs an hour apart
     # cover daylight saving time, and the brief goes out on the first run at or
     # after delivery.time in delivery.timezone. These two lines suit 06:15 in
-    # US Eastern time. The app's Email step gives the lines for your time.
+    # US Eastern time. The app's Deliver step gives the lines for your time.
     # Minute 15, not 00, because GitHub delays and drops runs at the top of the hour.
     - cron: "15 10 * * *"
     - cron: "15 11 * * *"
@@ -31,13 +31,6 @@ jobs:
     timeout-minutes: 20
     env:
       DAILY_BRIEF_HOME: ${{ github.workspace }}/.brief-history
-      SMTP_HOST: ${{ secrets.SMTP_HOST }}
-      SMTP_PORT: ${{ secrets.SMTP_PORT }}
-      SMTP_USER: ${{ secrets.SMTP_USER }}
-      SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-      SMTP_SECURITY: ${{ secrets.SMTP_SECURITY }}
-      MAIL_FROM: ${{ secrets.MAIL_FROM }}
-      MAIL_TO: ${{ secrets.MAIL_TO }}
       GITHUB_TOKEN: ${{ github.token }}
       BRIEF_MENTION: ${{ github.repository_owner }}
     steps:

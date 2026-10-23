@@ -1,4 +1,4 @@
-"""Your saved settings, no-repeat history and mail settings, kept in user_dir().
+"""Your saved settings and no-repeat history, kept in user_dir().
 
 Every write goes to a temporary file first and then replaces the old file, so a
 crash or a full disk can never leave half a file behind.
@@ -17,7 +17,7 @@ from .paths import user_dir
 
 CONFIG = "config.json"
 LEDGER = "ledger.json"
-SMTP = "smtp.json"
+OLD_SMTP = "smtp.json"  # mail settings from version 0.1.0; no longer read
 LOCK = "run.lock"
 
 

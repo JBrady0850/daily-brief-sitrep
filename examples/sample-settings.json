@@ -102,7 +102,8 @@
       "feeds": [],
       "color": "#0f6e5c",
       "skip_listicles": false,
-      "needs_location": false
+      "needs_location": false,
+      "icon": "chart"
     },
     {
       "id": "health-science",
@@ -137,7 +138,8 @@
       "skip_listicles": true,
       "feeds": [],
       "color": "#0f6e5c",
-      "needs_location": false
+      "needs_location": false,
+      "icon": "health"
     },
     {
       "id": "travel",
@@ -173,7 +175,8 @@
       "skip_listicles": true,
       "feeds": [],
       "color": "#7a2f5f",
-      "needs_location": false
+      "needs_location": false,
+      "icon": "plane"
     },
     {
       "id": "ai-tools",
@@ -232,7 +235,8 @@
       "skip_listicles": true,
       "feeds": [],
       "color": "#a04000",
-      "needs_location": false
+      "needs_location": false,
+      "icon": "sparkle"
     },
     {
       "id": "inspiring",
@@ -290,7 +294,8 @@
       "feeds": [],
       "color": "#8a5a00",
       "skip_listicles": false,
-      "needs_location": false
+      "needs_location": false,
+      "icon": "sunrise"
     },
     {
       "id": "local-news",
@@ -336,11 +341,15 @@
       "feeds": [],
       "color": "#1d6aa0",
       "needs_location": true,
-      "skip_listicles": false
+      "skip_listicles": false,
+      "icon": "pin"
     }
   ],
-  "email": {
-    "to": [],
-    "from_name": ""
+  "weather": {
+    "enabled": true,
+    "place": "Example City",
+    "latitude": 39.1,
+    "longitude": -94.58,
+    "units": "fahrenheit"
   }
 }

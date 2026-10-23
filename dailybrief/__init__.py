@@ -1,4 +1,4 @@
-"""Daily Brief: a configurable morning news SITREP with an email newsletter.
+"""Daily Brief: a configurable morning news SITREP and newsletter.
 
 Run ``python -m dailybrief --help`` for the commands. Standard library only.
 """

@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.2.0 (2026-10-23)
+
+The web address is now the whole app: it collects the news itself, remembers
+your choices in your own browser, and shows the brief as a full web page.
+
+- Collects in the browser, free and with no key: the GDELT news search, the
+  publisher feeds that allow web pages to read them, and an Open-Meteo forecast
+  for your town. Requests to GDELT are spaced out and retried once.
+- The brief is a web page, not an email: category icons, story photos from the
+  publishers' own feeds and share images, a forecast panel, and header artwork.
+- The category library grows from 22 to 67 categories in 11 groups, adding
+  weather, sports (NFL, college football, NBA, college basketball, MLB, NHL,
+  soccer, golf, motorsports, tennis, fantasy), top news, entertainment, science
+  and space, and life and home, plus five new packs.
+- Email sending is removed everywhere (SMTP, mail settings, the `send` command,
+  the `.eml` draft). Settings from 0.1.0 that list email still load, with a
+  warning. If you saved mail settings, delete `smtp.json` from your data folder.
+- `run --mark-read` keeps a scheduled run on your own computer free of repeats.
+- Tests no longer fail in a copy that set its own delivery time.
+
 ## 0.1.0 (2026-10-23)
 
 First public version.

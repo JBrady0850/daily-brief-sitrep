@@ -1,4 +1,6 @@
 """Reading feeds and collecting candidates (with recorded feeds, no network)."""
+import json
+
 import pytest
 from conftest import feed_bytes
 
@@ -108,3 +110,61 @@ def test_entity_guard_scans_the_whole_document():
         C.parse_feed(hidden)
     with pytest.raises(C.FetchError):
         C.parse_feed("<!DOCTYPE r [<!ENTITY a 'b'>]><rss/>".encode("utf-16"))
+
+
+# ------------------------------------------------------------- photos and weather
+PHOTO_FEED = b"""<?xml version="1.0"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel><title>Example Daily</title><link>https://example.com/</link>
+<item><title>Story with media content</title><link>https://example.com/a</link><pubDate>Fri, 23 Oct 2026 09:00:00 GMT</pubDate>
+<media:content url="https://img.example.com/a.jpg" medium="image" width="600"/></item>
+<item><title>Story with a thumbnail</title><link>https://example.com/b</link>
+<media:thumbnail url="https://img.example.com/b.jpg"/></item>
+<item><title>Story with an http picture only</title><link>https://example.com/c</link>
+<enclosure url="http://img.example.com/c.jpg" type="image/jpeg" length="1"/></item>
+<item><title>Story with a picture in its HTML</title><link>https://example.com/d</link>
+<description>&lt;p&gt;&lt;img src="https://img.example.com/d.png?w=1&amp;amp;h=2" alt=""&gt;Text.&lt;/p&gt;</description></item>
+<item><title>Story with a video</title><link>https://example.com/e</link>
+<media:content url="https://video.example.com/e.mp4" type="video/mp4"/></item>
+</channel></rss>"""
+
+
+def test_feed_photos_are_found_and_only_https_counts():
+    items = C.parse_feed(PHOTO_FEED)
+    assert [i["image"] for i in items] == ["https://img.example.com/a.jpg", "https://img.example.com/b.jpg", "",
+                                          "https://img.example.com/d.png?w=1&h=2", ""]
+    assert all(i["image"] == "" for i in C.parse_feed(feed_bytes("google_news.xml"), google=True))
+
+
+FORECAST = {"current": {"temperature_2m": 51.4, "weather_code": 3},
+            "daily": {"time": ["2026-10-23", "2026-10-24", "2026-10-25", "2026-10-26", "2026-10-27"],
+                      "weather_code": [3, 61, 0, 95, 71], "temperature_2m_max": [58.2, 55, 61.5, 60.1, 40],
+                      "temperature_2m_min": [44.1, 47.9, 43, 50, 30], "precipitation_probability_max": [10, 80, 0, 65, 90]}}
+
+
+def test_forecast_becomes_the_weather_block():
+    w = {"enabled": True, "place": "Example City", "latitude": 41.88, "longitude": -87.63, "units": "fahrenheit"}
+    cfg = {"version": 1, "weather": w, "categories": [{"id": "a", "name": "A", "queries": ["a"]}]}
+    asked = []
+
+    def fetcher(url):
+        asked.append(url)
+        return json.dumps(FORECAST).encode()
+    wx = C.weather(cfg, "2026-10-23T11:00:00Z", fetcher)
+    assert asked == [C.forecast_url(w)] and "latitude=41.88&longitude=-87.63" in asked[0] and "fahrenheit" in asked[0]
+    assert wx["place"] == "Example City" and wx["current"] == {"temp": 51.4, "code": 3} and len(wx["days"]) == 4
+    assert wx["days"][1] == {"date": "2026-10-24", "code": 61, "hi": 55, "lo": 47.9, "rain": 80}
+    assert C.weather(dict(cfg, weather=dict(w, enabled=False)), "2026-10-23T11:00:00Z", fetcher) is None
+
+
+def test_weather_failure_never_stops_the_brief(monkeypatch):
+    w = {"enabled": True, "place": "Example City", "latitude": 41.88, "longitude": -87.63, "units": "celsius"}
+    cfg = {"version": 1, "weather": w, "categories": [{"id": "net", "name": "Network", "queries": ['"zero trust"'],
+                                                     "require": [["zero trust", "VPN"]]}]}
+
+    def fetcher(url):
+        if "open-meteo" in url:
+            raise C.FetchError("down")
+        return feed_bytes("google_news.xml")
+    brief, health = C.run_brief(cfg, "2026-10-23T12:00:00Z", "2026-10-23", None, fetcher, pause=0)
+    assert "weather" not in brief and "down" in health["_weather"]["error"] and brief["total"] > 0

@@ -6,7 +6,7 @@ import time
 import pytest
 from conftest import feed_bytes
 
-from dailybrief import mailer, server, store
+from dailybrief import server, store
 
 
 def fetcher(url):
@@ -94,19 +94,13 @@ def test_bad_settings_are_rejected(app):
     assert code == 200 and r["saved"] and store.load_config()["categories"][0]["id"] == "net"
 
 
-def test_send_uses_mail_settings_and_marks_read(app, sample_brief, monkeypatch):
-    sent = []
-    monkeypatch.setattr(mailer, "send", lambda msg, s, **kw: sent.append((msg["Subject"], s.recipients)))
-    code, r = call(app, "POST", "/api/send", {"brief": sample_brief, "config": None})
-    assert code == 400 and "Mail is not set up" in r["error"]
-    code, pub = call(app, "POST", "/api/mail", {"values": {"host": "smtp.example.com", "user": "me@example.com",
-                                                            "password": "app-pass", "to": "a@example.com"}})
-    assert pub["configured"] and "password" not in pub and "app-pass" not in json.dumps(pub)
-    code, r = call(app, "POST", "/api/send", {"brief": sample_brief, "config": None})
-    assert code == 200 and r["sent"] == 1 and r["ledger_size"] is None  # the sample never enters the history
-    real = dict(sample_brief, source="ai")
-    code, r = call(app, "POST", "/api/send", {"brief": real, "config": None, "to": ["b@example.com"]})
-    assert code == 200 and r["ledger_size"] == sample_brief["total"] and sent[-1][1] == ["b@example.com"]
+def test_email_sending_is_gone(app, sample_brief):
+    code, health = call(app, "GET", "/api/health")
+    assert code == 200 and "mail" not in health
+    for method, path, body in (("POST", "/api/send", {"brief": sample_brief}), ("POST", "/api/mail", {"values": {}}),
+                               ("GET", "/api/mail", None)):
+        code, r = call(app, method, path, body)
+        assert code == 404 and r["error"] == "Unknown request.", path
 
 
 # ------------------------------------------------------------- review findings
@@ -136,15 +130,3 @@ def test_mark_as_read_keeps_the_scheduled_send_and_honours_category_limits(app, 
     assert code == 200, r
     led = store.load_ledger()
     assert led["sent_dates"] == [] and len(led["urls"]) == brief["total"]
-
-
-def test_send_once_per_day_unless_forced(app, sample_brief, monkeypatch):
-    sent = []
-    monkeypatch.setattr(mailer, "send", lambda msg, s, **kw: sent.append(msg["Subject"]))
-    call(app, "POST", "/api/mail", {"values": {"host": "smtp.example.com", "user": "me@example.com",
-                                               "password": "pw", "to": "a@example.com"}})
-    real = dict(sample_brief, source="ai")
-    assert call(app, "POST", "/api/send", {"brief": real})[0] == 200
-    code, r = call(app, "POST", "/api/send", {"brief": real})
-    assert code == 409 and r["already_sent"] and len(sent) == 1
-    assert call(app, "POST", "/api/send", {"brief": real, "force": True})[0] == 200 and len(sent) == 2

@@ -6,7 +6,7 @@ import re
 from conftest import ROOT
 
 from dailybrief import assets, engine as E, privacy
-from dailybrief.jsdata import library
+from dailybrief.jsdata import library, load_js_json
 
 APP = ROOT / "app"
 TEXT = {".md", ".py", ".js", ".json", ".html", ".css", ".yml", ".txt", ".webmanifest", ".svg", ".bat", ".sh", ".command"}
@@ -97,7 +97,13 @@ def test_white_text_on_every_colour_meets_wcag_aa():
 def test_library_is_complete_and_valid():
     lib = library()
     ids = [c["id"] for c in lib["categories"]]
-    assert len(ids) == len(set(ids)) == 22
+    assert len(ids) == len(set(ids)) == 67
+    for need in ("severe-weather", "weather-outlook", "local-weather", "nfl", "nba", "mlb", "nhl", "soccer", "golf",
+                 "movies", "tv-streaming", "music", "space", "food-dining", "pets"):
+        assert need in ids, need
+    icons = load_js_json(ROOT / "app" / "data" / "icons.js", "DB_ICONS")["icons"]
+    for c in lib["categories"]:
+        assert c["icon"] in icons, (c["id"], c["icon"])
     groups = {g["id"] for g in lib["groups"]}
     for c in lib["categories"]:
         assert c["group"] in groups
@@ -117,3 +123,19 @@ def test_start_scripts():
     for name in ("Start-Mac.command", "start-linux.sh"):
         assert b"\r\n" not in (ROOT / name).read_bytes()
         assert (ROOT / name).read_text().startswith("#!/bin/sh")
+
+
+def test_icon_file_matches_its_source():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("icons_source", ROOT / "tools" / "icons_source.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert load_js_json(ROOT / "app" / "data" / "icons.js", "DB_ICONS") == mod.data(), "run: python tools/icons_source.py"
+
+
+def test_every_document_link_resolves():
+    for md in [ROOT / "README.md", ROOT / "CONTRIBUTING.md", ROOT / "CHANGELOG.md"] + sorted((ROOT / "docs").glob("*.md")):
+        for target in re.findall(r"\]\(([^)#]+)(?:#[^)]*)?\)", md.read_text(encoding="utf-8")):
+            if target.startswith(("http://", "https://", "mailto:")):
+                continue
+            assert (md.parent / target).exists(), (md.name, target)

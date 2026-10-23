@@ -8,7 +8,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from . import assets, collect, engine as E, mailer, privacy, render, store
+from . import assets, collect, engine as E, privacy, render, store
 from .paths import EXAMPLES_DIR, PROMPT_DIR
 
 OK, FAIL, USAGE = 0, 1, 2
@@ -33,7 +33,7 @@ def _config(path: Optional[str]) -> dict:
     else:
         cfg = store.load_config()
         if cfg is None:
-            raise SystemExit("No saved settings. Save them in the desktop app (step 4, Email: Save my settings for scheduled runs) "
+            raise SystemExit("No saved settings. Save them in the desktop app (step 4, Deliver: Save my settings for scheduled runs) "
                              "or pass --config FILE.")
     v = E.validate_config(cfg)
     for w in v["warnings"]:
@@ -45,51 +45,31 @@ def _config(path: Optional[str]) -> dict:
     return cfg  # type: ignore[return-value]
 
 
-def _write_outputs(out: dict, folder: Path, stem: str, to: list) -> list:
+def _write_outputs(out: dict, folder: Path, stem: str) -> list:
     folder.mkdir(parents=True, exist_ok=True)
     files = []
     for ext, text in (("html", out["html"]), ("txt", out["text"])):
         p = folder / f"{stem}.{ext}"
         store.write_text(p, text)
         files.append(p)
-    msg = mailer.build_message(out["subject"], out["text"], out["html"], "you@example.com", to or ["you@example.com"])
-    p = folder / f"{stem}.eml"
-    p.write_bytes(bytes(msg))
-    files.append(p)
     return files
 
 
-def _deliver(brief: dict, cfg: Optional[dict], channels: list, to: Optional[list]) -> tuple:
-    """Sends the brief on each channel. Returns (what was delivered, problems)."""
-    import smtplib
+def _deliver(brief: dict, cfg: Optional[dict]) -> tuple:
+    """Posts the brief as a GitHub issue. Returns (what was delivered, problems)."""
     from . import github_issue
     from .markdown import render_markdown
     out = render.render(brief, cfg)
     n = E.normalize_config(cfg or {})
-    delivered, problems = [], []
-    for ch in channels:
-        if ch == "email":
-            try:
-                s = mailer.load_settings(to_override=to, from_name=n["email"].get("from_name", ""))
-                mailer.send(mailer.build_message(out["subject"], out["text"], out["html"], s.sender, s.recipients,
-                                                 s.from_name), s)
-                delivered.append(f"email to {len(s.recipients)} recipient(s)")
-            except mailer.MailConfigError as exc:
-                problems.append(f"email: {exc}")
-            except (smtplib.SMTPException, OSError) as exc:
-                problems.append(f"email failed: {type(exc).__name__}: {exc}")
-        elif ch == "issue":
-            gh = github_issue.settings()
-            if not gh:
-                problems.append("issue: no GITHUB_TOKEN here; this channel works inside GitHub Actions")
-                continue
-            prefix = n["brief"]["subject"].split("{")[0] or n["brief"]["title"]
-            try:
-                r = github_issue.post(out["subject"], render_markdown(brief, cfg), prefix, gh)
-                delivered.append(f"GitHub issue #{r['number']}" + (f" (closed {r['closed']} older)" if r["closed"] else ""))
-            except github_issue.IssueError as exc:
-                problems.append(f"issue failed: {exc}")
-    return delivered, problems
+    gh = github_issue.settings()
+    if not gh:
+        return [], ["issue: no GITHUB_TOKEN here; delivery works inside GitHub Actions"]
+    prefix = n["brief"]["subject"].split("{")[0] or n["brief"]["title"]
+    try:
+        r = github_issue.post(out["subject"], render_markdown(brief, cfg), prefix, gh)
+    except github_issue.IssueError as exc:
+        return [], [f"issue failed: {exc}"]
+    return [f"GitHub issue #{r['number']}" + (f" (closed {r['closed']} older)" if r["closed"] else "")], []
 
 
 def _summary(path: Optional[str], lines: list) -> None:
@@ -98,22 +78,6 @@ def _summary(path: Optional[str], lines: list) -> None:
         return
     with open(path, "a", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines) + "\n")
-
-
-def _send(brief: dict, cfg: Optional[dict], to: Optional[list], ledger_path: Optional[Path], force: bool,
-          channels: Optional[list] = None) -> int:
-    ledger = store.load_ledger(ledger_path) if ledger_path else None
-    if ledger is not None and brief.get("date") in ledger["sent_dates"] and not force and brief.get("source") != "sample":
-        print(f"A brief for {brief.get('date')} was already sent. Use --force to send another.")
-        return FAIL
-    delivered, problems = _deliver(brief, cfg, channels or ["email"], to)
-    for d in delivered:
-        print("Sent:", d)
-    for pr in problems:
-        print(pr)
-    if delivered and ledger is not None and brief.get("source") != "sample":
-        store.update_ledger(lambda led: E.ledger_add(led, brief), ledger_path)
-    return OK if delivered else FAIL
 
 
 # ------------------------------------------------------------------ commands
@@ -126,7 +90,6 @@ def cmd_run(a: argparse.Namespace) -> int:
     from . import schedule
     cfg = _config(a.config)
     n = E.normalize_config(cfg)
-    channels = a.channel or n["delivery"]["channels"]
     report = ["### Daily Brief"]
     if not store.acquire_lock():
         print("Another Daily Brief run is in progress. Try again in a few minutes.")
@@ -157,8 +120,10 @@ def cmd_run(a: argparse.Namespace) -> int:
                 print(f"  [{done}/{total}] {label}", flush=True)
 
         brief, health = collect.run_brief(cfg, now.strftime("%Y-%m-%dT%H:%M:%SZ"), day, ledger, progress=progress)
-        problems = [(cid, q.get("query") or q.get("url"), q["error"]) for cid, h in health.items()
+        problems = [(cid, q.get("query") or q.get("url"), q["error"]) for cid, h in health.items() if cid != "_weather"
                     for q in h["queries"] + h["feeds"] if q["error"]]
+        if "_weather" in health:
+            problems.append(("weather", "Open-Meteo forecast", health["_weather"]["error"]))
         for cid, what, err in problems:
             print(f"  source problem in {cid}: {what}: {err}")
         counts = f"{brief['total']} stories, {brief['empty']} empty categories, {brief['withheld']} withheld as already sent."
@@ -169,7 +134,7 @@ def cmd_run(a: argparse.Namespace) -> int:
         out_dir = Path(a.out) if a.out else store.path("briefs")
         out_dir.mkdir(parents=True, exist_ok=True)
         store.write_text(out_dir / f"brief-{day}.json", json.dumps(brief, indent=1, ensure_ascii=False) + "\n")
-        files = _write_outputs(render.render(brief, cfg), out_dir, f"brief-{day}", [])
+        files = _write_outputs(render.render(brief, cfg), out_dir, f"brief-{day}")
         print("Saved:", ", ".join(str(f) for f in files))
         report += ["**" + render.subject_line(brief, cfg) + "**", "", counts]
         if problems:
@@ -181,7 +146,7 @@ def cmd_run(a: argparse.Namespace) -> int:
             print("Not sent: the brief failed its check.")
             code = FAIL
         elif a.send:
-            delivered, failures = _deliver(brief, cfg, channels, a.to)
+            delivered, failures = _deliver(brief, cfg)
             for x in delivered:
                 print("Sent:", x)
             for x in failures:
@@ -190,6 +155,9 @@ def cmd_run(a: argparse.Namespace) -> int:
             if delivered and ledger is not None:
                 store.update_ledger(lambda led: E.ledger_add(led, brief), ledger_path)
             code = OK if delivered else FAIL
+        elif a.mark_read and ledger is not None and not check_errors:
+            store.update_ledger(lambda led: E.ledger_add(led, brief, sent=False), ledger_path)
+            print("Marked as read: these stories will not come back.")
         for w in warnings:
             print("warning:", w)
         _summary(a.summary, report + ["> " + w for w in warnings])
@@ -201,28 +169,9 @@ def cmd_run(a: argparse.Namespace) -> int:
 def cmd_render(a: argparse.Namespace) -> int:
     brief = _load(a.brief)
     cfg = _load(a.config) if a.config else None
-    files = _write_outputs(render.render(brief, cfg), Path(a.out), Path(a.brief).stem, a.to or [])  # type: ignore[arg-type]
+    files = _write_outputs(render.render(brief, cfg), Path(a.out), Path(a.brief).stem)
     print("Wrote", ", ".join(str(f) for f in files))
     return OK
-
-
-def cmd_send(a: argparse.Namespace) -> int:
-    brief = _load(a.brief)
-    cfg = _load(a.config) if a.config else None
-    chk = E.check_brief(brief, cfg, _now_iso())
-    for w in chk["warnings"]:
-        print("warning:", w)
-    if chk["errors"]:
-        for e in chk["errors"]:
-            print("error:", e)
-        if not a.force:
-            return FAIL
-    if a.dry_run:
-        files = _write_outputs(render.render(brief, cfg), Path(a.out), Path(a.brief).stem, a.to or [])  # type: ignore[arg-type]
-        print("Dry run, nothing sent. Wrote", ", ".join(str(f) for f in files))
-        return OK
-    ledger_path = None if a.no_history else store.path(store.LEDGER)
-    return _send(brief, cfg, a.to, ledger_path, a.force, a.channel)  # type: ignore[arg-type]
 
 
 def cmd_check(a: argparse.Namespace) -> int:
@@ -252,7 +201,7 @@ def cmd_prompt(a: argparse.Namespace) -> int:
     text = (PROMPT_DIR / name).read_text(encoding="utf-8")
     cfg = _config(a.config) if a.config else None
     if cfg is not None:
-        cfg = {k: v for k, v in cfg.items() if k != "email"}  # never put an email address in a prompt
+        cfg = {k: v for k, v in cfg.items() if k != "email"}  # older settings files may hold addresses; keep them out
     out = E.build_prompt(text, cfg, compact=a.compact)
     if a.out:
         store.write_text(Path(a.out), out)
@@ -265,7 +214,7 @@ def cmd_prompt(a: argparse.Namespace) -> int:
 def cmd_sample(a: argparse.Namespace) -> int:
     brief = _load(str(EXAMPLES_DIR / "sample-brief.json"))
     cfg = _load(str(EXAMPLES_DIR / "sample-settings.json"))
-    files = _write_outputs(render.render(brief, cfg), Path(a.out), "sample-brief", [])  # type: ignore[arg-type]
+    files = _write_outputs(render.render(brief, cfg), Path(a.out), "sample-brief")
     print("Wrote", ", ".join(str(f) for f in files))
     return OK
 
@@ -312,14 +261,15 @@ def cmd_schedule_help(a: argparse.Namespace) -> int:
     py = sys.executable
     root = Path(__file__).resolve().parents[1]
     hh, mm = a.time.split(":")
-    print("Run the brief every day at", a.time, "and email it. Pick the lines for your system.\n")
+    print("Collect the brief every day at", a.time, "and save the newsletter page in your data folder.")
+    print("Pick the lines for your system.\n")
     print("Windows (Command Prompt):")
-    print(f'  schtasks /Create /SC DAILY /ST {a.time} /TN "Daily Brief" /TR "\\"{py}\\" -m dailybrief run --send --quiet" /F')
+    print(f'  schtasks /Create /SC DAILY /ST {a.time} /TN "Daily Brief" /TR "\\"{py}\\" -m dailybrief run --mark-read --quiet" /F')
     print(f"  (the task runs in {root}; set Start in to that folder in Task Scheduler if it cannot find dailybrief)\n")
     print("macOS or Linux (crontab -e):")
-    print(f"  {int(mm)} {int(hh)} * * * cd \"{root}\" && \"{py}\" -m dailybrief run --send --quiet\n")
-    print("The computer must be on at that time. Mail settings come from the app (Email, Mail settings) or the")
-    print("SMTP_* environment variables. See docs/EMAIL.md.")
+    print(f"  {int(mm)} {int(hh)} * * * cd \"{root}\" && \"{py}\" -m dailybrief run --mark-read --quiet\n")
+    print("The computer must be on at that time. The page lands in the briefs folder of your data folder.")
+    print("For delivery with no computer on, use a GitHub copy: see docs/GITHUB-CLOUD.md.")
     return OK
 
 
@@ -333,39 +283,26 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--no-browser", action="store_true")
     s.set_defaults(func=cmd_serve)
 
-    s = sub.add_parser("run", help="collect today's news, save the brief, and optionally email it")
+    s = sub.add_parser("run", help="collect today's news, save the brief, and optionally post it as a GitHub issue")
     s.add_argument("--config", help="settings JSON (default: the settings saved by the desktop app)")
-    s.add_argument("--send", action="store_true", help="email the brief")
-    s.add_argument("--to", nargs="+", help="send to these addresses instead of the saved ones")
+    s.add_argument("--send", action="store_true", help="post the brief as a GitHub issue (inside GitHub Actions)")
+    s.add_argument("--mark-read", action="store_true", help="remember the stories so they do not come back (for runs on this computer)")
     s.add_argument("--out", help="folder for the brief files (default: your data folder)")
     s.add_argument("--date", help="edition date, YYYY-MM-DD (default: today)")
     s.add_argument("--no-history", action="store_true", help="ignore and do not update the no-repeat history")
     s.add_argument("--force", action="store_true", help="send even if today's brief was already sent")
     s.add_argument("--quiet", action="store_true")
-    s.add_argument("--channel", nargs="+", choices=["email", "issue"], help="deliver here instead of the channels in the settings")
     s.add_argument("--scheduled", action="store_true", help="send only at the delivery time in the settings (for scheduled runs)")
     s.add_argument("--fired", help="the cron line that started this run (GitHub sets github.event.schedule)")
     s.add_argument("--workflow", default=".github/workflows/daily-brief.yml", help="workflow file holding the cron lines")
     s.add_argument("--summary", help="append a Markdown report to this file (GitHub's job summary)")
     s.set_defaults(func=cmd_run)
 
-    s = sub.add_parser("render", help="turn a brief JSON into HTML, text and an .eml file")
+    s = sub.add_parser("render", help="turn a brief JSON into the newsletter page and plain text")
     s.add_argument("brief")
     s.add_argument("--config")
     s.add_argument("--out", default="output")
-    s.add_argument("--to", nargs="+")
     s.set_defaults(func=cmd_render)
-
-    s = sub.add_parser("send", help="email a brief JSON (for example one written by an AI assistant)")
-    s.add_argument("brief")
-    s.add_argument("--config")
-    s.add_argument("--to", nargs="+")
-    s.add_argument("--dry-run", action="store_true", help="write the files instead of sending")
-    s.add_argument("--out", default="output")
-    s.add_argument("--no-history", action="store_true")
-    s.add_argument("--force", action="store_true")
-    s.add_argument("--channel", nargs="+", choices=["email", "issue"], default=["email"])
-    s.set_defaults(func=cmd_send)
 
     s = sub.add_parser("check", help="check a brief JSON against the rules")
     s.add_argument("brief")
@@ -399,7 +336,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--check", action="store_true")
     s.set_defaults(func=cmd_build_assets)
 
-    s = sub.add_parser("schedule-help", help="print the command that runs the brief every morning")
+    s = sub.add_parser("schedule-help", help="print the command that collects the brief every morning on this computer")
     s.add_argument("--time", default="06:00")
     s.set_defaults(func=cmd_schedule_help)
     return p

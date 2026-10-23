@@ -1,57 +1,48 @@
-# Run it on GitHub (free, no computer needed)
+# Optional: run it on GitHub each morning
 
-Your own copy of this project can collect the news, build the newsletter and
-deliver it every morning on GitHub's servers. It uses free services only:
+The web address does everything on its own: it remembers your choices and
+collects the news in your browser when you open it. This guide is for people
+who also want a brief waiting each morning with no browser open. Your own copy
+of this project collects the news on GitHub's servers and posts it as an issue
+in your copy. It uses free services only:
 
 | Part | Service | Key or password? |
 |---|---|---|
 | News | Google News RSS searches and publisher RSS feeds | None |
+| Forecast | Open-Meteo, when your settings turn the forecast on | None |
 | Running it | GitHub Actions, on a schedule | None (GitHub gives every run its own token) |
 | No-repeat history | The GitHub Actions cache in your copy | None |
-| Delivery, option 1 | A GitHub issue in your copy; GitHub emails it to you | None |
-| Delivery, option 2 | Email through your own mail account | That account's app password, stored as a secret |
+| Delivery | A GitHub issue in your copy; GitHub notifies you by email or in its app, following your notification settings | None |
 
-No AI service, search API or paid service is involved.
+No AI service, search API or paid service is involved, and no secret is stored.
+Email sending was removed in version 0.2.0.
 
 ## Set it up (about ten minutes)
 
 1. **Make your settings.** Open the app, answer the setup questions, and on
-   question 7 pick the delivery time, your time zone and how it arrives
-   (email, GitHub issue, or both).
+   question 7 open **Only if you also run a GitHub copy** to pick the delivery
+   time and your time zone.
 2. **Make your own private copy.** On the project's GitHub page choose
    **Use this template**, **Create a new repository**, choose **Private**, and
    create it. Keep it private: in a public repository anyone can read your
    settings and the run logs, and anyone who can read it can reach the history
    cache through a pull request.
-3. **Add your settings.** In the app, step 4 (Email), choose **Download the
-   settings file**. In your copy choose **Add file**, **Upload files**, drop in
+3. **Add your settings.** In the app, **Settings**, choose **Download settings
+   file**. In your copy choose **Add file**, **Upload files**, drop in
    `daily-brief-settings.json`, and commit. Upload it again whenever you change
    something in the app.
-4. **Email only: add the mail secrets.** In your copy open **Settings**,
-   **Secrets and variables**, **Actions**, **New repository secret**, and add:
-
-   | Secret | Value |
-   |---|---|
-   | `SMTP_HOST` | Your provider's SMTP server, `smtp.gmail.com` for Gmail |
-   | `SMTP_USER` | Your mail address |
-   | `SMTP_PASSWORD` | An app password for that account ([docs/EMAIL.md](EMAIL.md)) |
-   | `MAIL_TO` | Who gets the brief, commas between addresses |
-   | `SMTP_PORT`, `SMTP_SECURITY`, `MAIL_FROM` | Optional: 587 and STARTTLS are the defaults |
-
-   Secrets are never shown again, never printed in the logs, and are not given
-   to runs started from forks.
-5. **GitHub issue only:** nothing to add. Check that **Settings**,
-   **Notifications** on github.com has email turned on for issues you
+4. **Check your notifications.** Nothing to add to the copy. On github.com,
+   **Settings**, **Notifications**, make sure you are notified about issues you
    participate in; the brief mentions you, which counts as participating.
-6. **Set the time.** GitHub schedules in UTC and cannot follow a time zone, so
+5. **Set the time.** GitHub schedules in UTC and cannot follow a time zone, so
    the workflow runs twice, an hour apart, and sends on the first run at or
-   after your delivery time. Step 4 of the app shows the two `cron:` lines for
+   after your delivery time. Step 4 of the app (Every day) shows the two `cron:` lines for
    your time and zone. In your copy open
    `.github/workflows/daily-brief.yml`, choose **Edit**, replace the two lines
    under `schedule:`, and commit.
-7. **Test it.** Open **Actions**, choose **Daily brief**, then **Run workflow**.
+6. **Test it.** Open **Actions**, choose **Daily brief**, then **Run workflow**.
    The run summary lists the subject, the story counts, any source problems,
-   and how the brief was delivered.
+   and the issue it opened.
 
 ## How a morning run decides
 
@@ -83,8 +74,7 @@ copy that stops running for a week starts its history again.
   workflows, disabling and enabling workflows, dependency caching, and Actions
   billing). The first real run on GitHub's servers, the same day, collected 25
   stories from Google News and opened the brief issue in 26 seconds. Still
-  UNVERIFIED: sending mail from GitHub's servers through your provider, and the
-  email GitHub sends for a brief issue.
+  UNVERIFIED: the notification email GitHub sends for a brief issue.
 - Checked 2026-10-23 from a home connection with the same code: Google News
   answered every search, a Federal IT pack run kept 44 stories and a Technology
   pack run kept 35, and 11 of 12 publisher feeds answered. CISA's advisory feed
@@ -94,5 +84,5 @@ copy that stops running for a week starts its history again.
 ## Optional
 
 - **Keep the brief files.** Add an Actions variable `BRIEF_KEEP_FILES` set to
-  `true` to save each brief (HTML, text, email file, JSON) as a run artifact for
+  `true` to save each brief (the page, text and JSON) as a run artifact for
   7 days. Leave it off in a public copy.

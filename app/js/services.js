@@ -79,6 +79,15 @@
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
   }
 
+  /* Shows the brief as a page of its own in a new tab. The page has no scripts,
+     and the tab cannot reach back into this one. Returns false when blocked. */
+  function openPage(html) {
+    const url = URL.createObjectURL(new Blob([html], { type: "text/html;charset=utf-8" }));
+    window.open(url, "_blank", "noopener");  // with noopener the browser returns no handle to check
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return true;
+  }
+
   async function copyText(text) {
     try {
       await navigator.clipboard.writeText(text);
@@ -98,8 +107,8 @@
     }
   }
 
-  /* Copies the newsletter as formatted content, so pasting into a new email
-     in Gmail, Outlook or Apple Mail keeps the layout. Browsers without rich
+  /* Copies the newsletter as formatted content, so pasting it into a document
+     or a message keeps the layout. Browsers without rich
      clipboard support get the plain-text version; the newsletter HTML is never
      put into this page. Returns "rich", "text" or "". */
   async function copyRich(html, text) {
@@ -126,6 +135,6 @@
 
   root.DB_SERVICES = {
     STORE_KEY, LEDGER_KEY, key, api, detectDesktop, readStore, writeStore, removeStore, storageBytes,
-    download, copyText, copyRich, projectUrl
+    download, openPage, copyText, copyRich, projectUrl
   };
 })(typeof self !== "undefined" ? self : this);

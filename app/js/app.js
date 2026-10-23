@@ -8,26 +8,35 @@
   const LIB = window.DB_LIBRARY;
   const PROMPTS = window.DB_PROMPTS;
   const SAMPLE = window.DB_SAMPLE;
+  const C = window.DB_COLLECT;
+  const ICONS = window.DB_ICONS || { icons: {}, art: {} };
 
-  const TABS = ["setup", "categories", "brief", "email", "ai", "settings", "help"];
-  const STEPS = ["setup", "categories", "brief", "email", "ai"];
-  const STEP_LABELS = { setup: "Setup", categories: "Categories", brief: "Brief", email: "Email", ai: "AI assistants" };
+  const TABS = ["setup", "categories", "brief", "daily", "ai", "settings", "help"];
+  const STEPS = ["setup", "categories", "brief", "daily", "ai"];
+  const STEP_LABELS = { setup: "Setup", categories: "Categories", brief: "Today", daily: "Every day", ai: "AI assistants" };
 
   const freshBrowser = !S.readStore(S.STORE_KEY, null);  // before anything is saved
   let state = loadState();
   let history = E.cleanLedger(S.readStore(S.LEDGER_KEY, null));
   let desktop = null;
   let job = null;
+  let webRun = null;
   let aiPlatform = "claude";
 
   // ------------------------------------------------------------ state
   function defaultState() {
-    return { version: 1, tab: "setup", step: 0, config: null, email: { to: [], from_name: "" }, brief: null, health: null };
+    return { version: 1, tab: "setup", step: 0, config: null, brief: null, health: null, setup_done: false, auto_run: false };
   }
 
   function loadState() {
     const s = S.readStore(S.STORE_KEY, null);
     const st = s && s.version === 1 ? Object.assign(defaultState(), s) : defaultState();
+    // Version 0.1.0 kept email recipients here; email sending is gone, so they go too.
+    delete st.email;
+    if (st.tab === "email" || st.tab === "deliver") st.tab = "daily";
+    if (st.config) delete st.config.email;
+    // Version 0.1.0 had no flag for a finished setup; the last question or a brief means it was done.
+    if (s && s.setup_done === undefined && (s.step >= 7 || s.brief)) st.setup_done = true;
     if (!st.config) {
       // First visit: the starter pack without local categories, which need a town.
       st.config = E.configFromPack(LIB, "starter", {});
@@ -81,6 +90,29 @@
   }
 
   function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); return el; }
+
+  /* Icons and artwork are fixed markup from data/icons.js, drawn for this
+     project; nothing typed by a person or read from the web goes in here. */
+  function ico(name, cls) {
+    const s = document.createElement("span");
+    s.className = "ic" + (cls ? " " + cls : "");
+    s.setAttribute("aria-hidden", "true");
+    s.innerHTML = N.iconSvg(ICONS.icons[name] ? name : "news", "i");
+    return s;
+  }
+
+  function art(name, cls) {
+    const d = document.createElement("div");
+    d.className = cls || "art";
+    d.innerHTML = (ICONS.art && ICONS.art[name]) || "";
+    return d;
+  }
+
+  function catIcon(cat) {
+    if (cat.icon && ICONS.icons[cat.icon]) return cat.icon;
+    const lc = E.categoryFromLibrary(LIB, cat.id);
+    return lc && lc.icon ? lc.icon : "news";
+  }
 
   function toast(msg) {
     const t = document.getElementById("toast");
@@ -165,35 +197,45 @@
     const bar = clear(document.getElementById("modebar"));
     if (desktop) {
       bar.className = "modebar on";
-      add(bar, [h("b", { text: "Desktop app. " }), "Live news, the no-repeat history and email sending are on."]);
+      add(bar, [h("b", { text: "Desktop app. " }), "Live news and the no-repeat history are on."]);
     } else {
       bar.className = "modebar";
-      add(bar, [h("b", { text: "Web version. " }), "Setup, preview, email drafts and the AI prompt work here. Live news comes from your GitHub copy, the desktop app or an AI assistant. ",
-        h("a", { href: "#", onclick: e => { e.preventDefault(); show("help"); } }, "Why?")]);
+      add(bar, [h("b", { text: "Your choices stay in this browser. " }), "The news is collected right here from free sources, with no account. ",
+        h("a", { href: "#", onclick: e => { e.preventDefault(); show("help"); } }, "How it works")]);
     }
   }
 
   // ------------------------------------------------------------ 1 Setup (interview)
   const INTERVIEW = [
-    { title: "What is the brief for?", body: stepPurpose },
-    { title: "Pick your categories", body: stepCategories },
-    { title: "Your area", body: stepArea },
-    { title: "How much, and how fresh", body: stepVolume },
-    { title: "What matters to you", body: stepWatch },
-    { title: "A countdown (optional)", body: stepCountdown },
-    { title: "When and how it arrives", body: stepTitle },
-    { title: "Review and save", body: stepReview }
+    { title: "What is the brief for?", short: "Purpose", icon: "sparkle", body: stepPurpose },
+    { title: "Pick your categories", short: "Topics", icon: "news", body: stepCategories },
+    { title: "Your town and weather", short: "Town", icon: "pin", body: stepArea },
+    { title: "How much, and how fresh", short: "Amount", icon: "chart", body: stepVolume },
+    { title: "What matters to you", short: "Focus", icon: "star", body: stepWatch },
+    { title: "A countdown (optional)", short: "Countdown", icon: "calendar", body: stepCountdown },
+    { title: "Name your brief", short: "Name", icon: "sunrise", body: stepTitle },
+    { title: "Review and save", short: "Review", icon: "shield", body: stepReview }
   ];
 
   function renderSetup(sec) {
     const i = Math.min(Math.max(state.step || 0, 0), INTERVIEW.length - 1);
     const st = INTERVIEW[i];
-    add(sec, h("div", { class: "intro" }, h("h1", { text: "Set up your morning brief" }),
-      i === 0 ? h("p", { text: "Eight short questions. Every answer starts with a sensible value, so change only what is different for you. You can come back any time." }) : null));
-    const dots = h("ol", { class: "dots", "aria-label": "Interview progress" });
+    if (i === 0) {
+      add(sec, h("div", { class: "hero" },
+        h("div", { class: "herotext" }, h("p", { class: "kicker", text: "Free, private, no account" }), h("h1", { text: "Your news, every morning, on one page" }),
+          h("p", { text: "Answer eight short questions. The Daily Brief remembers your choices in this browser, collects fresh stories from free sources each day, leaves out anything you have already seen, and lays it all out as one clean page with photos and your local forecast." }),
+          h("ul", { class: "heroticks" }, h("li", null, ico("news"), "Pick from " + LIB.categories.length + " ready-made categories or type your own"),
+            h("li", null, ico("sun"), "A forecast for your town"), h("li", null, ico("shield"), "No sign-up, no tracking, no keys"))),
+        art("hero", "heroart")));
+    } else {
+      add(sec, h("div", { class: "intro" }, h("h1", { text: "Set up your morning brief" })));
+    }
+    const dots = h("ol", { class: "stepper", "aria-label": "Interview progress" });
     INTERVIEW.forEach((s, k) => dots.append(h("li", { class: k === i ? "now" : k < i ? "done" : "" },
-      h("button", { onclick: () => { state.step = k; rerender(); }, "aria-label": "Question " + (k + 1) + ": " + s.title }, String(k + 1)))));
-    const card = h("div", { class: "card interview" }, h("p", { class: "kicker", text: "Question " + (i + 1) + " of " + INTERVIEW.length }), h("h2", { text: st.title }));
+      h("button", { onclick: () => { state.step = k; rerender(); }, "aria-label": "Question " + (k + 1) + ": " + s.title, "aria-current": k === i ? "step" : null },
+        ico(s.icon), h("span", { class: "sl", text: s.short })))));
+    const card = h("div", { class: "card interview" }, h("div", { class: "qhead" }, ico(st.icon, "qi"),
+      h("div", null, h("p", { class: "kicker", text: "Question " + (i + 1) + " of " + INTERVIEW.length }), h("h2", { text: st.title }))));
     st.body(card);
     const nav = h("div", { class: "qnav" },
       i > 0 ? h("button", { class: "btn ghost", onclick: () => { state.step = i - 1; rerender(); } }, "Back") : h("span"),
@@ -239,22 +281,30 @@
         c.categories = pick.slice(0, room).concat(custom);
         save();
         rerender();
-      } }, h("b", { text: p.name }), h("span", { text: p.description })));
+      } }, h("span", { class: "packicons" }, p.categories.slice(0, 4).map(id => { const lc = E.categoryFromLibrary(LIB, id); return ico(lc ? catIcon(lc) : "news"); })),
+        h("b", { text: p.name }), h("span", { text: p.description })));
     }
     add(card, [h("h3", { text: "Starter packs" }), packs]);
     add(card, quickAdd(() => rerender()));
     add(card, h("h3", { text: "Categories (" + c.categories.length + " of " + E.MAX_CATEGORIES + " chosen)" }));
     for (const g of LIB.groups) {
-      const box = h("fieldset", { class: "group" }, h("legend", { text: g.name }));
-      for (const lc of LIB.categories.filter(x => x.group === g.id)) {
+      const list = LIB.categories.filter(x => x.group === g.id);
+      const chosen = list.filter(x => hasCat(x.id)).length;
+      const box = h("details", { class: "group", open: chosen > 0 || g.id === "news" || g.id === "weather" || g.id === "sports" },
+        h("summary", null, ico(catIcon(list[0] || {}), "gi"), h("span", { text: g.name }), h("span", { class: "gcount", text: chosen ? chosen + " of " + list.length + " chosen" : list.length + " to choose from" })));
+      const grid = h("div", { class: "tiles" });
+      for (const lc of list) {
         const id = "lib-" + lc.id;
-        const cb = h("input", { type: "checkbox", id: id, checked: hasCat(lc.id), onchange: e => {
+        const on = hasCat(lc.id);
+        const cb = h("input", { type: "checkbox", id: id, class: "sr", checked: on, onchange: e => {
           if (!toggleLibraryCat(lc.id, e.target.checked)) e.target.checked = false;
           rerender();
         } });
-        box.append(h("div", { class: "check" }, cb, h("label", { for: id }, h("b", { text: lc.name.replace("({location})", "(your town)") }),
-          h("span", { class: "hint", text: lc.description }))));
+        grid.append(h("div", { class: "ctile" + (on ? " on" : ""), style: "--c:" + lc.color }, cb,
+          h("label", { for: id }, ico(catIcon(lc), "ci"), h("span", { class: "ct" }, h("b", { text: lc.name.replace("({location})", "(your town)") }),
+            h("span", { class: "hint", text: lc.description })))));
       }
+      box.append(grid);
       add(card, box);
     }
     const custom = c.categories.filter(x => !E.categoryFromLibrary(LIB, x.id));
@@ -352,6 +402,47 @@
       oninput: e => { r.location = e.target.value; save(); } }), "The town name only. No street address."));
     add(card, field("Nearby towns or the county that also count as local (commas)", h("input", { type: "text", value: (r.local_terms || []).join(", "),
       placeholder: "Shelbyville, Sangamon County", oninput: e => { r.local_terms = commas(e.target.value); save(); } })));
+    add(card, weatherPicker());
+  }
+
+  /* The forecast panel: find the town with Open-Meteo (free, no key), keep only
+     its name and rounded map position. */
+  function weatherPicker() {
+    const w = cfg().weather;
+    const box = h("div", { class: "wxpick" });
+    const status = h("p", { class: "hint", "aria-live": "polite" });
+    const results = h("div", { class: "chips" });
+    const town = h("input", { type: "text", value: w.place || cfg().reader.location || "", placeholder: "Springfield", "aria-label": "Town for the forecast" });
+    async function find() {
+      clear(results);
+      status.textContent = "Looking up " + E.collapse(town.value) + "...";
+      try {
+        const found = await C.geocode(town.value);
+        status.textContent = found.length ? "Pick your town:" : "No town by that name. Try the nearest city.";
+        found.forEach(f => results.append(h("button", { class: "chip", onclick: () => {
+          Object.assign(w, { enabled: true, place: f.label, latitude: f.latitude, longitude: f.longitude });
+          if (!E.collapse(cfg().reader.location)) cfg().reader.location = f.name;
+          // Only the United States and a few others measure in Fahrenheit.
+          if (f.country_code && ["US", "LR", "PR", "GU", "BS", "KY", "PW", "FM", "MH"].indexOf(f.country_code) < 0) w.units = "celsius";
+          save();
+          rerender();
+        } }, f.label)));
+      } catch (e) { status.textContent = "The town search is not answering right now (" + e.message + "). Try again later."; }
+    }
+    town.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); find(); } });
+    add(box, h("h3", null, ico("sun", "hi"), "Weather forecast"));
+    if (w.enabled && E.isNum(w.latitude)) {
+      add(box, h("p", { class: "ok", text: "The brief shows the forecast for " + w.place + "." }));
+      add(box, h("div", { class: "row" },
+        field("Units", select([["fahrenheit", "Fahrenheit"], ["celsius", "Celsius"]], w.units, v => { w.units = v; save(); })),
+        h("div", { class: "field" }, h("button", { class: "btn ghost", onclick: () => { w.enabled = false; save(); rerender(); } }, "Turn the forecast off"))));
+      add(box, h("p", { class: "hint", text: "To change town, search again." }));
+    } else {
+      add(box, h("p", { class: "hint", text: "Optional: a four-day forecast at the top of each brief, from Open-Meteo. Only the town name and its rounded map position are kept, in this browser." }));
+    }
+    add(box, h("div", { class: "row" }, town, h("button", { class: "btn", onclick: find }, "Find my town")));
+    add(box, [status, results]);
+    return box;
   }
 
   function stepVolume(card) {
@@ -409,33 +500,20 @@
     const b = cfg().brief;
     const preview = h("p", { class: "hint" });
     const upd = () => { preview.textContent = "Example: " + N.subjectLine({ date: today(), title: b.title, categories: [] }, cfg()); };
-    add(card, field("Newsletter title", h("input", { type: "text", value: b.title, oninput: e => { b.title = e.target.value; save(); upd(); } })));
-    add(card, field("Email subject", h("input", { type: "text", value: b.subject, oninput: e => { b.subject = e.target.value; save(); upd(); } }),
+    add(card, field("Title at the top of the page", h("input", { type: "text", value: b.title, oninput: e => { b.title = e.target.value; save(); upd(); } })));
+    add(card, field("Page title (the browser tab and the saved file)", h("input", { type: "text", value: b.subject, oninput: e => { b.subject = e.target.value; save(); upd(); } }),
       "{total} is the story count, {date} the date, {title} the title, {empty} the number of empty categories."));
     add(card, preview);
     upd();
     const dv = cfg().delivery;
-    add(card, h("div", { class: "row" },
-      field("Delivery time", h("input", { type: "time", value: dv.time, oninput: e => { dv.time = e.target.value; save(); } }),
-        "When the GitHub copy or the desktop app sends it."),
-      field("Time zone", h("input", { type: "text", list: "zones", value: dv.timezone, placeholder: "America/New_York",
-        oninput: e => { dv.timezone = E.collapse(e.target.value); save(); } }), "Your browser says " + (browserZone() || "nothing") + ".")));
-    add(card, h("datalist", { id: "zones" }, ZONES.map(z => h("option", { value: z }))));
-    const ch = (name, label, hint) => {
-      const id = "ch-" + name;
-      return h("div", { class: "check" }, h("input", { type: "checkbox", id: id, checked: dv.channels.indexOf(name) >= 0, onchange: e => {
-        const set = dv.channels.filter(x => x !== name);
-        if (e.target.checked) set.push(name);
-        if (!set.length) { e.target.checked = true; toast("Keep at least one way to receive it."); return; }
-        dv.channels = ["email", "issue"].filter(x => set.indexOf(x) >= 0);
-        save();
-      } }), h("label", { for: id }, h("b", { text: label }), h("span", { class: "hint", text: hint })));
-    };
-    add(card, h("h3", { text: "How it arrives" }));
-    add(card, ch("email", "Email", "Sent through your own mail account. Needs that account's app password, saved as a secret in your GitHub copy or in the desktop app."));
-    add(card, ch("issue", "GitHub issue", "No password at all: the brief is posted as an issue in your private GitHub copy, and GitHub emails it to you."));
-    add(card, field("Send to (commas)", h("input", { type: "email", multiple: true, value: (state.email.to || []).join(", "), placeholder: "you@example.com",
-      oninput: e => { state.email.to = commas(e.target.value); save(); } }), "Kept in this browser only. It is never added to your settings file or the AI prompt. In GitHub, recipients go in the MAIL_TO secret."));
+    add(card, h("details", { class: "more" }, h("summary", { text: "Only if you also run a GitHub copy: its delivery time" }),
+      h("div", { class: "row" },
+        field("Delivery time", h("input", { type: "time", value: dv.time, oninput: e => { dv.time = e.target.value; save(); } }),
+          "When your GitHub copy posts it."),
+        field("Time zone", h("input", { type: "text", list: "zones", value: dv.timezone, placeholder: "America/New_York",
+          oninput: e => { dv.timezone = E.collapse(e.target.value); save(); } }), "Your browser says " + (browserZone() || "nothing") + ".")),
+      h("datalist", { id: "zones" }, ZONES.map(z => h("option", { value: z }))),
+      h("p", { class: "hint", text: "This page needs no schedule: open it and press Get today's brief. A GitHub copy is optional; it posts the brief as an issue each morning (step 4)." })));
   }
 
   function localCats() {
@@ -463,12 +541,19 @@
       ["Older stories", n.brief.backfill_max_hours > n.brief.window_hours ? "up to " + n.brief.backfill_max_hours + " hours, labelled OLDER" : "off"],
       ["Reference pages", n.brief.allow_reference ? "allowed, labelled REFERENCE" : "off"],
       ["Your area", n.reader.location || "not set"],
+      ["Weather", n.weather.enabled ? "forecast for " + n.weather.place + " (" + n.weather.units + ")" : "off"],
       ["Watch list", (n.reader.watch_list || []).join(", ") || "empty"],
       ["Countdown", n.countdown.enabled ? n.countdown.label + " on " + n.countdown.date : "off"]
     ];
     add(card, h("table", { class: "summary" }, h("tbody", null, rows.map(r => h("tr", null, h("th", { text: r[0] }), h("td", { text: r[1] }))))));
     add(card, h("div", { class: "actions" },
-      h("button", { class: "btn", disabled: v.errors.length > 0, onclick: () => { save(); show("brief"); } }, "Save and get my brief"),
+      h("button", { class: "btn", disabled: v.errors.length > 0, onclick: () => {
+        const first = !state.setup_done;
+        state.setup_done = true;
+        save();
+        show("brief");
+        if (first && !state.brief) getToday();
+      } }, "Save and get my brief"),
       h("button", { class: "btn ghost", onclick: downloadSettings }, "Download settings file")));
   }
 
@@ -524,39 +609,71 @@
       h("details", null, h("summary", { text: "Searches and filters" }), body));
   }
 
-  // ------------------------------------------------------------ 3 Brief
+  // ------------------------------------------------------------ 3 Today
   function renderBrief(sec) {
-    add(sec, h("div", { class: "intro" }, h("h1", { text: "Today's brief" })));
     const v = E.validateConfig(cfg());
+    const fresh = state.brief && state.brief.date === today() && state.brief.source !== "sample";
+    add(sec, h("div", { class: "intro todayhead" }, h("div", null, h("p", { class: "kicker", text: N.prettyDate(today()) }),
+      h("h1", { text: "Today's brief" })), ico("sunrise", "bigico")));
     if (v.errors.length) {
       add(sec, h("div", { class: "card" }, h("p", { text: "Your settings need a fix before a brief can be built." }), msgList(v),
         h("button", { class: "btn", onclick: () => { state.step = 7; show("setup"); } }, "Go to Review")));
     }
-    if (desktop) {
-      const useHist = h("input", { type: "checkbox", id: "usehist", checked: true });
-      const go = h("button", { class: "btn big", disabled: v.errors.length > 0 || !!job, onclick: () => runDesktop(useHist.checked) }, job ? "Collecting..." : "Get today's brief");
-      add(sec, h("div", { class: "card" }, h("p", { text: "Searches Google News and the publisher feeds for every category, keeps fresh, on-topic stories, and leaves out anything you have already been sent. About a minute." }),
-        h("div", { class: "row" }, go, h("div", { class: "check" }, useHist, h("label", { for: "usehist" }, "Leave out stories already sent"))),
-        h("div", { id: "progress" })));
-      if (job) paintProgress();
-    } else {
-      add(sec, h("div", { class: "card" },
-        h("h2", { text: "Get the news in" }),
-        h("p", { text: "News sites do not let a web page read their feeds, so this page cannot fetch the news by itself. Choose one:" }),
-        h("ol", { class: "ways" },
-          h("li", null, h("b", { text: "Run it on GitHub, free. " }), "Your own private copy of this project collects the news and delivers it every morning on GitHub's servers. No computer, no AI, no keys. ",
-            h("button", { class: "link", onclick: () => { show("email"); const c = document.getElementById("cloud"); if (c) c.scrollIntoView(); } }, "Set it up")),
-          h("li", null, h("b", { text: "Ask an AI assistant. " }), "Claude, ChatGPT, Gemini or Grok searches the web with your settings and writes the brief, with a Lead Analysis. ",
-            h("button", { class: "link", onclick: () => show("ai") }, "Set it up")),
-          h("li", null, h("b", { text: "Use the desktop app. " }), "A free download for Windows, Mac or Linux that collects the news itself and emails it every morning, no AI needed. ",
-            h("button", { class: "link", onclick: () => show("help") }, "How to get it")),
-          h("li", null, h("b", { text: "See the sample. " }), h("button", { class: "link", onclick: () => setBrief(E.clone(SAMPLE.brief), null) }, "Show the sample brief")))));
-      const ta = h("textarea", { rows: 6, placeholder: "Paste the whole reply from your AI assistant here. The app finds the brief JSON in it." });
-      add(sec, h("div", { class: "card" }, h("h2", { text: "Paste a brief from your AI assistant" }),
-        h("p", { text: "In the chat, type JSON after the brief (or RUN with the JSON output setting), copy the reply, and paste it here." }),
-        ta, h("button", { class: "btn", onclick: () => pasteBrief(ta.value) }, "Show the newsletter")));
-    }
+    const running = !!job || !!webRun;
+    const useHist = h("input", { type: "checkbox", id: "usehist", checked: true });
+    const go = h("button", { class: "btn big", disabled: v.errors.length > 0 || running, onclick: () => getToday(useHist.checked) },
+      running ? "Collecting..." : fresh ? "Check for newer stories" : "Get today's brief");
+    const auto = h("input", { type: "checkbox", id: "autorun", checked: !!state.auto_run, onchange: e => { state.auto_run = e.target.checked; save(); } });
+    add(sec, h("div", { class: "card runcard" },
+      h("p", { text: desktop ? "Searches Google News and the publisher feeds for every category, keeps fresh, on-topic stories, and leaves out anything you have already seen. About a minute."
+        : "Collects fresh stories for your " + cfg().categories.length + " categories from free news sources, right in this browser, and leaves out anything you have already seen. About a minute; the page stays usable." }),
+      h("div", { class: "row" }, go,
+        h("div", { class: "check" }, useHist, h("label", { for: "usehist" }, "Leave out stories I have already seen"))),
+      h("div", { class: "check" }, auto, h("label", { for: "autorun" }, h("b", { text: "Collect automatically when I open this page" }),
+        h("span", { class: "hint", text: "Once a day. Your choices are saved in this browser, so bookmarking this page is all a daily routine needs." }))),
+      h("div", { id: "progress" })));
+    if (running) paintProgress();
     if (state.brief) add(sec, briefView());
+    if (!desktop) {
+      const ta = h("textarea", { rows: 5, placeholder: "Paste the whole reply from your AI assistant here. The app finds the brief JSON in it." });
+      add(sec, h("details", { class: "card more" }, h("summary", { text: "Other ways to fill the page: an AI assistant, or the sample" }),
+        h("p", { text: "An AI assistant (Claude, ChatGPT, Gemini or Grok) can write the brief with a Lead Analysis from a web search: set it up on step 5, type JSON after the brief, and paste the reply here." }),
+        ta, h("div", { class: "actions" }, h("button", { class: "btn", onclick: () => pasteBrief(ta.value) }, "Show the pasted brief"),
+          h("button", { class: "btn ghost", onclick: () => setBrief(E.clone(SAMPLE.brief), null) }, "Show the sample brief"))));
+    }
+  }
+
+  /* One button for every mode: the desktop app collects on this computer, the
+     web version collects in the browser. */
+  function getToday(useHistory) {
+    if (desktop) return runDesktop(useHistory !== false);
+    return runWeb(useHistory !== false);
+  }
+
+  async function runWeb(useHistory) {
+    if (webRun) return;
+    const v = E.validateConfig(cfg());
+    if (v.errors.length) { toast("Fix the settings first."); return; }
+    if (!C) { toast("The collector did not load. Reload the page."); return; }
+    webRun = { state: "running", done: 0, total: 0, step: "Starting", cancelled: false };
+    if (state.tab === "brief") rerender();
+    const ledger = useHistory ? history : null;
+    try {
+      const r = await C.runBrief(E.clone(cfg()), ledger, {
+        progress: (label, done, total) => { if (webRun) { webRun.step = label; webRun.done = done; webRun.total = total; paintProgress(); } },
+        cancelled: () => !!(webRun && webRun.cancelled)
+      });
+      webRun = null;
+      // Everything shown counts as seen, so tomorrow's brief has only new stories.
+      if (r.brief.total) { history = E.ledgerAdd(history, r.brief, true); saveHistory(); }
+      setBrief(r.brief, r.health);
+      toast(r.brief.total ? r.brief.total + " stories collected." : "Nothing new right now. Try again later in the day.");
+    } catch (e) {
+      const was = webRun && webRun.cancelled;
+      webRun = null;
+      rerender();
+      toast(was ? "Stopped." : "The collection failed: " + e.message);
+    }
   }
 
   function pasteBrief(text) {
@@ -595,24 +712,28 @@
   function briefView() {
     const out = rendered();
     const chk = E.checkBrief(state.brief, state.brief.source === "sample" ? SAMPLE.settings : cfg());
-    const frame = h("iframe", { class: "preview", title: "Newsletter preview", sandbox: "allow-popups allow-popups-to-escape-sandbox" });
+    // No scripts may run in the page; same-origin only lets this app measure its height.
+    const frame = h("iframe", { class: "page", title: "Today's brief", sandbox: "allow-same-origin allow-popups allow-popups-to-escape-sandbox" });
     frame.srcdoc = out.html.replace("<head>", "<head><base target=\"_blank\">");
+    const fit = () => { try { const d = frame.contentDocument; if (d && d.documentElement) frame.style.height = d.documentElement.scrollHeight + "px"; } catch (e) { /* keep the default height */ } };
+    frame.addEventListener("load", () => {
+      fit();
+      try { new ResizeObserver(fit).observe(frame.contentDocument.body); } catch (e) { setTimeout(fit, 1500); }
+    });
     const st = N.stats(state.brief);
-    const canSend = desktop && desktop.mail && desktop.mail.configured;
     const box = h("div", { class: "card", id: "briefview" },
       h("h2", { text: out.subject }),
       h("p", { class: "hint", text: st.total + " stories, " + st.news + " fresh, " + st.empty.length + " empty categories." }),
       h("div", { class: "actions" },
-        desktop ? h("button", { class: "btn", disabled: !canSend, title: canSend ? "" : "Set up mail on the Email step first", onclick: () => sendNow(false) }, "Email it now") : null,
-        h("button", { class: "btn" + (desktop ? " ghost" : ""), onclick: downloadEml }, "Download email draft"),
+        h("button", { class: "btn", onclick: () => S.openPage(out.html) }, "Open as a full page"),
+        h("button", { class: "btn ghost", onclick: () => S.download(fileStem() + ".html", out.html, "text/html") }, "Download page"),
         h("button", { class: "btn ghost", onclick: async () => {
           const how = await S.copyRich(out.html, out.text);
-          toast(how === "rich" ? "Copied. Paste it into a new email." : how === "text"
-            ? "Copied as plain text; this browser cannot copy the formatted version. Download email draft keeps the layout."
-            : "This browser blocked copying. Use Download email draft.");
-        } }, "Copy for email"),
-        h("button", { class: "btn ghost", onclick: () => S.download(fileStem() + ".html", out.html, "text/html") }, "Download page"),
-        state.brief.source !== "sample" ? h("button", { class: "btn ghost", onclick: markRead }, "Mark as read") : null),
+          toast(how === "rich" ? "Copied. Paste it where you want it." : how === "text"
+            ? "Copied as plain text; this browser cannot copy the formatted version. Download page keeps the layout."
+            : "This browser blocked copying. Use Download page.");
+        } }, "Copy newsletter"),
+        state.brief.source !== "sample" && state.brief.source !== "web" ? h("button", { class: "btn ghost", onclick: markRead }, "Mark as read") : null),
       chk.errors.length || chk.warnings.length ? h("details", { class: "checks" }, h("summary", { text: "Checks: " + chk.errors.length + " problem(s), " + chk.warnings.length + " note(s)" }), msgList(chk)) : null,
       frame,
       state.health ? healthView(state.health) : null);
@@ -620,12 +741,6 @@
   }
 
   function fileStem() { return "daily-brief-" + (state.brief && state.brief.date ? state.brief.date : today()); }
-
-  function downloadEml() {
-    const out = rendered();
-    S.download(fileStem() + ".eml", N.buildEml(out, state.email.to || [], cfg().email && cfg().email.from_name), "message/rfc822");
-    toast("Saved. Open the file to get a ready-to-send email (Outlook opens it as a draft).");
-  }
 
   async function markRead() {
     if (desktop) {
@@ -639,16 +754,6 @@
     history = E.ledgerAdd(history, state.brief, false);
     saveHistory();
     toast("Marked as read. Pasted briefs will leave these stories out from now on.");
-  }
-
-  async function sendNow(force) {
-    try {
-      const r = await S.api("/api/send", { brief: state.brief, config: cfg(), to: state.email.to, force: force === true });
-      toast("Sent to " + r.sent + " recipient(s)." + (r.ledger_size !== null ? " Marked as read." : ""));
-    } catch (e) {
-      if (e.details && e.details.already_sent && confirm(e.message + " Send it again?")) return sendNow(true);
-      toast(e.message);
-    }
   }
 
   async function runDesktop(useHistory) {
@@ -675,10 +780,12 @@
 
   function paintProgress() {
     const p = document.getElementById("progress");
-    if (!p || !job) return;
-    const pct = job.total ? Math.round(100 * job.done / job.total) : 3;
+    const run = job || webRun;
+    if (!p || !run) return;
+    const pct = run.total ? Math.round(100 * run.done / run.total) : 3;
     clear(p).append(h("div", { class: "bar" }, h("div", { class: "fill", style: "width:" + pct + "%" })),
-      h("p", { class: "hint", text: "Checking " + (job.step || "") + " (" + job.done + " of " + (job.total || "?") + " sources)" }));
+      h("p", { class: "hint", text: "Checking " + (run.step || "") + " (" + run.done + " of " + (run.total || "?") + " sources)" }),
+      webRun ? h("button", { class: "link", onclick: () => { if (webRun) webRun.cancelled = true; } }, "Stop") : null);
   }
 
   function healthView(health) {
@@ -691,32 +798,27 @@
       rows.push(h("tr", null, h("th", { text: cat.name }), h("td", { text: hh.queries.reduce((a, x) => a + x.items, 0) + " search results, " + hh.feeds.reduce((a, x) => a + x.items, 0) + " feed items" }),
         h("td", { text: rej || "none" }), h("td", { class: errs.length ? "badtext" : "", text: errs.length ? errs.map(x => (x.query || x.url) + ": " + x.error).join("; ") : "none" })));
     }
+    if (health._weather) rows.push(h("tr", null, h("th", { text: "Weather" }), h("td", { text: "forecast" }), h("td", { text: "" }), h("td", { class: "badtext", text: health._weather.error })));
     return h("details", { class: "checks" }, h("summary", { text: "Sources and filters" }),
       h("table", { class: "summary" }, h("thead", null, h("tr", null, h("th", { text: "Category" }), h("th", { text: "Found" }), h("th", { text: "Left out" }), h("th", { text: "Source problems" }))),
         h("tbody", null, rows)));
   }
 
-  // ------------------------------------------------------------ 4 Email
+  // ------------------------------------------------------------ 4 Every day
   function cloudCard() {
     const proj = S.projectUrl();
     const d = E.normalizeConfig(cfg()).delivery;
     const lines = E.cronLines(d.time, d.timezone, new Date().getFullYear());
     const cronText = lines.map(l => "    - cron: \"" + l + "\"").join("\n");
     const link = (href, text) => href ? h("a", { href: href, target: "_blank", rel: "noopener", text: text }) : h("b", { text: text });
-    const email = d.channels.indexOf("email") >= 0;
-    const issue = d.channels.indexOf("issue") >= 0;
-    return h("div", { class: "card", id: "cloud" }, h("h2", { text: "Every morning from GitHub, free" }),
+    return h("details", { class: "card more", id: "cloud" }, h("summary", null, ico("cloud", "hi"), "Optional: have GitHub post it each morning, even with no browser open"),
       h("p", { text: "GitHub's servers collect the news, build the newsletter and deliver it, with no computer of yours switched on. It uses free services only: Google News RSS and publisher feeds need no keys, and no AI or search service is involved." }),
       h("ol", { class: "ways" },
         h("li", null, h("b", { text: "Make your own private copy. " }), link(proj ? proj + "/generate" : "", "Use this template"),
           ", choose Private, and create the repository."),
         h("li", null, h("b", { text: "Add your settings. " }), h("button", { class: "link", onclick: downloadSettings }, "Download the settings file"),
           ", then in your copy choose Add file, Upload files, drop daily-brief-settings.json in, and commit. Upload it again after you change something here."),
-        email ? h("li", null, h("b", { text: "Email: add the mail secrets. " }), "In your copy open Settings, Secrets and variables, Actions, New repository secret, and add ",
-          h("code", { text: "SMTP_HOST" }), " (smtp.gmail.com for Gmail), ", h("code", { text: "SMTP_USER" }), " (your address), ",
-          h("code", { text: "SMTP_PASSWORD" }), " (an app password, not your normal one) and ", h("code", { text: "MAIL_TO" }),
-          " (who gets it, commas between addresses). Optional: SMTP_PORT, SMTP_SECURITY, MAIL_FROM.") : null,
-        issue ? h("li", null, h("b", { text: "GitHub issue: nothing to add. " }), "Each morning the brief appears as an issue in your copy, mentioning you, and yesterday's issue closes. GitHub emails it to you when email notifications are on (Settings, Notifications).") : null,
+        h("li", null, h("b", { text: "Nothing to add for delivery. " }), "Each morning the brief appears as an issue in your copy, mentioning you, and yesterday's issue closes. GitHub tells you about it by email or in its mobile app, following your notification settings (Settings, Notifications). No password or secret is stored."),
         h("li", null, h("b", { text: "Set the time. " }), lines.length ? [
           "In your copy open .github/workflows/daily-brief.yml, choose Edit, and replace the two cron lines with these (they put the brief out at " + d.time + " " + d.timezone + " in summer and winter):",
           h("pre", { class: "code", text: cronText }),
@@ -726,67 +828,27 @@
       h("p", { class: "hint", text: "GitHub Actions is free for public repositories; a private copy uses your plan's included minutes, about three a day. Keep your copy private: in a public one, anyone can read your settings and run logs, and GitHub turns scheduled runs off after 60 days without activity. Times are best kept off the top of the hour, when GitHub delays runs." }));
   }
 
-  function renderEmail(sec) {
-    add(sec, h("div", { class: "intro" }, h("h1", { text: "Deliver the newsletter" })));
-    add(sec, cloudCard());
-    add(sec, h("div", { class: "card" }, h("h2", { text: "Who gets it" }),
-      field("Send to (commas)", h("input", { type: "email", multiple: true, value: (state.email.to || []).join(", "), placeholder: "you@example.com",
-        oninput: e => { state.email.to = commas(e.target.value); save(); } }), "Kept in this browser only."),
-      field("From name", h("input", { type: "text", value: (cfg().email && cfg().email.from_name) || "", placeholder: "Morning Brief",
-        oninput: e => { cfg().email.from_name = e.target.value; save(); } }))));
-    if (desktop) add(sec, mailSettings());
-    add(sec, h("div", { class: "card" }, h("h2", { text: "Other ways to send" }),
+  function renderDaily(sec) {
+    add(sec, h("div", { class: "intro" }, h("h1", { text: "Make it a daily habit" }),
+      h("p", { text: "Your choices are already saved in this browser. Here is how to get a fresh brief every day." })));
+    const auto = h("input", { type: "checkbox", id: "autorun2", checked: !!state.auto_run, onchange: e => { state.auto_run = e.target.checked; save(); } });
+    add(sec, h("div", { class: "card" }, h("h2", null, ico("sunrise", "hi"), "Every morning, in this browser"),
       h("ol", { class: "ways" },
-        h("li", null, h("b", { text: "Email draft file. " }), "On step 3, Download email draft saves an .eml file. Outlook opens it as a draft ready to send; other mail programs open it as a message you can forward."),
-        h("li", null, h("b", { text: "Copy for email. " }), "Copies the formatted newsletter. Paste it into a new message in Gmail, Outlook or Apple Mail."),
-        h("li", null, h("b", { text: "From your computer. " }), desktop ? "Set up mail above, then schedule the morning run below." : "The desktop app also collects and sends it, from your own computer."))));
+        h("li", null, h("b", { text: "Keep this page handy. " }), "Bookmark it, or add it to your home screen: on a phone, use Share, then Add to Home Screen; in Chrome or Edge on a computer, use the install button in the address bar. It then opens like an app."),
+        h("li", null, h("b", { text: "Let it collect by itself. " }), h("span", { class: "check inline" }, auto, h("label", { for: "autorun2", text: "Collect automatically when I open this page (once a day)" }))),
+        h("li", null, h("b", { text: "Same browser, same device. " }), "Choices live in this browser only. To use another device, download the settings file (Settings) and import it there.")),
+      h("p", { class: "hint", text: "Nothing is sent anywhere except the searches themselves: your search words go to the GDELT news index, and the forecast request carries your town's map position to Open-Meteo." })));
+    add(sec, h("div", { class: "card" }, h("h2", null, ico("megaphone", "hi"), "Share or keep a copy"),
+      h("ol", { class: "ways" },
+        h("li", null, h("b", { text: "Open as a full page or Download page. " }), "On the Today tab. The page is one HTML file that opens in any browser and can be printed."),
+        h("li", null, h("b", { text: "Copy newsletter. " }), "Copies the formatted page, ready to paste into a document or a message."))));
+    add(sec, cloudCard());
     if (desktop) add(sec, scheduleCard());
   }
 
-  function mailSettings() {
-    const m = desktop.mail || {};
-    const vals = { host: m.host || "", port: m.port || "587", security: m.security || "starttls", user: m.user || "", sender: m.sender || "", password: "" };
-    const inp = (k, type, ph) => h("input", { type: type || "text", value: vals[k], placeholder: ph || "", autocomplete: k === "password" ? "new-password" : "off", oninput: e => { vals[k] = e.target.value; } });
-    const preset = select([["", "Choose a provider"], ["gmail", "Gmail or Google Workspace"], ["other", "Another provider"]], "", v => {
-      if (v === "gmail") { vals.host = "smtp.gmail.com"; vals.port = "587"; vals.security = "starttls"; save(); clear(wrap).append(form()); }
-    });
-    const wrap = h("div");
-    function form() {
-      return h("div", null,
-        field("SMTP server", inp("host", "text", "smtp.gmail.com")),
-        h("div", { class: "row" }, field("Port", inp("port", "text", "587")),
-          field("Security", select([["starttls", "STARTTLS (port 587)"], ["ssl", "SSL (port 465)"]], vals.security, v => {
-            vals.security = v;
-            const port = v === "ssl" ? "465" : "587";
-            if ((vals.port === "587" || vals.port === "465" || !vals.port) && vals.port !== port) { vals.port = port; clear(wrap).append(form()); }
-          }))),
-        field("Account name (usually your address)", inp("user", "email")),
-        field("App password", inp("password", "password", m.has_password ? "Saved. Leave empty to keep it." : "")),
-        field("Send from (optional)", inp("sender", "email", "Defaults to the account name")));
-    }
-    wrap.append(form());
-    return h("div", { class: "card" }, h("h2", { text: "Mail settings (this computer)" }),
-      h("p", { class: m.configured ? "ok" : "warn", text: m.configured ? "Mail is set up." : "Mail is not set up yet." }),
-      m.env_overrides && m.env_overrides.length ? h("p", { class: "hint", text: "These come from environment variables and win over this form: " + m.env_overrides.join(", ") }) : null,
-      field("Provider", preset), wrap,
-      h("p", { class: "hint", text: "Gmail needs 2-Step Verification and an app password (Google Account, Security, App passwords). The password is stored only in your data folder on this computer and is never shown again." }),
-      h("div", { class: "actions" },
-        h("button", { class: "btn", onclick: async () => {
-          try {
-            desktop.mail = await S.api("/api/mail", { values: Object.assign({}, vals, { to: state.email.to }) });
-            toast(desktop.mail.configured ? "Mail settings saved." : "Saved, but mail is not ready yet. " + (desktop.mail.problem || ""));
-            rerender();
-          } catch (e) { toast(e.message); }
-        } }, "Save mail settings"),
-        h("button", { class: "btn ghost", disabled: !m.configured, onclick: async () => {
-          try { const r = await S.api("/api/send", { brief: SAMPLE.brief, config: SAMPLE.settings, to: state.email.to }); toast("Test sent to " + r.sent + " recipient(s)."); }
-          catch (e) { toast(e.message); }
-        } }, "Send a test (the sample)")));
-  }
-
   function scheduleCard() {
-    const cmd = "python -m dailybrief run --send --quiet";
-    return h("div", { class: "card" }, h("h2", { text: "Every morning, automatically" }),
+    const cmd = "python -m dailybrief run --mark-read --quiet";
+    return h("div", { class: "card" }, h("h2", { text: "Every morning on this computer" }),
       h("ol", { class: "ways" },
         h("li", null, h("button", { class: "btn ghost", onclick: async () => {
           try { const r = await S.api("/api/config", { config: cfg() }); toast(r.saved ? "Saved for scheduled runs." : "Not saved: fix the settings first."); }
@@ -794,9 +856,9 @@
         } }, "Save my settings for scheduled runs"), " The scheduled run uses the saved copy, so press this again after changes."),
         h("li", null, "Make the computer run this command each morning, in the Daily Brief folder: ", h("code", { text: cmd }), " ",
           h("button", { class: "link", onclick: async () => toast(await S.copyText(cmd) ? "Copied." : "Copy blocked.") }, "Copy")),
-        h("li", null, "Windows: open Task Scheduler, Create Basic Task, Daily, pick the time, Start a program: python, arguments ", h("code", { text: "-m dailybrief run --send --quiet" }),
+        h("li", null, "Windows: open Task Scheduler, Create Basic Task, Daily, pick the time, Start a program: python, arguments ", h("code", { text: "-m dailybrief run --mark-read --quiet" }),
           ", Start in: the Daily Brief folder. Mac or Linux: add it to crontab. The command ", h("code", { text: "python -m dailybrief schedule-help" }), " prints the exact lines for your computer.")),
-      h("p", { class: "hint", text: "The computer must be on at that time. Each day is sent once; the no-repeat history updates after a successful send." }));
+      h("p", { class: "hint", text: "The computer must be on at that time. The newsletter page lands in the briefs folder of your data folder, and its stories join the no-repeat history." }));
   }
 
   // ------------------------------------------------------------ 5 AI assistants
@@ -843,7 +905,7 @@
 
   function renderAi(sec) {
     add(sec, h("div", { class: "intro" }, h("h1", { text: "Use it with an AI assistant" }),
-      h("p", { text: "The prompt makes Claude, ChatGPT, Gemini or Grok run the same interview and write the brief from a live web search, with a Lead Analysis and no repeats. Your email address is never put in the prompt." })));
+      h("p", { text: "The prompt makes Claude, ChatGPT, Gemini or Grok run the same interview and write the brief from a live web search, with a Lead Analysis and no repeats." })));
     const tabs = h("div", { class: "seg", role: "radiogroup", "aria-label": "Assistant" });
     Object.keys(PLATFORMS).forEach(k => tabs.append(h("button", { class: k === aiPlatform ? "on" : "", role: "radio", "aria-checked": k === aiPlatform ? "true" : "false",
       onclick: () => { aiPlatform = k; rerender(); } }, PLATFORMS[k].name)));
@@ -867,8 +929,8 @@
       kind === "compact" ? h("p", { class: "hint" }, "The compact prompt is " + text.length + " characters and expects your settings as a file. For a scheduled task, which cannot take files, use ",
         h("button", { class: "link", onclick: async () => toast(await S.copyText(withSettings) ? "Copied (" + withSettings.length + " characters)." : "Copy blocked.") }, "the compact prompt with your settings built in"),
         " (" + withSettings.length + " characters).") : null));
-    add(sec, h("div", { class: "card" }, h("h2", { text: "Get the newsletter and email" }),
-      h("p", { text: "Ask the assistant for JSON (type JSON), copy its reply, and paste it on step 3. The app turns it into the newsletter and the email." }),
+    add(sec, h("div", { class: "card" }, h("h2", { text: "Get the newsletter" }),
+      h("p", { text: "Ask the assistant for JSON (type JSON), copy its reply, and paste it on step 3. The app turns it into the newsletter." }),
       h("button", { class: "btn ghost", onclick: () => show("brief") }, "Go to step 3")));
   }
 
@@ -880,10 +942,8 @@
   function importSettings(obj) {
     const v = E.validateConfig(obj);
     if (v.errors.length) { alert("These settings have problems:\n\n" + v.errors.join("\n")); return false; }
-    const keepEmail = cfg().email;
     state.config = E.merge(E.DEFAULTS, obj);
-    state.config.email = obj.email && Array.isArray(obj.email.to) ? obj.email : keepEmail;
-    if (obj.email && Array.isArray(obj.email.to) && obj.email.to.length) state.email.to = obj.email.to.slice();
+    delete state.config.email;  // version 0.1.0 settings may still hold addresses
     save();
     toast("Settings imported.");
     rerender();
@@ -916,14 +976,14 @@
         rerender();
       } }, "Clear the history")));
     add(sec, h("div", { class: "card" }, h("h2", { text: "Back up everything" }),
-      h("p", { text: "Settings, recipients, the history in this browser and the last brief, in one file." }),
+      h("p", { text: "Settings, the history in this browser and the last brief, in one file." }),
       h("div", { class: "actions" },
         h("button", { class: "btn ghost", onclick: () => S.download("daily-brief-backup-" + today() + ".json", JSON.stringify({ db_backup: 1, version: E.VERSION, state: state, history: history }) + "\n", "application/json") }, "Back up all data"),
         h("button", { class: "btn ghost", onclick: () => file.click() }, "Restore from file"))));
     if (desktop) {
       add(sec, h("div", { class: "card" }, h("h2", { text: "Desktop app" }),
         h("p", null, "Your data folder: ", h("code", { text: desktop.data_folder || "" })),
-        h("p", { class: "hint", text: "It holds config.json (saved for scheduled runs), ledger.json (the history), smtp.json (mail settings) and the briefs folder." })));
+        h("p", { class: "hint", text: "It holds config.json (saved for scheduled runs), ledger.json (the history) and the briefs folder." })));
     }
     add(sec, h("div", { class: "card" }, h("h2", { text: "Start over" }),
       h("button", { class: "btn danger", onclick: () => {
@@ -946,8 +1006,8 @@
     const st = defaultState();
     for (const k of Object.keys(st)) if (k in obj.state && k !== "version") st[k] = obj.state[k];
     st.config = E.merge(E.DEFAULTS, obj.state.config);
-    st.email = { to: Array.isArray(st.email && st.email.to) ? st.email.to.filter(x => typeof x === "string") : [],
-      from_name: typeof (st.email && st.email.from_name) === "string" ? st.email.from_name : "" };
+    delete st.config.email;
+    if (st.tab === "email" || st.tab === "deliver") st.tab = "daily";
     if (st.brief && (typeof st.brief !== "object" || !Array.isArray(st.brief.categories))) st.brief = null;
     state = st;
     history = E.cleanLedger(obj.history);
@@ -964,14 +1024,14 @@
     add(sec, h("div", { class: "card prose" },
       h("h2", { text: "Four ways to use it" }),
       h("ol", null,
-        h("li", null, h("b", { text: "Your GitHub copy. " }), "A private copy of the project runs every morning on GitHub's servers: it collects the news from Google News and publisher feeds, builds the newsletter and emails it, or posts it as a GitHub issue. Free services only. Step 4 walks through it."),
-        h("li", null, h("b", { text: "This web page. " }), "Runs the setup interview, edits your categories, previews and exports the newsletter, and builds the AI prompt. Nothing to install."),
-        h("li", null, h("b", { text: "The desktop app. " }), "Download the project from GitHub (Code, Download ZIP), unzip it, and double-click Start-Windows.bat, Start-Mac.command or start-linux.sh. It opens this same app with live news from Google News and publisher feeds, the no-repeat history on disk, and email sending. It needs Python 3.9 or newer from python.org, and no account or key."),
+        h("li", null, h("b", { text: "This web page. " }), "Runs the setup interview, remembers your choices in this browser, collects the news itself from free sources, and shows the brief as a page. Nothing to install, no account."),
+        h("li", null, h("b", { text: "Your GitHub copy (optional). " }), "A private copy of the project runs every morning on GitHub's servers: it collects the news from Google News and publisher feeds and posts it as an issue in your copy. Free, no password. Step 4 walks through it."),
+        h("li", null, h("b", { text: "The desktop app. " }), "Download the project from GitHub (Code, Download ZIP), unzip it, and double-click Start-Windows.bat, Start-Mac.command or start-linux.sh. It opens this same app with live news from Google News and publisher feeds and the no-repeat history on disk. It needs Python 3.9 or newer from python.org, and no account or key."),
         h("li", null, h("b", { text: "An AI assistant. " }), "Claude, ChatGPT, Gemini or Grok runs the interview and writes the brief from a web search, adding a Lead Analysis.")),
       proj ? h("p", null, "Project page and download: ", h("a", { href: proj, target: "_blank", rel: "noopener", text: proj.replace("https://", "") }), " | ",
         h("a", { href: proj + "/issues/new", target: "_blank", rel: "noopener", text: "report a problem or suggest an idea" })) : null,
-      h("h2", { text: "Why this page cannot fetch the news" }),
-      h("p", { text: "Browsers only let a page read another site when that site allows it. Google News and most publisher feeds do not, so a web page cannot read them. The desktop app reads them from your own computer, where that rule does not apply." }),
+      h("h2", { text: "Where the news comes from" }),
+      h("p", { text: "Browsers only let a page read another site when that site allows it. This page uses the free sources that do: the GDELT news index, which watches news sites worldwide, and the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired). The forecast comes from Open-Meteo. Google News does not allow web pages, so the desktop app and the GitHub copy read it from a computer or a server instead." }),
       h("h2", { text: "How stories are picked" }),
       h("ol", null,
         h("li", { text: "Search each category, then keep a story only if it mentions a term from every must-mention line and none of the leave-out terms." }),
@@ -982,21 +1042,25 @@
       h("h2", { text: "Reading the pills" }),
       h("p", { text: "Green, teal and amber pills give a story's age inside the window. OLDER is beyond the window, stamped with its true age. REFERENCE is an undated authoritative page, never presented as an event." }),
       h("h2", { text: "Privacy" }),
-      h("p", { text: "No account and no tracking. Settings, recipients and the history stay in this browser, or in your data folder when you use the desktop app. The desktop app sends your search words to Google News and fetches the feeds you list; mail goes through the provider you set up. The AI prompt never includes your email address." }),
+      h("p", { text: "No account and no tracking. Settings and the history stay in this browser, or in your data folder when you use the desktop app. This page sends your search words to the GDELT news index, fetches the feeds you list, and, if the forecast is on, sends your town's rounded map position to Open-Meteo. Story photos load from the publishers' own sites. The desktop app and the GitHub copy send your search words to Google News instead." }),
       h("h2", { text: "Limits" }),
       h("ul", null,
-        h("li", { text: "Desktop briefs show headlines and short feed summaries. Google News gives no summary, so those stories show the headline only." }),
+        h("li", { text: "Stories from the GDELT index and Google News come with a headline only; publisher feeds add a short summary and often a photo." }),
+        h("li", { text: "The GDELT index sometimes turns requests away when it is busy. The page waits and retries once; a category can come back short on a busy morning." }),
         h("li", { text: "Google News links open through a Google redirect page." }),
         h("li", { text: "AI assistants can still make mistakes. The prompt requires links from a live search; check a link before you act on a story." })),
       h("p", { class: "hint", text: "Daily Brief " + E.VERSION + ". Free and open source under the MIT licence." })));
   }
 
-  const RENDER = { setup: renderSetup, categories: renderCategories, brief: renderBrief, email: renderEmail, ai: renderAi, settings: renderSettings, help: renderHelp };
+  const RENDER = { setup: renderSetup, categories: renderCategories, brief: renderBrief, daily: renderDaily, ai: renderAi, settings: renderSettings, help: renderHelp };
 
   // ------------------------------------------------------------ start
   document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => show(b.getAttribute("data-tab"))));
   modebar();
+  if (state.setup_done && (state.tab === "setup" || !state.tab)) state.tab = "brief";
   show(state.tab || "setup");
+  // A daily routine: the first visit of the day collects by itself when asked to.
+  const wantsAuto = () => state.auto_run && state.setup_done && !(state.brief && state.brief.date === today() && state.brief.source !== "sample");
   S.detectDesktop().then(async info => {
     if (!info) return;
     desktop = info;
@@ -1015,7 +1079,9 @@
     }
     modebar();
     rerender();
+    if (wantsAuto()) getToday(true);
   });
+  setTimeout(() => { if (!desktop && wantsAuto() && !webRun) { if (state.tab !== "brief") show("brief"); getToday(true); } }, 1200);
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => { /* offline support is optional */ });
   }

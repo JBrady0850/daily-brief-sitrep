@@ -1,9 +1,11 @@
-"""Collects candidate stories from Google News RSS searches and publisher feeds.
+"""Collects candidate stories from Google News RSS searches and publisher feeds,
+and the forecast from Open-Meteo.
 
-This runs on your computer (the desktop app or a scheduled run), because news
-sites do not let a web page read their feeds directly. Nothing here needs an
-account or a key. A source that fails is recorded in the health report and the
-brief still goes out with whatever the other sources returned.
+This runs on your computer (the desktop app or a scheduled run) or on GitHub's
+servers. The web page has its own collector (app/js/collect.js), because Google
+News does not let a web page read it. Nothing here needs an account or a key. A
+source that fails is recorded in the health report and the brief still goes out
+with whatever the other sources returned.
 """
 from __future__ import annotations
 
@@ -123,6 +125,34 @@ def _text(el: Optional[ET.Element]) -> str:
     return "" if el is None else "".join(el.itertext())
 
 
+_IMG_TAG = re.compile(r"""<img[^>]+src=["']([^"']+)["']""", re.I)
+
+
+def _image(it: ET.Element) -> str:
+    """The story's photo from media:content, media:thumbnail, an image enclosure
+    or the first picture in its HTML. Only https links count."""
+    cands = []
+    for c in it.iter():
+        ln = _local(c.tag)
+        typ = (c.get("type") or "").lower()
+        medium = (c.get("medium") or "").lower()
+        if ln == "content" and c.get("url") and (medium == "image" or typ.startswith("image/") or (not typ and not medium)):
+            cands.append(c.get("url"))
+        elif ln == "thumbnail" and c.get("url"):
+            cands.append(c.get("url"))
+        elif ln == "enclosure" and typ.startswith("image/") and c.get("url"):
+            cands.append(c.get("url"))
+    markup = " ".join(_text(_child(it, n)) for n in ("encoded", "description", "content", "summary"))
+    m = _IMG_TAG.search(markup)
+    if m:
+        cands.append(m.group(1).replace("&amp;", "&"))
+    for u in cands:
+        v = E.collapse(u)
+        if E.valid_image(v):
+            return v
+    return ""
+
+
 _ZONES = {"CET": "+0100", "CEST": "+0200", "BST": "+0100", "WET": "+0000", "WEST": "+0100", "EET": "+0200",
           "EEST": "+0300", "IST": "+0530", "JST": "+0900", "AEST": "+1000", "AEDT": "+1100", "NZST": "+1200",
           "NZDT": "+1300", "HST": "-1000", "AKST": "-0900", "AKDT": "-0800"}
@@ -206,6 +236,7 @@ def parse_feed(data: bytes, google: bool = False) -> list:
                 "summary": "" if google else first_sentences(desc),
                 "source": source,
                 "source_url": E.collapse(source_url),
+                "image": "" if google else _image(it),
             })
     elif _local(root.tag) == "feed":
         channel_title = E.collapse(_text(_child(root, "title")))
@@ -228,6 +259,7 @@ def parse_feed(data: bytes, google: bool = False) -> list:
                 "summary": first_sentences(desc),
                 "source": channel_title,
                 "source_url": E.collapse(channel_link),
+                "image": _image(it),
             })
     return items
 
@@ -315,9 +347,61 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
     return candidates, health
 
 
+FORECAST = "https://api.open-meteo.com/v1/forecast"
+
+
+def forecast_url(w: dict) -> str:
+    """Mirrors forecastUrl in app/js/collect.js."""
+    return (FORECAST + "?latitude=" + E.js_str(w["latitude"]) + "&longitude=" + E.js_str(w["longitude"])
+            + "&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,"
+            "precipitation_probability_max&timezone=auto&forecast_days=4&temperature_unit="
+            + ("celsius" if w.get("units") == "celsius" else "fahrenheit"))
+
+
+def weather_from(data: object, w: dict, now_iso: str) -> dict:
+    """The brief's weather block from an Open-Meteo answer (mirrors weatherFrom in collect.js)."""
+    d = data.get("daily") if isinstance(data, dict) else None
+    if not isinstance(d, dict) or not isinstance(d.get("time"), list):
+        raise FetchError("the forecast came back empty")
+
+    def num(v: object) -> Optional[float]:
+        return v if E.is_num(v) else None
+
+    def col(name: str) -> list:
+        v = d.get(name)
+        return v if isinstance(v, list) else []
+
+    def at(lst: list, i: int) -> Optional[float]:
+        return num(lst[i]) if i < len(lst) else None
+
+    days = [{"date": E.js_str(t), "code": at(col("weather_code"), i), "hi": at(col("temperature_2m_max"), i),
+             "lo": at(col("temperature_2m_min"), i), "rain": at(col("precipitation_probability_max"), i)}
+            for i, t in enumerate(d["time"][:4])]
+    c = data.get("current") if isinstance(data, dict) else None
+    current = None
+    if isinstance(c, dict) and num(c.get("temperature_2m")) is not None:
+        current = {"temp": c["temperature_2m"], "code": num(c.get("weather_code"))}
+    return {"place": E.collapse(w.get("place")), "units": "celsius" if w.get("units") == "celsius" else "fahrenheit",
+            "source": "Open-Meteo", "fetched_at": now_iso, "current": current, "days": days}
+
+
+def weather(cfg: dict, now_iso: str, fetcher: Optional[Fetcher] = None) -> Optional[dict]:
+    w = E.normalize_config(cfg)["weather"]
+    if not isinstance(w, dict) or w.get("enabled") is not True or not E.is_num(w.get("latitude")) or not E.is_num(w.get("longitude")):
+        return None
+    return weather_from(E.json_loads((fetcher or fetch)(forecast_url(w)).decode("utf-8")), w, now_iso)
+
+
 def run_brief(cfg: dict, now_iso: str, date_str: str, ledger: Optional[dict], fetcher: Optional[Fetcher] = None,
               progress: Optional[Callable[[str, int, int], None]] = None, pause: float = GOOGLE_PAUSE) -> tuple:
     """Collect and select in one step. Returns (brief, health)."""
     candidates, health = collect(cfg, now_iso, ledger, fetcher, progress, pause)
     brief = E.select_brief(candidates, cfg, ledger, now_iso, date_str, "desktop")
+    try:
+        wx = weather(cfg, now_iso, fetcher)
+    except Exception as exc:  # the forecast never stops the brief
+        wx = None
+        health["_weather"] = {"error": type(exc).__name__ + ": " + str(exc)}
+    if wx:
+        brief["weather"] = wx
     return brief, health

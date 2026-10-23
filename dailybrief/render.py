@@ -1,7 +1,8 @@
-"""Python mirror of app/js/newsletter.js (the newsletter theme).
+"""Python mirror of app/js/newsletter.js (the page theme).
 
-The stylesheet is read from app/js/newsletter.js, so the email sent by the
-desktop app and the preview in the browser use one copy of the CSS.
+The stylesheet is read from app/js/newsletter.js and the icons from
+app/data/icons.js, so a page saved here and the view in the browser use one
+copy of each.
 tests/test_parity.py renders the same briefs with both and requires identical
 HTML, text and subject lines.
 """
@@ -13,17 +14,103 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from . import engine as E
+from .jsdata import load_js_json
 from .paths import APP_DIR
 
 MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "August",
                "September", "October", "November", "December"]
 DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
-TBL = 'role="presentation" width="100%" cellpadding="0" cellspacing="0"'
 MIX_COLORS = {"news": "#1b6e3d", "backfill": "#6e5426", "reference": "#5b3485"}
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _CSS: Optional[str] = None
+_ICONS: Optional[dict] = None
+
+
+def icons() -> dict:
+    """The icon set and artwork, taken from app/data/icons.js."""
+    global _ICONS
+    if _ICONS is None:
+        _ICONS = load_js_json(APP_DIR / "data" / "icons.js", "DB_ICONS")
+    return _ICONS
+
+
+def icon_svg(name: Any, cls: str) -> str:
+    ic = icons()["icons"]
+    inner = ic.get(name) if isinstance(name, str) and name in ic else ic.get("news", "")
+    return ('<svg class="' + cls + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" '
+            'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + inner + "</svg>")
+
+
+def icon_of(cat: dict, cfg: dict) -> str:
+    ic = icons()["icons"]
+    own = E.collapse(cat.get("icon"))
+    if own and own in ic:
+        return own
+    match = next((c for c in cfg.get("categories") or [] if c.get("id") == cat.get("id")), None)
+    if match and isinstance(match.get("icon"), str) and match["icon"] in ic:
+        return match["icon"]
+    return "news"
+
+
+def wx_kind(code: Any) -> str:
+    if not isinstance(code, bool):
+        for k, codes in icons()["weather_codes"].items():
+            if code in codes:
+                return k
+    return "cloudy"
+
+
+def wx_svg(kind: str, cls: str) -> str:
+    return ('<svg class="' + cls + '" viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" '
+            'stroke-linejoin="round" aria-hidden="true">' + icons()["weather"].get(kind, "") + "</svg>")
+
+
+def rnd(x: float) -> int:
+    return math.floor(x + 0.5)
+
+
+def _day_label(d: str, day: str) -> str:
+    if d == day:
+        return "Today"
+    return DAYS[_weekday_index(datetime.strptime(d, "%Y-%m-%d"))][:3]
+
+
+def _wx_days(wx: dict) -> list:
+    return [d for d in wx["days"] if isinstance(d, dict) and E.is_date_str(d.get("date"))][:4]
+
+
+def _wx_ok(wx: Any) -> bool:
+    return isinstance(wx, dict) and isinstance(wx.get("days"), list)
+
+
+def weather_html(wx: Any, day: str) -> str:
+    """The forecast panel. Numbers are checked before they are written."""
+    if not _wx_ok(wx):
+        return ""
+    days = _wx_days(wx)
+    if not days:
+        return ""
+    words = icons()["weather_words"]
+    unit = "C" if wx.get("units") == "celsius" else "F"
+    c = wx.get("current")
+    cur = c if isinstance(c, dict) and _num(c.get("temp")) else None
+    now_kind = wx_kind(cur.get("code") if cur else days[0].get("code"))
+    place = E.collapse(wx.get("place")) or "your area"
+    h = ('<section class="wx"><div class="wxnow">' + wx_svg(now_kind, "wxi big") + '<div><div class="wxk">Weather &middot; '
+         + esc(place) + "</div>" + ('<div class="wxt">' + str(rnd(cur["temp"])) + "&deg;" + unit + "</div>" if cur else "")
+         + '<div class="wxw">' + esc(words.get(now_kind, "")) + (" now" if cur else " today") + '</div></div></div><ol class="wxd">')
+    for d in days:
+        k = wx_kind(d.get("code"))
+        hi = str(rnd(d["hi"])) + "&deg;" if _num(d.get("hi")) else "&ndash;"
+        lo = str(rnd(d["lo"])) + "&deg;" if _num(d.get("lo")) else "&ndash;"
+        rain = str(rnd(d["rain"])) + "% rain" if _num(d.get("rain")) and d["rain"] > 0 else ""
+        h += ('<li title="' + esc(words.get(k, "")) + '"><span class="wxdn">' + _day_label(d["date"], day) + "</span>" + wx_svg(k, "wxi")
+              + '<span class="wxhl"><b>' + hi + "</b> / " + lo + '</span><span class="wxr">' + rain + "</span></li>")
+    when = stamp(wx.get("fetched_at"))
+    return (h + '</ol><p class="wxs">Forecast by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0)'
+            + (" &middot; updated " + when if when else "") + "</p></section>")
 
 
 def css() -> str:
@@ -158,19 +245,16 @@ def countdown_html(c: dict, day: str) -> str:
         cls = "ms-mark" if m["mark"] else "ms-hot" if dd <= 30 else "ms-warm" if dd <= 120 else "ms-cool"
         when = "today" if dd == 0 else str(dd) + " d"
         note = " &middot; " + esc(m["note"]) if m["note"] else ""
-        rows.append('<tr><td class="msd"><span class="pill ' + cls + '">' + when + '</span></td><td>' + esc(m["label"])
-                    + '<span class="msn">' + short_date(m["date"]) + note + '</span></td></tr>')
+        rows.append('<li><span class="pill ' + cls + '">' + when + '</span><span>' + esc(m["label"])
+                    + '<span class="msn">' + short_date(m["date"]) + note + '</span></span></li>')
     rows_html = "".join(rows)
     sub = pretty_date(c["date"]) + ("" if c["pct"] is None else " &middot; " + str(c["pct"]) + "% of the countdown elapsed")
     bar = ""
     if c["pct"] is not None:
-        fill = max(c["pct"], 1)
-        bar = ('<table class="bar" ' + TBL + '><tr><td class="barf" width="' + str(fill)
-               + '%"></td><td class="bare" width="' + str(100 - fill) + '%"></td></tr></table>')
-    return ('<table class="cd" ' + TBL + '><tr><td class="cdn">' + str(c["days"]) + '</td><td class="cdt"><div class="cdk">'
-            + esc(c["label"]) + '</div><div class="cds">' + sub + '</div>' + bar + '</td></tr>'
-            + ('<tr><td class="mst" colspan="2"><table class="ms" ' + TBL + '>' + rows_html + '</table></td></tr>'
-               if rows_html else "") + '</table>')
+        bar = '<div class="bar"><div class="barf" style="width:' + str(max(c["pct"], 1)) + '%"></div></div>'
+    return ('<section class="cd"><div class="cdtop"><div class="cdn">' + str(c["days"]) + '</div><div class="cdt"><div class="cdk">'
+            + esc(c["label"]) + '</div><div class="cds">' + sub + '</div>' + bar + '</div></div>'
+            + ('<ul class="ms">' + rows_html + '</ul>' if rows_html else "") + '</section>')
 
 
 def pill(item: dict, age: Optional[float]) -> str:
@@ -214,7 +298,7 @@ def analysis_html(a: Any, cfg: dict) -> str:
     top, watch, conn, act = p["top"], p["watch"], p["conn"], p["act"]
     if not top and not watch and not conn and not act:
         return ""
-    h = '<div class="an"><div class="anh">Lead analysis</div>'
+    h = '<section class="an"><h2 class="anh">Lead analysis</h2>'
     if top:
         h += '<div class="anb"><b>Top three</b><ol>' + "".join("<li>" + esc(t) + "</li>" for t in top) + "</ol></div>"
     if conn:
@@ -224,14 +308,15 @@ def analysis_html(a: Any, cfg: dict) -> str:
               + "".join("<li>" + esc(t) + "</li>" for t in watch) + "</ul></div>")
     if act:
         h += '<div class="anr"><b>Action:</b> ' + esc(act) + "</div>"
-    return (h + '<div class="anf">Analysis is inference from the headlines below, not reporting. '
-            'Check the linked sources before acting.</div></div>')
+    return (h + '<p class="anf">Analysis is inference from the headlines below, not reporting. '
+            'Check the linked sources before acting.</p></section>')
 
 
 def card_html(cat: dict, brief: dict, cfg: dict, index: int, win: Any) -> str:
     color = cat.get("color") if _HEX.match(str(cat.get("color") or "")) else E.PALETTE[index % len(E.PALETTE)]
     items = cat.get("items") if isinstance(cat.get("items"), list) else []
     rows = []
+    lead = False
     for it in items:
         age = age_of(it, brief)
         href = safe_href(it.get("url"))
@@ -243,12 +328,30 @@ def card_html(cat: dict, brief: dict, cfg: dict, index: int, win: Any) -> str:
         summ = E.collapse(it.get("summary"))
         st = ""
         if cfg["brief"]["conversation_starters"] and E.collapse(it.get("starter")):
-            st = '<div class="st">Ask: ' + esc(E.collapse(it.get("starter"))) + "</div>"
-        rows.append('<tr><td class="it">' + head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src
-                    + "</span></div>" + ('<div class="sum">' + esc(summ) + "</div>" if summ else "") + st + "</td></tr>")
-    if not rows:
-        rows.append('<tr><td class="it"><div class="none">No new items. Nothing was published in the last ' + _js_str(win)
-                    + " hours that you have not already been sent.</div></td></tr>")
+            st = '<p class="st">Ask: ' + esc(E.collapse(it.get("starter"))) + "</p>"
+        text = (head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src + "</span></div>"
+                + ('<p class="sum">' + esc(summ) + "</p>" if summ else "") + st)
+        img = ('<img src="' + esc(it.get("image")) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
+               if E.valid_image(it.get("image")) else "")
+        if not img:
+            rows.append('<li class="it">' + text + "</li>")
+            continue
+
+        def wrap(cls: str) -> str:
+            if href:
+                return '<a class="' + cls + '" href="' + esc(href) + '" tabindex="-1" aria-hidden="true">' + img + "</a>"
+            return '<span class="' + cls + '">' + img + "</span>"
+        # The first story with a photo leads the card; later ones get a thumbnail.
+        if not lead:
+            lead = True
+            rows.append('<li class="it lead">' + wrap("ph") + text + "</li>")
+        else:
+            rows.append('<li class="it th"><div class="tx">' + text + "</div>" + wrap("thumb") + "</li>")
+    if rows:
+        body = '<ul class="items">' + "".join(rows) + "</ul>"
+    else:
+        body = ('<p class="none">No new items. Nothing was published in the last ' + _js_str(win)
+                + " hours that you have not already been sent.</p>")
     n_news = len([i for i in items if i.get("recency") == "news"])
     n_back = len([i for i in items if i.get("recency") == "backfill"])
     n_ref = len([i for i in items if i.get("recency") == "reference"])
@@ -257,11 +360,12 @@ def card_html(cat: dict, brief: dict, cfg: dict, index: int, win: Any) -> str:
     so = E.collapse(cat.get("so_what"))
     sig_row = ""
     if sig or so:
-        sig_row = ('<tr><td class="sig">' + ("<b>Signal:</b> " + esc(sig) if sig else "") + ("<br>" if sig and so else "")
-                   + ("<b>So what:</b> " + esc(so) if so else "") + "</td></tr>")
-    return ('<table class="card" ' + TBL + ' style="border-left:5px solid ' + color + '"><tr><td class="ch"><span class="tag" style="background:'
-            + color + '">' + esc(tag_of(cat, index)) + '</span><span class="cn">' + esc(cat.get("name")) + '</span><span class="mix">' + mix
-            + "</span></td></tr>" + sig_row + '<tr><td style="padding:0"><table ' + TBL + ">" + "".join(rows) + "</table></td></tr></table>")
+        sig_row = ('<p class="sig">' + ("<b>Signal:</b> " + esc(sig) if sig else "") + ("<br>" if sig and so else "")
+                   + ("<b>So what:</b> " + esc(so) if so else "") + "</p>")
+    return ('<section class="card" style="--c:' + color + '"><h2 class="ch"><span class="ico">' + icon_svg(icon_of(cat, cfg), "i")
+            + '</span><span class="tag">' + esc(tag_of(cat, index))
+            + '</span><span class="cn">' + esc(cat.get("name")) + '</span><span class="mix">' + mix + "</span></h2>"
+            + sig_row + body + "</section>")
 
 
 def tag_of(cat: dict, index: int) -> str:
@@ -276,7 +380,9 @@ def source_label(brief: dict) -> str:
     if brief.get("source") == "ai":
         model = E.collapse(brief.get("model"))
         return "written by an AI assistant with web search" + (" (" + model + ")" if model else "")
-    return "collected by the Daily Brief desktop app from Google News and publisher feeds"
+    if brief.get("source") == "web":
+        return "collected in your browser from the GDELT news index and publisher feeds"
+    return "collected by the Daily Brief from Google News and publisher feeds"
 
 
 def render(brief: dict, cfg: Any = None) -> dict:
@@ -299,16 +405,16 @@ def render(brief: dict, cfg: Any = None) -> dict:
     tiles = [[s["total"], "stories"], [s["news"], "fresh, under " + W + "h"],
              [str(s["filled"]) + " of " + str(s["cats"]), "categories filled"],
              [withheld or 0, "withheld as already sent"] if brief.get("ledger_applied") else [s["outlets"], "outlets"]]
-    tiles_html = ('<table class="tiles" ' + TBL + "><tr>" + "".join(
-        '<td class="tile"><div class="tn">' + esc(t[0]) + '</div><div class="tl">' + esc(t[1]) + "</div></td>" for t in tiles)
-        + "</tr></table>")
+    tiles_html = ('<div class="tiles">' + "".join(
+        '<div class="tile"><div class="tn">' + esc(t[0]) + '</div><div class="tl">' + esc(t[1]) + "</div></div>" for t in tiles)
+        + "</div>")
     segs = [["Fresh", s["news"], MIX_COLORS["news"]], ["Older", s["backfill"], MIX_COLORS["backfill"]],
             ["Reference", s["reference"], MIX_COLORS["reference"]]]
-    cells = "".join('<td class="seg" width="' + str(max(1, math.floor(100 * x[1] / max(s["total"], 1) + 0.5)))
-                    + '%" style="background:' + x[2] + '"></td>' for x in segs if x[1] > 0)
+    cells = "".join('<span class="seg" style="width:' + str(max(1, math.floor(100 * x[1] / max(s["total"], 1) + 0.5)))
+                    + '%;background:' + x[2] + '"></span>' for x in segs if x[1] > 0)
     legend = "".join('<span class="lg"><span class="sw" style="background:' + x[2] + '"></span>' + x[0] + " " + str(x[1])
                      + "</span>" for x in segs)
-    bar = ('<table class="srcbar" ' + TBL + "><tr>" + cells + '</tr></table><div class="lgd">Today\'s stories by age: '
+    bar = ('<div class="srcbar">' + cells + '</div><div class="lgd">Today\'s stories by age: '
            + legend + "</div>") if cells else ""
     cd = countdown_data(n, day)
     gap = ""
@@ -318,20 +424,25 @@ def render(brief: dict, cfg: Any = None) -> dict:
     sample = ('<div class="sample">Sample brief: invented headlines that show the layout. Nothing here is real news and the '
               'links go to example.com.</div>') if brief.get("source") == "sample" else ""
     cards = "".join(card_html(c, brief, n, i, win) for i, c in enumerate(brief.get("categories") or []))
+    subject = subject_line(brief, n)
     html = ('<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-            + "<title>" + esc(title + ", " + day) + "</title><style>" + css() + "</style></head><body>"
-            + '<table class="wrap" ' + TBL + '><tr><td class="mast"><div class="kick">' + esc(title) + " &middot; Edition " + esc(day)
-            + '</div><div class="ttl">' + esc(pretty_date(day)) + '</div><div class="dl">' + dek
-            + '</div></td></tr><tr><td class="rule"></td></tr><tr><td class="body">'
-            + sample + (countdown_html(cd, day) if cd else "") + tiles_html + bar + analysis_html(brief.get("analysis"), n) + gap + cards
+            + "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">"
+            + "<title>" + esc(subject) + "</title><style>" + css() + "</style></head><body>"
+            + '<header class="mast"><div class="art">' + icons()["art"].get("masthead", "") + '</div><div class="in"><div class="kick">'
+            + icon_svg("sunrise", "ki") + esc(title) + " &middot; Edition " + esc(day)
+            + '</div><h1 class="ttl">' + esc(pretty_date(day)) + '</h1><p class="dl">' + dek
+            + '</p></div></header><div class="rule"></div><main class="in">'
+            + sample + weather_html(brief.get("weather"), day) + (countdown_html(cd, day) if cd else "") + tiles_html + bar + analysis_html(brief.get("analysis"), n) + gap
+            + '<div class="grid">' + cards + "</div>"
             + '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + W
             + '-hour window (under 6h, under 12h, under ' + W + 'h). <span class="pill old">OLDER</span> is beyond ' + W
             + 'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span>'
             + ' is an undated authoritative page, never presented as an event.</div>'
-            + '</td></tr><tr><td class="foot">Generated ' + esc(brief.get("generated_at") or "") + " &middot; " + esc(source_label(brief))
+            + '</main><footer class="foot"><div class="in">Generated ' + esc(brief.get("generated_at") or "") + " &middot; " + esc(source_label(brief))
             + " &middot; " + W + "-hour window &middot; summaries capped at " + esc(cap)
-            + " characters &middot; Daily Brief " + E.VERSION + "</td></tr></table></body></html>")
-    return {"subject": subject_line(brief, n), "html": html,
+            + " characters &middot; Daily Brief " + E.VERSION
+            + "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story.</div></footer></body></html>")
+    return {"subject": subject, "html": html,
             "text": plain_text(brief, n, s, cd, win, title, day, withheld)}
 
 
@@ -345,6 +456,17 @@ def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, titl
              + (" | " + _js_str(withheld or 0) + " withheld as already sent" if brief.get("ledger_applied") else ""))
     if brief.get("source") == "sample":
         L.append("SAMPLE: invented headlines that show the layout. Nothing here is real news.")
+    wx = brief.get("weather")
+    if _wx_ok(wx):
+        unit = "C" if wx.get("units") == "celsius" else "F"
+        words = icons()["weather_words"]
+        parts = [_day_label(d["date"], day) + " " + words.get(wx_kind(d.get("code")), "")
+                 + (" " + str(rnd(d["hi"])) + unit if _num(d.get("hi")) else "")
+                 + ("/" + str(rnd(d["lo"])) + unit if _num(d.get("lo")) else "")
+                 + (" " + str(rnd(d["rain"])) + "% rain" if _num(d.get("rain")) and d["rain"] > 0 else "")
+                 for d in _wx_days(wx)]
+        if parts:
+            L += ["", "WEATHER, " + (E.collapse(wx.get("place")) or "your area").upper() + ": " + " | ".join(parts)]
     if cd:
         L += ["", cd["label"].upper() + ": " + str(cd["days"]) + " days to " + pretty_date(cd["date"])
               + ("" if cd["pct"] is None else " (" + str(cd["pct"]) + "% elapsed)")]

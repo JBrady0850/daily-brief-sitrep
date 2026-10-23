@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.1.0";
+  const VERSION = "0.2.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -48,11 +48,11 @@
     },
     reader: { role: "", location: "", local_terms: [], goals: [], watch_list: [] },
     countdown: { enabled: false, label: "", date: "", start: "", milestones: [] },
-    delivery: { time: "06:15", timezone: "", channels: ["email"] },
+    delivery: { time: "06:15", timezone: "", channels: ["issue"] },
+    weather: { enabled: false, place: "", latitude: null, longitude: null, units: "fahrenheit" },
     sources: { avoid_hosts: SOCIAL_HOSTS.slice(), prefer: [] },
     style: { no_em_dashes: true },
-    categories: [],
-    email: { to: [], from_name: "" }
+    categories: []
   };
 
   // ------------------------------------------------------------------ helpers
@@ -110,6 +110,13 @@
   function daysBetween(a, b) { // whole days from date a to date b (YYYY-MM-DD)
     return Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000);
   }
+
+  /* A photo link the page may show: https only (an http picture breaks an https page), no quotes or spaces. */
+  function validImage(u) {
+    return isStr(u) && u.length <= 2000 && /^https:\/\/[^/?#\s"'<>\\]+\.[^/?#\s"'<>\\]+(?:[/?#][^\s"'<>\\]*)?$/i.test(u);
+  }
+
+  function isNum(v) { return typeof v === "number" && isFinite(v); }
 
   function validUrl(u) {
     if (!isStr(u)) return false;
@@ -204,7 +211,7 @@
     out.categories = cats.filter(isObj).map((c, i) => {
       const base = {
         id: "", name: "", description: "", queries: [], require: [], exclude: [], feeds: [],
-        color: PALETTE[i % PALETTE.length], items: null, skip_listicles: false, needs_location: false
+        color: PALETTE[i % PALETTE.length], items: null, skip_listicles: false, needs_location: false, icon: ""
       };
       const m = merge(base, c);
       if (!isStr(m.color) || !/^#[0-9a-fA-F]{6}$/.test(m.color)) m.color = PALETTE[i % PALETTE.length];
@@ -299,6 +306,7 @@
           else usesLocal = true;
         }
       }
+      if (!isStr(c.icon) || (c.icon && !/^[a-z0-9-]{1,32}$/.test(c.icon))) errors.push(label + ": icon must be a short name like weather or football.");
       if ((usesLocal || c.needs_location) && !collapse(r.location)) {
         errors.push(label + ": needs your town in reader.location.");
       }
@@ -319,17 +327,22 @@
     if (!isStr(dv.time) || (dv.time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(dv.time))) errors.push("delivery.time must be a time like 06:15, or empty.");
     if (!isStr(dv.timezone) || (dv.timezone && !/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)*$/.test(dv.timezone))) errors.push("delivery.timezone must be a time zone name like America/New_York, or empty.");
     if (!strList(dv.channels) || !dv.channels.length || !dv.channels.every(c => c === "email" || c === "issue")) {
-      errors.push("delivery.channels must list email, issue or both.");
+      errors.push('delivery.channels must be ["issue"].');
+    } else if (dv.channels.indexOf("email") >= 0) {
+      warnings.push("delivery.channels lists email, which was removed in version 0.2.0; the brief arrives as a GitHub issue.");
+    }
+    const w = n.weather;
+    if (!isObj(w) || typeof w.enabled !== "boolean") errors.push("weather.enabled must be true or false.");
+    else if (w.enabled) {
+      if (!(isNum(w.latitude) && w.latitude >= -90 && w.latitude <= 90 && isNum(w.longitude) && w.longitude >= -180 && w.longitude <= 180)) {
+        errors.push("weather needs a place: pick your town so the forecast knows where you are.");
+      }
+      if (w.units !== "fahrenheit" && w.units !== "celsius") errors.push("weather.units must be fahrenheit or celsius.");
+      if (!isStr(w.place)) errors.push("weather.place must be text.");
     }
     if (!strList(n.sources.avoid_hosts)) errors.push("sources.avoid_hosts must be a list of text.");
     if (typeof n.style.no_em_dashes !== "boolean") errors.push("style.no_em_dashes must be true or false.");
-    if (!strList(n.email.to)) errors.push("email.to must be a list of addresses.");
-    else {
-      for (const a of n.email.to) {
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(a)) errors.push("email.to has an address that does not look right: " + a);
-      }
-      if (n.email.to.length) warnings.push("email.to holds addresses; keep this file out of public places.");
-    }
+    if ("email" in n) warnings.push("The email settings are no longer used (email delivery was removed in version 0.2.0); delete them.");
     return { errors, warnings };
   }
 
@@ -535,8 +548,11 @@
       source: noEmDash(collapse(raw && raw.source)),
       source_url: collapse(raw && raw.source_url),
       published: null,
-      summary: noEmDash(cutSummary((raw && raw.summary) || "", maxChars))
+      summary: noEmDash(cutSummary((raw && raw.summary) || "", maxChars)),
+      image: ""
     };
+    const img = collapse(raw && raw.image);
+    if (validImage(img)) it.image = img;
     const pub = raw && raw.published;
     const ms = parseIso(pub);
     it.published_ms = ms;
@@ -617,10 +633,10 @@
         takenToks.push(toks);
         picked.push({
           title: it.title, url: it.url, source: it.source, published: it.published,
-          recency: it.recency, age_hours: it.age === null ? null : round1(it.age), summary: it.summary
+          recency: it.recency, age_hours: it.age === null ? null : round1(it.age), summary: it.summary, image: it.image
         });
       }
-      out.push({ id: cat.id, name: cat.name, color: cat.color, items: picked, rejected: rejected });
+      out.push({ id: cat.id, name: cat.name, color: cat.color, icon: cat.icon, items: picked, rejected: rejected });
     }
     const total = out.reduce((a, c) => a + c.items.length, 0);
     return {
@@ -731,6 +747,7 @@
         }
         if ((it.recency === "news" || it.recency === "backfill") && pms === null) errors.push(w + ": " + it.recency + " items need a published time.");
         if (it.recency === "reference" && pms !== null) warnings.push(w + ": reference items should have no date.");
+        if (it.image !== undefined && it.image !== null && it.image !== "" && !validImage(it.image)) warnings.push(w + ": image must be an https link to a picture; it will not be shown.");
         if (isStr(it.summary) && cpLen(it.summary) > maxChars) warnings.push(w + ": summary is longer than " + maxChars + " characters.");
         if (isStr(it.title)) {
           const toks = titleTokens(it.title);
@@ -749,6 +766,8 @@
     if (b && n.style.no_em_dashes) {
       for (const pair of briefTexts(brief)) if (pair[1].indexOf("\u2014") >= 0) errors.push(pair[0] + ": contains an em dash.");
     }
+    const wx = brief.weather;
+    if (wx !== null && wx !== undefined && !(isObj(wx) && Array.isArray(wx.days))) warnings.push("weather must be an object with a days list; it will not be shown.");
     const a = brief.analysis;
     if (a !== null && a !== undefined) {
       if (!isObj(a)) errors.push("analysis must be an object or null.");
@@ -836,7 +855,7 @@
 
   return {
     VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_LEDGER, MAX_RECENT,
-    clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, hostOf, round1, pad2,
+    clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, validImage, isNum, hostOf, round1, pad2,
     isAcronym, termHit, countHits, resolveCategory, normalizeConfig, validateConfig,
     categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
     emptyLedger, cleanLedger, ledgerHas, ledgerAdd, ledgerSize, humanizeAge, classify, cutSummary,

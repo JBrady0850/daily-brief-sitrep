@@ -39,7 +39,8 @@ window.DB_SAMPLE = {
       "published": "2026-10-23T07:48:00Z",
       "recency": "news",
       "summary": "Stocks rose after a monthly price report came in below forecasts, and traders raised the odds of a rate cut before year end.",
-      "starter": "Would a rate cut change how you hold cash?"
+      "starter": "Would a rate cut change how you hold cash?",
+      "image": "https://jbrady0850.github.io/daily-brief-sitrep/img/sample/markets.svg"
      },
      {
       "title": "Sample bank survey finds savings rates have peaked",
@@ -55,10 +56,12 @@ window.DB_SAMPLE = {
       "source": "Example Labor News",
       "published": "2026-10-22T15:00:00Z",
       "recency": "news",
-      "summary": "Service employers added jobs at the same pace as last month while manufacturing hiring slowed."
+      "summary": "Service employers added jobs at the same pace as last month while manufacturing hiring slowed.",
+      "image": "https://jbrady0850.github.io/daily-brief-sitrep/img/sample/local.svg"
      }
     ],
-    "color": "#0f6e5c"
+    "color": "#0f6e5c",
+    "icon": "chart"
    },
    {
     "id": "health-science",
@@ -70,7 +73,8 @@ window.DB_SAMPLE = {
       "source": "Example Science Journal",
       "published": "2026-10-23T06:00:00Z",
       "recency": "news",
-      "summary": "The team traced how a brain signal shortens deep sleep in older adults, a step toward targeted treatments."
+      "summary": "The team traced how a brain signal shortens deep sleep in older adults, a step toward targeted treatments.",
+      "image": "https://jbrady0850.github.io/daily-brief-sitrep/img/sample/science.svg"
      },
      {
       "title": "Sample space telescope spots water vapor on a distant world",
@@ -89,7 +93,8 @@ window.DB_SAMPLE = {
       "summary": "A standing guidance page lists who should get a flu shot this season and where to find one."
      }
     ],
-    "color": "#0f6e5c"
+    "color": "#0f6e5c",
+    "icon": "health"
    },
    {
     "id": "travel",
@@ -103,7 +108,8 @@ window.DB_SAMPLE = {
       "source": "Example Travel Report",
       "published": "2026-10-23T09:00:00Z",
       "recency": "news",
-      "summary": "The carrier will fly four new nonstop routes from March, with introductory fares on sale this week."
+      "summary": "The carrier will fly four new nonstop routes from March, with introductory fares on sale this week.",
+      "image": "https://jbrady0850.github.io/daily-brief-sitrep/img/sample/travel.svg"
      },
      {
       "title": "Sample fare tracker says spring prices are up eight percent",
@@ -122,7 +128,8 @@ window.DB_SAMPLE = {
       "summary": "Routine passport applications are taking about six weeks, according to the latest weekly sample update."
      }
     ],
-    "color": "#7a2f5f"
+    "color": "#7a2f5f",
+    "icon": "plane"
    },
    {
     "id": "ai-tools",
@@ -134,7 +141,8 @@ window.DB_SAMPLE = {
       "source": "Example Tech Times",
       "published": "2026-10-23T07:00:00Z",
       "recency": "news",
-      "summary": "Users can now ask the sample assistant to repeat a request on a schedule, such as a weekday morning summary."
+      "summary": "Users can now ask the sample assistant to repeat a request on a schedule, such as a weekday morning summary.",
+      "image": "https://jbrady0850.github.io/daily-brief-sitrep/img/sample/ai.svg"
      },
      {
       "title": "A practical guide to writing clearer AI prompts",
@@ -145,7 +153,8 @@ window.DB_SAMPLE = {
       "summary": "The guide recommends stating the goal, the audience and the format up front, and giving one good example."
      }
     ],
-    "color": "#a04000"
+    "color": "#a04000",
+    "icon": "sparkle"
    },
    {
     "id": "inspiring",
@@ -158,18 +167,61 @@ window.DB_SAMPLE = {
       "published": "2026-10-23T05:00:00Z",
       "recency": "news",
       "summary": "With a guide runner and a year of training, she completed the course in just under five hours.",
-      "starter": "Who in your life made a comeback worth celebrating?"
+      "starter": "Who in your life made a comeback worth celebrating?",
+      "image": "https://jbrady0850.github.io/daily-brief-sitrep/img/sample/inspiring.svg"
      }
     ],
-    "color": "#8a5a00"
+    "color": "#8a5a00",
+    "icon": "sunrise"
    },
    {
     "id": "local-news",
     "name": "Local Community (Example City)",
     "items": [],
-    "color": "#1d6aa0"
+    "color": "#1d6aa0",
+    "icon": "pin"
    }
-  ]
+  ],
+  "weather": {
+   "place": "Example City",
+   "units": "fahrenheit",
+   "source": "Open-Meteo",
+   "fetched_at": "2026-10-23T10:55:00Z",
+   "current": {
+    "temp": 54.3,
+    "code": 2
+   },
+   "days": [
+    {
+     "date": "2026-10-23",
+     "code": 2,
+     "hi": 63.4,
+     "lo": 47.8,
+     "rain": 10
+    },
+    {
+     "date": "2026-10-24",
+     "code": 61,
+     "hi": 58.1,
+     "lo": 49.6,
+     "rain": 70
+    },
+    {
+     "date": "2026-10-25",
+     "code": 3,
+     "hi": 60.2,
+     "lo": 45.0,
+     "rain": 20
+    },
+    {
+     "date": "2026-10-26",
+     "code": 0,
+     "hi": 66.7,
+     "lo": 44.9,
+     "rain": 0
+    }
+   ]
+  }
  },
  "settings": {
   "version": 1,
@@ -275,7 +327,8 @@ window.DB_SAMPLE = {
     "feeds": [],
     "color": "#0f6e5c",
     "skip_listicles": false,
-    "needs_location": false
+    "needs_location": false,
+    "icon": "chart"
    },
    {
     "id": "health-science",
@@ -310,7 +363,8 @@ window.DB_SAMPLE = {
     "skip_listicles": true,
     "feeds": [],
     "color": "#0f6e5c",
-    "needs_location": false
+    "needs_location": false,
+    "icon": "health"
    },
    {
     "id": "travel",
@@ -346,7 +400,8 @@ window.DB_SAMPLE = {
     "skip_listicles": true,
     "feeds": [],
     "color": "#7a2f5f",
-    "needs_location": false
+    "needs_location": false,
+    "icon": "plane"
    },
    {
     "id": "ai-tools",
@@ -405,7 +460,8 @@ window.DB_SAMPLE = {
     "skip_listicles": true,
     "feeds": [],
     "color": "#a04000",
-    "needs_location": false
+    "needs_location": false,
+    "icon": "sparkle"
    },
    {
     "id": "inspiring",
@@ -463,7 +519,8 @@ window.DB_SAMPLE = {
     "feeds": [],
     "color": "#8a5a00",
     "skip_listicles": false,
-    "needs_location": false
+    "needs_location": false,
+    "icon": "sunrise"
    },
    {
     "id": "local-news",
@@ -509,12 +566,16 @@ window.DB_SAMPLE = {
     "feeds": [],
     "color": "#1d6aa0",
     "needs_location": true,
-    "skip_listicles": false
+    "skip_listicles": false,
+    "icon": "pin"
    }
   ],
-  "email": {
-   "to": [],
-   "from_name": ""
+  "weather": {
+   "enabled": true,
+   "place": "Example City",
+   "latitude": 39.1,
+   "longitude": -94.58,
+   "units": "fahrenheit"
   }
  }
 };

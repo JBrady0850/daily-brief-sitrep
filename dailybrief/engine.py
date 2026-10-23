@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -52,11 +52,11 @@ DEFAULTS: dict = {
     },
     "reader": {"role": "", "location": "", "local_terms": [], "goals": [], "watch_list": []},
     "countdown": {"enabled": False, "label": "", "date": "", "start": "", "milestones": []},
-    "delivery": {"time": "06:15", "timezone": "", "channels": ["email"]},
+    "delivery": {"time": "06:15", "timezone": "", "channels": ["issue"]},
+    "weather": {"enabled": False, "place": "", "latitude": None, "longitude": None, "units": "fahrenheit"},
     "sources": {"avoid_hosts": list(SOCIAL_HOSTS), "prefer": []},
     "style": {"no_em_dashes": True},
     "categories": [],
-    "email": {"to": [], "from_name": ""},
 }
 
 _WS = re.compile("[\t\n\v\f\r \u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000\ufeff]+")
@@ -66,11 +66,12 @@ _URL = re.compile(r"^https?://([^/?#\s]+)[^\s]*\Z", re.IGNORECASE)
 _HOST = re.compile(r"^https?://([^/?#\s]+)", re.IGNORECASE)
 _NORM_URL = re.compile(r"^(https?)://([^/?#]+)([^?#]*)(\?[^#]*)?(#.*)?\Z", re.IGNORECASE)
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}\Z")
+_IMAGE = re.compile(r"^https://[^/?#\s\"'<>\\]+\.[^/?#\s\"'<>\\]+(?:[/?#][^\s\"'<>\\]*)?\Z", re.IGNORECASE)
+_ICON = re.compile(r"^[a-z0-9-]{1,32}\Z")
 _ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}\Z")
 _PLACEHOLDER = re.compile(r"\{([a-z_]+)\}")
 _EMAIL_IN_TEXT = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
 _PHONE_IN_TEXT = re.compile(r"\d{3}[-. )]+\d{3}[-. ]+\d{4}", re.ASCII)
-_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+\Z")
 _LIST1 = re.compile(r"^(top|best)\s+\d+\b", re.ASCII)
 _LIST2 = re.compile(r"\bbest\b.*\b20\d\d\b", re.ASCII)
 
@@ -231,6 +232,15 @@ def valid_url(u: Any) -> bool:
     return bool(m) and m.group(1).find(".") > 0
 
 
+def valid_image(u: Any) -> bool:
+    """A photo link the page may show: https only (an http picture breaks an https page), no quotes or spaces."""
+    return is_str(u) and len(u) <= 2000 and bool(_IMAGE.match(u))
+
+
+def is_num(v: Any) -> bool:
+    return isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v)
+
+
 def host_of(u: Any) -> str:
     m = _HOST.match(str(u or "").strip())
     if not m:
@@ -329,7 +339,7 @@ def normalize_config(cfg: Any) -> dict:
     for i, c in enumerate([c for c in cats if is_obj(c)]):
         base = {"id": "", "name": "", "description": "", "queries": [], "require": [], "exclude": [],
                 "feeds": [], "color": PALETTE[i % len(PALETTE)], "items": None,
-                "skip_listicles": False, "needs_location": False}
+                "skip_listicles": False, "needs_location": False, "icon": ""}
         m = merge(base, c)
         if not is_str(m["color"]) or not _HEX.match(m["color"]):
             m["color"] = PALETTE[i % len(PALETTE)]
@@ -429,6 +439,8 @@ def validate_config(cfg: Any) -> dict:
                     errors.append(label + ": unknown placeholder {" + p + "}.")
                 else:
                     uses_local = True
+        if not is_str(c["icon"]) or (c["icon"] and not _ICON.match(c["icon"])):
+            errors.append(label + ": icon must be a short name like weather or football.")
         if (uses_local or c["needs_location"]) and not collapse(r["location"]):
             errors.append(label + ": needs your town in reader.location.")
     cd = n["countdown"]
@@ -453,20 +465,26 @@ def validate_config(cfg: Any) -> dict:
     if not is_str(dv["timezone"]) or (dv["timezone"] and not re.match(r"^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*\Z", dv["timezone"])):
         errors.append("delivery.timezone must be a time zone name like America/New_York, or empty.")
     if not str_list(dv["channels"]) or not dv["channels"] or not all(c in ("email", "issue") for c in dv["channels"]):
-        errors.append("delivery.channels must list email, issue or both.")
+        errors.append('delivery.channels must be ["issue"].')
+    elif "email" in dv["channels"]:
+        warnings.append("delivery.channels lists email, which was removed in version 0.2.0; the brief arrives as a GitHub issue.")
+    w = n["weather"]
+    if not is_obj(w) or not isinstance(w.get("enabled"), bool):
+        errors.append("weather.enabled must be true or false.")
+    elif w["enabled"]:
+        lat, lon = w.get("latitude"), w.get("longitude")
+        if not (is_num(lat) and -90 <= lat <= 90 and is_num(lon) and -180 <= lon <= 180):
+            errors.append("weather needs a place: pick your town so the forecast knows where you are.")
+        if w.get("units") not in ("fahrenheit", "celsius"):
+            errors.append("weather.units must be fahrenheit or celsius.")
+        if not is_str(w.get("place")):
+            errors.append("weather.place must be text.")
     if not str_list(n["sources"]["avoid_hosts"]):
         errors.append("sources.avoid_hosts must be a list of text.")
     if not isinstance(n["style"]["no_em_dashes"], bool):
         errors.append("style.no_em_dashes must be true or false.")
-    to = n["email"]["to"]
-    if not str_list(to):
-        errors.append("email.to must be a list of addresses.")
-    else:
-        for a in to:
-            if not _EMAIL.match(a):
-                errors.append("email.to has an address that does not look right: " + a)
-        if to:
-            warnings.append("email.to holds addresses; keep this file out of public places.")
+    if "email" in n:
+        warnings.append("The email settings are no longer used (email delivery was removed in version 0.2.0); delete them.")
     return {"errors": errors, "warnings": warnings}
 
 
@@ -708,7 +726,11 @@ def clean_item(raw: Any, max_chars: int) -> dict:
         "source_url": collapse(raw.get("source_url")),
         "published": None,
         "summary": no_em_dash(cut_summary(raw.get("summary") or "", max_chars)),
+        "image": "",
     }
+    img = collapse(raw.get("image"))
+    if valid_image(img):
+        it["image"] = img
     pub = raw.get("published")
     ms = parse_iso(pub)
     it["published_ms"] = ms
@@ -825,10 +847,10 @@ def select_brief(candidates: dict, cfg: Any, ledger: Optional[dict], now_iso: st
             picked.append({
                 "title": it["title"], "url": it["url"], "source": it["source"], "published": it["published"],
                 "recency": it["recency"], "age_hours": None if it["age"] is None else round1(it["age"]),
-                "summary": it["summary"],
+                "summary": it["summary"], "image": it["image"],
             })
-        out.append({"id": cat["id"], "name": cat["name"], "color": cat["color"], "items": picked,
-                    "rejected": rejected})
+        out.append({"id": cat["id"], "name": cat["name"], "color": cat["color"], "icon": cat["icon"],
+                    "items": picked, "rejected": rejected})
     total = sum(len(c["items"]) for c in out)
     return {
         "schema": SCHEMA, "title": b["title"], "date": date_str, "generated_at": iso_z(now_ms),
@@ -971,6 +993,8 @@ def check_brief(brief: Any, cfg: Any = None, now_iso: Optional[str] = None) -> d
                 errors.append(w + ": " + it["recency"] + " items need a published time.")
             if it.get("recency") == "reference" and pms is not None:
                 warnings.append(w + ": reference items should have no date.")
+            if it.get("image") not in (None, "") and not valid_image(it.get("image")):
+                warnings.append(w + ": image must be an https link to a picture; it will not be shown.")
             if is_str(it.get("summary")) and len(it["summary"]) > max_chars:
                 warnings.append(w + ": summary is longer than " + str(max_chars) + " characters.")
             if is_str(it.get("title")):
@@ -991,6 +1015,9 @@ def check_brief(brief: Any, cfg: Any = None, now_iso: Optional[str] = None) -> d
         for where, text in brief_texts(brief):
             if "\u2014" in text:
                 errors.append(where + ": contains an em dash.")
+    wx = brief.get("weather")
+    if wx is not None and not (is_obj(wx) and isinstance(wx.get("days"), list)):
+        warnings.append("weather must be an object with a days list; it will not be shown.")
     a = brief.get("analysis")
     if a is not None:
         if not is_obj(a):

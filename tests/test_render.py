@@ -50,4 +50,5 @@ def test_history_wording(sample_brief):
 
 def test_css_comes_from_the_app_file():
     css = R.css()
-    assert "table.wrap" in css and "td.mast" in css and len(css) > 3000
+    assert "header.mast" in css and "section.card" in css and len(css) > 3000
+    assert "table" not in css, "a web page, not an email layout"

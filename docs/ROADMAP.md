@@ -8,17 +8,18 @@ public project better. Items are ranked by value to a reader, then by effort.
 
 | Stage | What happens | Where |
 |---|---|---|
-| Collect | Google News RSS search for each category query, plus any publisher feeds | The GitHub workflow or the desktop app (`dailybrief/collect.py`), or an AI assistant's web search |
+| Collect | At the web address: a GDELT news search for each category, the publisher feeds that allow web pages, and an Open-Meteo forecast. On a computer or GitHub: Google News RSS searches, every listed feed and the same forecast | `app/js/collect.js` in the browser; `dailybrief/collect.py` in the desktop app and the GitHub copy; or an AI assistant's web search |
 | Filter | Keep a story only if it mentions a term from every "must mention" group and no "leave out" term; drop social media, paperwork notices and, if asked, list articles | `selectBrief` / `select_brief` |
 | Date | NEWS inside the freshness window; OLDER (labelled, true age) only when a category is short; undated REFERENCE pages only when allowed and still short | `classify` |
 | No repeats | Leave out anything already sent (link, headline, or the same story from another outlet) and anything already used in another category | `ledgerHas`, `nearDup` |
 | Rank and fill | Freshest and most on-topic first, up to the category quota; never pad | `score` |
 | Analyze | Lead Analysis (top three, connection, watch list, action), AI path only | The prompt, section 4 |
 | Check | Counts, links, ages, labels, duplicates, em dashes | `checkBrief` / `check_brief` |
-| Render | Newsletter theme to HTML, plain text and a subject line | `app/js/newsletter.js`, `dailybrief/render.py` |
-| Deliver | A GitHub issue (no password), SMTP through your own mail account, an email draft file, or copy and paste | `dailybrief/github_issue.py`, `dailybrief/mailer.py`, the app |
-| Schedule | Two UTC runs an hour apart; the first at or after the delivery time in your time zone sends | `.github/workflows/daily-brief.yml`, `dailybrief/schedule.py` |
-| Record | The no-repeat history updates only after a confirmed send or "Mark as read" | `ledgerAdd` |
+| Render | A self-contained web page (category icons, story photos, forecast panel, header artwork), plain text and a title line | `app/js/newsletter.js`, `dailybrief/render.py`, `app/data/icons.js` |
+| Show | The page inside the app, full screen in a new tab, as a download, or copied | The app |
+| Routine | Choices saved in the browser; an optional once-a-day collection when the page opens; an optional GitHub copy that posts an issue | `app/js/app.js`, `.github/workflows/daily-brief.yml`, `dailybrief/github_issue.py` |
+| Schedule (GitHub copy) | Two UTC runs an hour apart; the first at or after the delivery time in your time zone posts | `.github/workflows/daily-brief.yml`, `dailybrief/schedule.py` |
+| Record | The no-repeat history updates after the web page shows a brief, after a posted issue, or on "Mark as read" | `ledgerAdd` |
 
 ## 2. Lessons carried into v0.1.0
 
@@ -61,17 +62,20 @@ Needs a decision.
 
 | ID | Item | Why it matters | Effort | Status |
 |---|---|---|---|---|
-| R1 | Cloud schedule with GitHub Actions in your own private copy | A daily email with no computer left on | M | Done in 0.1.0 |
+| R22 | Collect at the web address | The page gathers the news itself from free sources that allow browsers (GDELT, open feeds, Open-Meteo), so the address alone is the app | M | Done in 0.2.0 |
+| R23 | The brief as a web page | Icons, publisher photos, a forecast panel and header artwork instead of an email layout | M | Done in 0.2.0 |
+| R24 | A bigger library | 67 categories in 11 groups, including weather, sports, entertainment and life at home | M | Done in 0.2.0 |
+| R25 | A second browser-readable news index | A fallback when GDELT is busy (candidates: the Hacker News search for technology, Wikipedia's current events) | M | Idea |
+| R1 | Cloud schedule with GitHub Actions in your own private copy | A brief with no computer left on | M | Done in 0.1.0 |
 | R19 | Save settings to your GitHub copy from the app | Skip the download and upload step with a fine-grained token kept in the browser | M | Idea |
 | R20 | Run now button in the app | Start the workflow from the app (workflow dispatch) | S | Idea |
-| R21 | First-run report from the cloud | After the first GitHub run, confirm Google News, mail and the issue email work from GitHub's servers, and document the result (Google News and the issue passed on 2026-10-23; mail and the issue email remain) | S | Planned |
+| R21 | First-run report from the cloud | After the first GitHub run, confirm Google News and the issue notification work from GitHub's servers (Google News and the issue passed on 2026-10-23; the notification email remains) | S | Planned |
 | R2 | Bring your own AI key in the app (Anthropic, OpenAI, Google, xAI) | Lead Analysis on desktop briefs, and live news in the web version through the provider's web search | M | Planned |
 | R3 | One-click scheduling in the desktop app | Removes the Task Scheduler or crontab step | S | Planned |
 | R4 | Source health over time | Catch a dead feed the day it dies, from the history of runs | S | Planned |
 | R5 | Outlet count as an importance signal | A story many outlets cover ranks higher, instead of being thrown away as a duplicate | S | Planned |
-| R6 | Feed relay template for the web version | A small worker you deploy yourself lets the web page read feeds, so the hosted app collects news with no install | M | Needs a decision |
-| R7 | Real email client checks | Confirm the newsletter in Gmail, Outlook and Apple Mail on phone and desktop | S | Planned |
-| R8 | Dark mode in the newsletter | Readable at night in mail apps that darken messages | S | Idea |
+| R6 | Feed relay template for the web version | A small worker you deploy yourself lets the web page read Google News and every feed | M | Needs a decision |
+| R8 | Dark mode for the brief page | Readable at night | S | Idea |
 | R9 | Article summaries for desktop briefs | Read the article page for one or two sentences when the feed has none | M | Idea |
 | R10 | Several readers, several briefs | One copy serves a family or a team, each with their own categories and recipients | M | Idea |
 | R11 | Weekly digest mode | Seven-day window, top stories only, for slow-moving categories | S | Idea |
@@ -79,7 +83,7 @@ Needs a decision.
 | R13 | Prompt regression runs | Each month, run the prompt in each assistant and score the JSON with `python -m dailybrief check` | M | Idea |
 | R14 | Region and language presets | Google News editions outside the US in the interview | S | Idea |
 | R15 | Your briefs as an RSS feed or archive page | Read past briefs in a feed reader | M | Idea |
-| R16 | Chat delivery (Slack, Teams, Discord webhooks) | A second delivery path beside email | S | Idea |
+| R16 | Chat delivery (Slack, Teams, Discord webhooks) | A second delivery path beside the issue | S | Idea |
 | R17 | Thumbs up or down on a story | Tune categories from what you actually read | L | Idea |
 | R18 | Audio brief | Listen on the drive | L | Idea |
 
@@ -88,11 +92,11 @@ Needs a decision.
 `.github/workflows/daily-brief.yml` runs twice a day in your private copy, and
 `dailybrief/schedule.py` sends on the first run at or after your delivery time,
 which handles daylight saving time without a time zone in cron. The history
-lives in the Actions cache, and delivery is a GitHub issue (no password) or
-email through your own account. See [GITHUB-CLOUD.md](GITHUB-CLOUD.md). The
+lives in the Actions cache, and delivery is a GitHub issue (no password).
+Email delivery was removed in 0.2.0. See [GITHUB-CLOUD.md](GITHUB-CLOUD.md). The
 first real run (2026-10-23) collected 25 stories from Google News on GitHub's
-servers and opened the brief issue. Still UNVERIFIED: SMTP from GitHub's servers
-and the notification email for the issue (R21).
+servers and opened the brief issue. Still UNVERIFIED: the notification email
+for the issue (R21).
 
 ### R2. Bring your own AI key
 

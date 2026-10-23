@@ -1,67 +1,62 @@
 # Daily Brief
 
-A free morning news brief that runs on GitHub. You answer a short setup
-interview (what you follow, which categories, how fresh, how many stories,
-when it should arrive), and every morning GitHub's servers collect the news,
-build an executive SITREP newsletter, and deliver it to you: fresh, on-topic
-stories in each category you chose, and nothing you have already been sent.
+Your morning news on one page, free. Open the web address, answer a short
+setup interview (what you follow, which categories, your town, how fresh, how
+many stories), and the page collects that day's news itself: fresh, on-topic
+stories in every category you chose, with publisher photos, a forecast for your
+town, and nothing you have already seen.
 
-Free services only: Google News RSS and publisher feeds need no keys, GitHub
-Actions runs it, and it arrives as a GitHub issue (no password at all) or by
-email through your own mail account. No AI, search API or paid service is
-involved. Categories are yours: start from 22 ready-made ones or describe your
-own in plain words.
+Your choices stay in your own browser, so each person who opens the address
+gets their own brief. Come back any day and press **Get today's brief**, or let
+the page collect by itself the first time you open it each day. There is no
+account, no sign-up and no key. Every source is free: the GDELT news index and
+publisher feeds for the news, and Open-Meteo for the forecast.
 
-![The newsletter](docs/images/06-newsletter.png)
+![A brief, shown as a page](docs/images/07-brief-page.png)
 
 ## 1. Open the app
 
 ### [jbrady0850.github.io/daily-brief-sitrep](https://jbrady0850.github.io/daily-brief-sitrep/)
 
-Open the link on a computer, tablet or phone. It runs the setup interview, edits
-your categories, shows the newsletter, and makes your settings file. Your
-settings stay in that browser. On a tablet, Share, Add to Home Screen (iPad) or
-Install app (Android Chrome) keeps it one tap away.
+Open the link on a computer, tablet or phone. Answer the eight questions, press
+**Save and get my brief**, and the brief appears as a page a minute later. On a
+phone, **Share**, **Add to Home Screen** keeps it one tap away; in Chrome or
+Edge on a computer, the install button in the address bar does the same.
 
 ![Setup interview](docs/images/01-setup.png)
 
-## 2. Run it on GitHub every morning
+## 2. Pick from 67 categories, or type your own
 
-1. In the app, answer the questions. Question 7 sets the delivery time, your
-   time zone, and how it arrives.
-2. On this page choose **Use this template**, and create a **private**
-   repository from it.
-3. In the app, step 4, **Download the settings file**, then upload it to your
-   copy (**Add file**, **Upload files**).
-4. For email, add four secrets to your copy (`SMTP_HOST`, `SMTP_USER`,
-   `SMTP_PASSWORD`, `MAIL_TO`). For a GitHub issue, add nothing.
-5. Paste the two schedule lines the app gives you into
-   `.github/workflows/daily-brief.yml`, then press **Run workflow** under
-   **Actions** to test.
+The library has 11 groups: top news, weather, sports, technology, money and
+business, science and health, entertainment and culture, life and home, your
+area, government and defense, and career and education. Ten packs start you
+off (for example **Headlines and weather** or **Sports fan**), and **Type what
+you want to follow** turns any topic in your own words into a category.
 
-Every step, with the details GitHub checks, is in
-[docs/GITHUB-CLOUD.md](docs/GITHUB-CLOUD.md).
-
-## Other ways to use it
-
-| Way | What it gives you |
+| Group | Categories |
 |---|---|
-| An AI assistant (Claude, ChatGPT, Gemini, Grok) | The same interview, a brief written from a live web search, and a Lead Analysis. Step 5 of the app gives the prompt and the steps. See [docs/AI-ASSISTANTS.md](docs/AI-ASSISTANTS.md). |
-| The desktop app | The same collection and email from your own computer: install Python 3.9 or newer from python.org, download this project (**Code**, **Download ZIP**), and double-click `Start-Windows.bat`, `Start-Mac.command` or `start-linux.sh`. On a Mac, the first time, right-click `Start-Mac.command` and choose **Open**, and run **Install Certificates.command** from the Python folder in Applications. |
-| The web page alone | Preview a brief pasted from an AI, save an email draft (.eml), or copy it into a new email. |
+| Top news | U.S. headlines, world news, politics and policy, business headlines, good news |
+| Weather | Severe weather across the country, forecasts and seasonal outlook, climate and environment, weather and safety in your town |
+| Sports | Sports headlines, NFL, college football, NBA, college basketball, MLB, NHL, soccer, golf, motorsports, tennis, fantasy sports |
+| Technology | Technology headlines, gadgets and reviews, cybersecurity, networks, cloud, enterprise AI, AI tools, open source |
+| Money and business | Personal finance, retirement planning, markets and the economy, housing, small business, crypto, energy and gas prices |
+| Science and health | Space, science and discovery, health and wellness, health and science |
+| Entertainment and culture | Movies, television and streaming, music, books, video games, arts and culture |
+| Life and home | Travel, food and dining, cars and electric vehicles, home and garden, pets, parenting and family, outdoors, faith, inspiring stories |
+| Your area | Local community, local government, local sports, things to do |
+| Government and defense | Military and veterans, defense AI, the federal workforce, pay, retirement and government technology |
+| Career and education | Career growth and skills, schools and education |
 
-News sites do not let a web page read their feeds, so the web page itself
-cannot fetch the news; your GitHub copy, the desktop app, or an AI assistant
-does.
+![Category tiles](docs/images/03-category-tiles.png)
 
 ## The five steps in the app
 
 | Step | What you do |
 |---|---|
-| 1 Setup | Eight questions, each with a sensible default |
+| 1 Setup | Eight questions, each with a sensible default, including your town for the forecast |
 | 2 Categories | Add, remove, reorder and fine-tune categories |
-| 3 Brief | See the sample, paste a brief from an AI, or (desktop app) get today's |
-| 4 Email | Set up the GitHub run, or send, save or copy the newsletter |
+| 3 Today | Get today's brief, see it as a page, open it full screen, download it or copy it |
+| 4 Every day | Keep the page handy, turn on the once-a-day automatic collection, or set up a GitHub copy |
 | 5 AI assistants | Copy the prompt for Claude, ChatGPT, Gemini or Grok |
 
 ## How stories are picked
@@ -72,45 +67,63 @@ does.
 2. **NEWS** is published inside your window (24 hours by default). When a
    category is short, **OLDER** stories fill in, stamped with their true age.
    Undated official pages appear last, labelled **REFERENCE**.
-3. Nothing you have already been sent comes back: not the same link, not the
-   same headline, and not the same story from a second outlet. A story appears
-   in one category only.
+3. Nothing you have already seen comes back: not the same link, not the same
+   headline, and not the same story from a second outlet. A story appears in
+   one category only.
 4. A category is never padded. If nothing new turned up, it says so.
 
 [docs/CATEGORIES.md](docs/CATEGORIES.md) explains how to write a category.
 [docs/ROADMAP.md](docs/ROADMAP.md) reviews the whole process, the lessons behind
 every rule, and the ranked list of improvements.
 
+## Other ways to use it
+
+| Way | What it gives you |
+|---|---|
+| An AI assistant (Claude, ChatGPT, Gemini, Grok) | The same interview, a brief written from a live web search, and a Lead Analysis. Paste its reply on the Today tab. See [docs/AI-ASSISTANTS.md](docs/AI-ASSISTANTS.md). |
+| A GitHub copy (optional) | GitHub's servers collect the brief from Google News each morning and post it as an issue in your private copy, with no browser open. See [docs/GITHUB-CLOUD.md](docs/GITHUB-CLOUD.md). |
+| The desktop app | The same app on your own computer, reading Google News and every publisher feed: install Python 3.9 or newer from python.org, download this project (**Code**, **Download ZIP**), and double-click `Start-Windows.bat`, `Start-Mac.command` or `start-linux.sh`. On a Mac, the first time, right-click `Start-Mac.command` and choose **Open**, and run **Install Certificates.command** from the Python folder in Applications. |
+
+Email sending was removed in version 0.2.0. The brief is a web page you open,
+download or copy; see [CHANGELOG.md](CHANGELOG.md).
+
 ## Privacy
 
-No account of ours and no tracking. Settings stay in your browser and in your
-own private GitHub copy; mail settings are GitHub secrets. The AI prompt and the
-settings file never include an email address. See
-[docs/PRIVACY.md](docs/PRIVACY.md) and [docs/LIMITS.md](docs/LIMITS.md).
+No account of ours and no tracking. Settings and the no-repeat history stay in
+your browser. The page sends your category searches to the GDELT news index,
+reads the publisher feeds your categories list, and, when the forecast is on,
+sends your town's rounded map position to Open-Meteo. Story photos load from
+the publishers' own sites. See [docs/PRIVACY.md](docs/PRIVACY.md) and
+[docs/LIMITS.md](docs/LIMITS.md).
 
 ## For developers
 
 ```
 python -m dailybrief --help        # every command
-python -m dailybrief run --config daily-brief-settings.json --out output   # one run, no sending
-python -m dailybrief sample        # render the sample newsletter to output/
+python -m dailybrief run --config daily-brief-settings.json --out output   # one run, nothing posted
+python -m dailybrief sample        # render the sample brief page to output/
+python tools/icons_source.py       # rebuild app/data/icons.js
 python -m pytest -q                # the tests
 ```
 
 Standard library only. The browser engine (`app/js/engine.js`,
 `app/js/newsletter.js`) and the Python engine (`dailybrief/`) are twins, and the
-parity tests require identical results. See [CONTRIBUTING.md](CONTRIBUTING.md).
+parity tests require identical results. The browser collector
+(`app/js/collect.js`) and the Python collector (`dailybrief/collect.py`) share
+the forecast code and the brief format. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 | Folder | What is in it |
 |---|---|
-| `app/` | The app: plain HTML, CSS and JavaScript, no build step |
-| `dailybrief/` | Collector, newsletter, mail and issue delivery, schedule gate, desktop app, command line |
-| `.github/workflows/` | The daily run, the tests, and the Pages publish |
+| `app/` | The app: plain HTML, CSS and JavaScript, no build step, with the icon set and sample artwork |
+| `dailybrief/` | Python collector, page renderer, issue delivery, schedule gate, desktop app, command line |
+| `.github/workflows/` | The optional daily run, the tests, and the Pages publish |
 | `prompt/` | The AI prompt (full and compact) and the category library |
 | `examples/` | An invented sample brief and its settings |
+| `tools/` | The source of the icon set |
 | `docs/` | Guides, the roadmap and screenshots |
-| `tests/` | Engine, parity, cloud, server, command line and browser tests |
+| `tests/` | Engine, parity, collector, cloud, server, command line and browser tests |
 
 ## Licence
 
-MIT. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE). The icons and artwork were drawn for this project
+and are under the same licence.

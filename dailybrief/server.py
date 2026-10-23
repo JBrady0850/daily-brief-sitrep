@@ -1,6 +1,6 @@
 """The desktop app: serves the Daily Brief app on this computer only and adds
-what a web page cannot do on its own: read news feeds, keep the no-repeat
-history on disk, and send the email.
+what a web page cannot do on its own: read news feeds and keep the no-repeat
+history on disk.
 
     python -m dailybrief serve              # opens the app in your browser
     python -m dailybrief serve --port 8766 --no-browser
@@ -8,7 +8,7 @@ history on disk, and send the email.
 Safety: the server listens on 127.0.0.1 only, answers only requests addressed
 to 127.0.0.1 or localhost, and every /api call must carry the random key that
 this run writes into the page it serves. Another web site open in your browser
-cannot read the key, so it cannot use the app or send mail through it.
+cannot read the key, so it cannot use the app.
 """
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from functools import partial
 from typing import Any, Callable, Optional
 from urllib.parse import urlsplit
 
-from . import collect, engine as E, mailer, render, store
+from . import collect, engine as E, store
 from .paths import APP_DIR
 
 MAX_BODY = 4_000_000
@@ -177,15 +177,13 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             return
         try:
             self._api_post(path, body if isinstance(body, dict) else {})
-        except mailer.MailConfigError as exc:
-            self._json(400, {"error": str(exc)})
         except Exception as exc:  # report, never crash the server
             self._json(500, {"error": type(exc).__name__ + ": " + str(exc)})
 
     def _api_get(self, path: str) -> None:
         if path == "/api/health":
             ledger = store.load_ledger()
-            self._json(200, {"ok": True, "mode": "desktop", "version": E.VERSION, "mail": mailer.public_settings(),
+            self._json(200, {"ok": True, "mode": "desktop", "version": E.VERSION,
                              "ledger_size": E.ledger_size(ledger), "sent_dates": ledger["sent_dates"][-14:],
                              "has_config": store.load_config() is not None, "data_folder": str(store.path(""))})
         elif path == "/api/config":
@@ -193,8 +191,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         elif path.startswith("/api/run/"):
             job = self.app.jobs.get(path.rsplit("/", 1)[-1])
             self._json(200 if job else 404, job or {"error": "No such run."})
-        elif path == "/api/mail":
-            self._json(200, mailer.public_settings())
         else:
             self._json(404, {"error": "Unknown request."})
 
@@ -223,36 +219,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             # "Mark as read" remembers the stories but leaves the day's scheduled send in place.
             ledger = store.update_ledger(lambda led: E.ledger_add(led, brief, sent=False))
             self._json(200, {"ledger_size": E.ledger_size(ledger)})
-        elif path == "/api/send":
-            brief, cfg = body.get("brief"), body.get("config")
-            chk = E.check_brief(brief, cfg, now_iso())
-            if chk["errors"]:
-                self._json(400, {"error": "The brief has problems.", **chk})
-                return
-            if not self.app.send_lock.acquire(blocking=False):
-                self._json(409, {"error": "An email is already being sent. Wait for it to finish."})
-                return
-            try:
-                real = brief.get("source") != "sample"
-                day = brief.get("date")
-                if real and body.get("force") is not True and day in store.load_ledger()["sent_dates"]:
-                    self._json(409, {"error": f"The brief for {day} was already sent.", "already_sent": True})
-                    return
-                out = render.render(brief, cfg)
-                n = E.normalize_config(cfg or {})
-                to = mailer.split_addresses(body.get("to")) or None
-                s = mailer.load_settings(to_override=to, from_name=n["email"].get("from_name", ""))
-                mailer.send(mailer.build_message(out["subject"], out["text"], out["html"], s.sender, s.recipients,
-                                                 s.from_name), s)
-                size = None
-                if real:
-                    size = E.ledger_size(store.update_ledger(lambda led: E.ledger_add(led, brief)))
-                self._json(200, {"sent": len(s.recipients), "subject": out["subject"], "ledger_size": size})
-            finally:
-                self.app.send_lock.release()
-        elif path == "/api/mail":
-            mailer.save_settings(body.get("values") or {})
-            self._json(200, mailer.public_settings())
         elif path == "/api/history/clear":
             store.update_ledger(lambda led: E.empty_ledger())
             self._json(200, {"ledger_size": 0})
@@ -265,7 +231,6 @@ class DesktopApp:
                  pause: float = collect.GOOGLE_PAUSE, key: Optional[str] = None):
         self.key = key or secrets.token_urlsafe(24)
         self.jobs = Jobs(fetcher, pause)
-        self.send_lock = threading.Lock()
         handler = partial(Handler, app=self)
         self.httpd = http.server.ThreadingHTTPServer(("127.0.0.1", _free_port(port)), handler)
         self.httpd.daemon_threads = True
@@ -303,6 +268,9 @@ def serve(port: int = 8765, open_browser: bool = True) -> int:
     print("Daily Brief desktop app")
     print("  Open:", app.url)
     print("  Your data folder:", store.path(""))
+    if store.path(store.OLD_SMTP).exists():
+        print("  Note: smtp.json in your data folder holds mail settings from version 0.1.0, including an app")
+        print("  password. Email sending was removed, so nothing reads it any more. Delete the file.")
     print("  Leave this window open while you use the app. Press Ctrl+C to stop.")
     if open_browser:
         threading.Timer(0.6, lambda: webbrowser.open(app.url)).start()

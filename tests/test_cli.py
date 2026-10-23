@@ -1,10 +1,12 @@
-"""Command line: validate, check, prompt, render, send, run and scan."""
+"""Command line: validate, check, prompt, render, run and scan."""
 import json
 from pathlib import Path
 
+import pytest
+
 from conftest import ROOT, feed_bytes
 
-from dailybrief import cli, collect, mailer, store
+from dailybrief import cli, collect, github_issue, store
 
 EX = ROOT / "examples"
 
@@ -32,7 +34,7 @@ def test_prompt_with_settings(tmp_path):
     assert len(text) < 12000, "the compact prompt keeps its settings on one line"
 
 
-def test_prompt_never_carries_an_email_address(tmp_path):
+def test_prompt_drops_an_old_email_block(tmp_path):
     cfg = json.loads((EX / "sample-settings.json").read_text())
     cfg["email"] = {"to": ["reader@example.org"], "from_name": "Pat Example"}
     p = tmp_path / "s.json"
@@ -44,44 +46,51 @@ def test_prompt_never_carries_an_email_address(tmp_path):
         assert "reader@example.org" not in text and "Pat Example" not in text and "Example City" in text
 
 
-def test_render_and_dry_run_send_touch_nothing(tmp_path):
+def test_render_writes_the_page_and_text_and_touches_nothing(tmp_path):
     assert run("render", EX / "sample-brief.json", "--out", tmp_path / "r") == 0
-    assert sorted(p.suffix for p in (tmp_path / "r").iterdir()) == [".eml", ".html", ".txt"]
-    assert run("send", EX / "sample-brief.json", "--dry-run", "--out", tmp_path / "d") == 0
+    assert sorted(p.suffix for p in (tmp_path / "r").iterdir()) == [".html", ".txt"]
     assert not store.path(store.LEDGER).exists()
 
 
-def test_send_once_per_day_and_history(tmp_path, monkeypatch):
-    sent = []
-    monkeypatch.setattr(mailer, "send", lambda msg, s, **kw: sent.append(msg["Subject"]))
-    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
-    monkeypatch.setenv("SMTP_USER", "me@example.com")
-    monkeypatch.setenv("SMTP_PASSWORD", "x")
-    monkeypatch.setenv("MAIL_TO", "a@example.com")
-    brief = json.loads((EX / "sample-brief.json").read_text())
-    brief["source"] = "ai"
-    p = tmp_path / "ai.json"
-    p.write_text(json.dumps(brief))
-    assert run("send", p) == 0 and len(sent) == 1
-    assert store.load_ledger()["sent_dates"] == ["2026-10-23"]
-    assert run("send", p) == 1 and len(sent) == 1  # the same day is not sent twice
-    assert run("send", p, "--force") == 0 and len(sent) == 2
+def test_email_commands_are_gone(capsys):
+    for args in (["send", EX / "sample-brief.json"], ["run", "--to", "a@example.com"]):
+        with pytest.raises(SystemExit) as exc:
+            run(*args)
+        assert exc.value.code == 2  # argparse: unknown command or option
+    err = capsys.readouterr().err
+    assert "invalid choice: 'send'" in err and "unrecognized arguments: --to" in err
 
 
-def test_run_collects_saves_and_sends(tmp_path, monkeypatch):
+def _fake_news(monkeypatch):
     monkeypatch.setattr(collect, "fetch", lambda url, **kw: feed_bytes("google_news.xml" if "google" in url else "rss_feed.xml"))
     monkeypatch.setattr(collect, "GOOGLE_PAUSE", 0)
-    sent = []
-    monkeypatch.setattr(mailer, "send", lambda msg, s, **kw: sent.append(msg["Subject"]))
-    for k, v in {"SMTP_HOST": "smtp.example.com", "SMTP_USER": "me@example.com", "SMTP_PASSWORD": "x", "MAIL_TO": "a@example.com"}.items():
-        monkeypatch.setenv(k, v)
-    cfg = {"version": 1, "categories": [{"id": "net", "name": "Network", "queries": ['"zero trust"'], "require": [["zero trust", "VPN"]]}]}
-    store.save_config(cfg)
+    store.save_config({"version": 1, "categories": [{"id": "net", "name": "Network", "queries": ['"zero trust"'],
+                                                     "require": [["zero trust", "VPN"]]}]})
+
+
+def test_run_collects_saves_and_posts_the_issue(tmp_path, monkeypatch):
+    _fake_news(monkeypatch)
+    posted = []
+    monkeypatch.setattr(github_issue, "post", lambda subject, body, prefix, s, opener=None: posted.append(subject) or {"number": 2, "url": "", "closed": 0})
+    monkeypatch.setenv("GITHUB_TOKEN", "x")
+    monkeypatch.setenv("GITHUB_REPOSITORY", "me/brief")
     assert run("run", "--date", "2026-10-23", "--quiet", "--out", tmp_path / "o") == 0
     saved = json.loads((tmp_path / "o" / "brief-2026-10-23.json").read_text())
-    assert saved["schema"] == "daily-brief/v1" and not sent
-    assert run("run", "--send", "--date", "2026-10-23", "--quiet", "--out", tmp_path / "o") == 0 and len(sent) == 1
-    assert run("run", "--send", "--date", "2026-10-23", "--quiet") == 1 and len(sent) == 1
+    assert saved["schema"] == "daily-brief/v1" and not posted
+    assert sorted(p.name for p in (tmp_path / "o").iterdir()) == ["brief-2026-10-23.html", "brief-2026-10-23.json", "brief-2026-10-23.txt"]
+    assert run("run", "--send", "--date", "2026-10-23", "--quiet", "--out", tmp_path / "o") == 0 and len(posted) == 1
+    assert run("run", "--send", "--date", "2026-10-23", "--quiet") == 1 and len(posted) == 1  # once a day
+
+
+def test_mark_read_keeps_tomorrows_page_free_of_repeats(tmp_path, monkeypatch):
+    _fake_news(monkeypatch)
+    assert run("run", "--mark-read", "--date", "2026-10-23", "--quiet", "--out", tmp_path / "a") == 0
+    first = json.loads((tmp_path / "a" / "brief-2026-10-23.json").read_text())
+    led = store.load_ledger()
+    assert first["total"] > 0 and len(led["urls"]) == first["total"] and led["sent_dates"] == []
+    assert run("run", "--date", "2026-10-24", "--quiet", "--out", tmp_path / "b") == 0
+    second = json.loads((tmp_path / "b" / "brief-2026-10-24.json").read_text())
+    assert second["total"] == 0 and second["withheld"] == first["total"]
 
 
 def test_run_refuses_while_another_run_holds_the_lock(capsys):

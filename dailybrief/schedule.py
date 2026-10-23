@@ -91,7 +91,7 @@ def decide(now_utc: datetime, delivery: dict, sent_dates: list, crons: list,
             return {"send": True, "date": day, "reason": "last scheduled run of the day, sending early",
                     "warning": (f"Sent at {now_local:%H:%M} {where}, before the {when} delivery time, because no later "
                                 "run is scheduled today. Update the cron lines in .github/workflows/daily-brief.yml "
-                                "(the app's Email step shows the right ones).")}
+                                "(the app's Deliver step shows the right ones).")}
         wait = target - now_local
         return {"send": False, "date": day, "warning": "",
                 "reason": f"not yet {when} {where} (it is {now_local:%H:%M}); {_hm(wait)} to go"}

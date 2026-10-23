@@ -7,12 +7,14 @@ from datetime import datetime, timezone
 import pytest
 from conftest import ROOT, feed_bytes
 
-from dailybrief import cli, collect, github_issue, mailer, schedule as S, store
+from dailybrief import cli, collect, github_issue, schedule as S, store
 from dailybrief.markdown import md, render_markdown
 
 WF = (ROOT / ".github" / "workflows" / "daily-brief.yml").read_text()
 EASTERN = {"time": "06:15", "timezone": "America/New_York"}
-CRONS = S.parse_crons(WF)
+# The template's two lines for 06:15 US Eastern. A copy changes the lines in its
+# workflow to its own time, so the gate tests use these, not the file's lines.
+CRONS = [(10, 15), (11, 15)]
 
 needs_tz = pytest.mark.skipif(S.zone("America/New_York") is None, reason="no time zone data on this computer")
 
@@ -21,8 +23,12 @@ def utc(y, mo, d, h, mi):
     return datetime(y, mo, d, h, mi, tzinfo=timezone.utc)
 
 
-def test_workflow_crons_are_the_two_eastern_lines():
-    assert CRONS == [(10, 15), (11, 15)]
+def test_workflow_cron_lines_are_usable():
+    """Holds for the template and for every copy that set its own time."""
+    lines = S.parse_crons(WF)
+    assert 1 <= len(lines) <= 2, lines
+    assert all(0 <= h <= 23 and 0 < m <= 59 for h, m in lines), "keep runs off the top of the hour"
+    assert S.parse_crons('    - cron: "15 10 * * *"\n    - cron: "15 11 * * *"\n') == CRONS
 
 
 @needs_tz
@@ -122,7 +128,7 @@ def test_scheduled_run_skips_before_time_and_reports(tmp_path, monkeypatch):
     assert code == 0 and "Skipped: not yet 23:59" in summary.read_text()
 
 
-def test_run_delivers_by_issue_and_records_history(tmp_path, monkeypatch):
+def test_run_delivers_by_issue_and_records_history(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(collect, "fetch", lambda url, **kw: feed_bytes("google_news.xml"))
     posted = []
     monkeypatch.setattr(github_issue, "post", lambda subject, body, prefix, s, opener=None: posted.append((subject, prefix)) or {"number": 4, "url": "", "closed": 0})
@@ -137,23 +143,26 @@ def test_run_delivers_by_issue_and_records_history(tmp_path, monkeypatch):
                      "--date", "2026-10-23"])
     text = summary.read_text()
     assert code == 0 and posted and posted[0][1] == "Daily Brief - "
-    assert "Delivered: GitHub issue #4" in text and "Not delivered: email: Mail is not set up" in text
+    assert "Delivered: GitHub issue #4" in text and "Not delivered" not in text and "email" not in text.lower()
     assert store.load_ledger()["sent_dates"] == ["2026-10-23"]
+    # Settings from version 0.1.0 still listing email get a warning, not an error.
+    assert "lists email, which was removed in version 0.2.0" in capsys.readouterr().out
 
 
-def test_run_fails_when_no_channel_delivers(tmp_path, monkeypatch):
+def test_run_fails_when_the_issue_cannot_be_posted(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(collect, "fetch", lambda url, **kw: feed_bytes("google_news.xml"))
     cfg = {"version": 1, "categories": [{"id": "net", "name": "Network", "queries": ["x"], "require": [["VPN"]]}]}
     p = tmp_path / "s.json"
     p.write_text(json.dumps(cfg))
     assert cli.main(["run", "--config", str(p), "--send", "--quiet", "--out", str(tmp_path / "o")]) == 1
     assert store.load_ledger()["sent_dates"] == []
+    assert "no GITHUB_TOKEN here" in capsys.readouterr().out
 
 
 def test_workflow_matches_the_code():
-    for name in ("SMTP_HOST", "SMTP_PORT", "SMTP_USER", "SMTP_PASSWORD", "SMTP_SECURITY", "MAIL_FROM", "MAIL_TO"):
-        assert f"{name}: ${{{{ secrets.{name} }}}}" in WF, name
-        assert name in mailer.__doc__
+    # No secrets at all: GitHub's own token posts the issue, and nothing sends mail.
+    assert "secrets." not in WF and "SMTP" not in WF and "MAIL_" not in WF
+    assert "GITHUB_TOKEN: ${{ github.token }}" in WF
     assert "issues: write" in WF and "contents: read" in WF
     for action in ("actions/checkout@v7", "actions/setup-python@v7", "actions/cache/restore@v6", "actions/cache/save@v6",
                    "actions/upload-artifact@v7"):
