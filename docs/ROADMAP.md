@@ -64,7 +64,7 @@ Needs a decision.
 | R1 | Cloud schedule with GitHub Actions in your own private copy | A daily email with no computer left on | M | Done in 0.1.0 |
 | R19 | Save settings to your GitHub copy from the app | Skip the download and upload step with a fine-grained token kept in the browser | M | Idea |
 | R20 | Run now button in the app | Start the workflow from the app (workflow dispatch) | S | Idea |
-| R21 | First-run report from the cloud | After the first GitHub run, confirm Google News, mail and the issue email work from GitHub's servers, and document the result (a home-connection run passed on 2026-10-23) | S | Planned |
+| R21 | First-run report from the cloud | After the first GitHub run, confirm Google News, mail and the issue email work from GitHub's servers, and document the result (Google News and the issue passed on 2026-10-23; mail and the issue email remain) | S | Planned |
 | R2 | Bring your own AI key in the app (Anthropic, OpenAI, Google, xAI) | Lead Analysis on desktop briefs, and live news in the web version through the provider's web search | M | Planned |
 | R3 | One-click scheduling in the desktop app | Removes the Task Scheduler or crontab step | S | Planned |
 | R4 | Source health over time | Catch a dead feed the day it dies, from the history of runs | S | Planned |
@@ -89,9 +89,10 @@ Needs a decision.
 `dailybrief/schedule.py` sends on the first run at or after your delivery time,
 which handles daylight saving time without a time zone in cron. The history
 lives in the Actions cache, and delivery is a GitHub issue (no password) or
-email through your own account. See [GITHUB-CLOUD.md](GITHUB-CLOUD.md). Still
-UNVERIFIED until the first real run: Google News answering GitHub's servers,
-SMTP from GitHub's servers, and the notification email for the issue (R21).
+email through your own account. See [GITHUB-CLOUD.md](GITHUB-CLOUD.md). The
+first real run (2026-10-23) collected 25 stories from Google News on GitHub's
+servers and opened the brief issue. Still UNVERIFIED: SMTP from GitHub's servers
+and the notification email for the issue (R21).
 
 ### R2. Bring your own AI key
 

@@ -81,9 +81,10 @@ copy that stops running for a week starts its history again.
   **Enable workflow**.
 - Checked 2026-10-23 against GitHub's documentation (events that trigger
   workflows, disabling and enabling workflows, dependency caching, and Actions
-  billing). UNVERIFIED until the first real run: whether Google News answers
-  GitHub's servers as it answers a home connection, sending mail from GitHub's
-  servers through your provider, and the email GitHub sends for a brief issue.
+  billing). The first real run on GitHub's servers, the same day, collected 25
+  stories from Google News and opened the brief issue in 26 seconds. Still
+  UNVERIFIED: sending mail from GitHub's servers through your provider, and the
+  email GitHub sends for a brief issue.
 - Checked 2026-10-23 from a home connection with the same code: Google News
   answered every search, a Federal IT pack run kept 44 stories and a Technology
   pack run kept 35, and 11 of 12 publisher feeds answered. CISA's advisory feed

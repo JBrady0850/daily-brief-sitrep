@@ -9,10 +9,11 @@
 - The desktop app's schedule runs only while the computer is on. The GitHub
   copy needs no computer, but GitHub may delay or drop scheduled runs at busy
   times, and its history cache is removed after 7 days without a run.
-- Checked 2026-10-23 from a home connection: Google News answered every search
-  and 11 of 12 publisher feeds answered. UNVERIFIED until the first GitHub run:
-  whether Google News answers GitHub's servers the same way, sending mail from
-  GitHub's servers, and the notification email GitHub sends for the brief issue.
+- Checked 2026-10-23: Google News answered every search from a home connection
+  and from GitHub's servers (the first cloud run kept 25 stories and opened the
+  brief issue), and 11 of 12 publisher feeds answered. Still UNVERIFIED: sending
+  mail from GitHub's servers, and the notification email GitHub sends for the
+  brief issue.
 - Some sites refuse scripted requests (CISA's feed returned HTTP 403). The
   source health report lists any such feed by name.
 - On a Mac, Python from python.org cannot check web certificates until you run
