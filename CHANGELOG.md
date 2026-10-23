@@ -19,6 +19,8 @@ your choices in your own browser, and shows the brief as a full web page.
   warning. If you saved mail settings, delete `smtp.json` from your data folder.
 - `run --mark-read` keeps a scheduled run on your own computer free of repeats.
 - Tests no longer fail in a copy that set its own delivery time.
+- The app declares its own install identity (`/daily-brief-sitrep/`), so it
+  never shares one with another app installed from the same github.io site.
 
 ## 0.1.0 (2026-10-23)
 

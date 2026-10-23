@@ -139,3 +139,11 @@ def test_every_document_link_resolves():
             if target.startswith(("http://", "https://", "mailto:")):
                 continue
             assert (md.parent / target).exists(), (md.name, target)
+
+
+def test_install_identity_is_this_app_only():
+    """Browsers resolve a manifest id against the site's origin, not the app's folder,
+    so "./" would claim the whole of jbrady0850.github.io and clash with any other
+    app installed from that site ("already installed")."""
+    m = json.loads((APP / "manifest.webmanifest").read_text())
+    assert m["id"] == "/daily-brief-sitrep/" and m["start_url"] == "./" and m["scope"] == "./"

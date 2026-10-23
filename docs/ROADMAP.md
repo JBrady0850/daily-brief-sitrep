@@ -142,4 +142,7 @@ needs a decision because it puts a server, however small, in the path.
    and add a CHANGELOG entry.
 5. In a fork or a new home for the project, change the app link at the top of
    the README, turn on **Settings, Template repository** so readers can use
-   **Use this template**, and turn on Pages (Source: GitHub Actions).
+   **Use this template**, and turn on Pages (Source: GitHub Actions). Set
+   `"id"` in `app/manifest.webmanifest` to the new repository's path (for
+   example `/my-brief/`): browsers resolve it against the site's origin, so a
+   bare `./` would clash with every other app installed from the same site.
