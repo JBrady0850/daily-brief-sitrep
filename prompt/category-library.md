@@ -161,6 +161,7 @@ Uplifting stories: rescues, kindness, community wins and breakthroughs that went
 - Queries: `("good news" OR heartwarming OR uplifting OR kindness) (community OR rescued OR donated OR volunteers)` / `(rescued OR reunited OR "pays it forward" OR donates) (family OR community OR neighbors)`
 - Must mention one of (group 1): good news, heartwarming, uplifting, kindness, kind, rescued, rescue, reunited, donated, donates, volunteer, volunteers, celebrates, hero, heroes, generous, gift, inspiring
 - Leave out: obituary, shooting, killed, crash, lawsuit, sponsored content
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml
 
 ### Weather and Safety ({location}) (`local-weather`)
 
@@ -177,6 +178,7 @@ Hurricanes, tornadoes, winter storms, heat waves, floods and wildfires anywhere 
 - Queries: `(hurricane OR tornado OR blizzard OR "winter storm" OR "heat wave" OR "severe storms") (warning OR forecast OR "National Weather Service")` / `("tropical storm" OR flooding OR wildfire OR "extreme heat" OR "ice storm") (evacuation OR warning OR forecast)`
 - Must mention one of (group 1): hurricane, tornado, tornadoes, blizzard, winter storm, snowstorm, heat wave, extreme heat, severe storms, severe weather, tropical storm, flood, flooding, wildfire, wildfires, forecast, National Weather Service, storm, storms, ice storm, weather
 - Leave out: Carolina Hurricanes, Miami Heat, Tampa Bay Lightning, Oklahoma City Thunder, perfect storm, storm of criticism, brainstorm, Storm Area, Seattle Storm
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml, https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml
 
 ### Forecasts and Seasonal Outlook (`weather-outlook`)
 
@@ -185,6 +187,7 @@ The big picture: seasonal outlooks, El Nino and La Nina, first frost, pollen and
 - Queries: `(NOAA OR "Climate Prediction Center" OR "National Weather Service") (outlook OR forecast OR season)` / `("El Nino" OR "La Nina" OR "winter outlook" OR "hurricane season" OR "first frost" OR pollen) forecast`
 - Must mention one of (group 1): outlook, forecast, forecasters, El Nino, La Nina, NOAA, season, seasonal, winter, summer, hurricane season, frost, pollen, meteorologist, meteorologists
 - Leave out: Carolina Hurricanes, earnings outlook, economic outlook, market outlook
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml, https://rss.nytimes.com/services/xml/rss/nyt/US.xml
 
 ### Climate and Environment (`climate-environment`)
 
@@ -300,6 +303,7 @@ Waiver wire pickups, start and sit calls, injury updates and rankings for fantas
 - Queries: `"fantasy football" (waiver OR rankings OR start OR sit OR sleepers)` / `(fantasy OR "fantasy football" OR "fantasy basketball") (injury OR waiver OR rankings)`
 - Must mention one of (group 1): fantasy
 - Leave out: fantasy novel, fantasy film, fantasy series, final fantasy, sportsbook, promo code
+- Publisher feeds: https://www.espn.com/espn/rss/nfl/news, https://www.cbssports.com/rss/headlines/nfl/
 
 ### Cybersecurity and IT Industry (`cybersecurity`)
 
@@ -315,6 +319,7 @@ Zero trust architecture, CISA and NSA guidance, firewall, VPN, identity and netw
 
 - Queries: `"zero trust" (network OR security OR architecture)` / `(CISA OR NSA) (advisory OR guidance OR directive) (network OR security)`
 - Must mention one of (group 1): zero trust, CISA, NSA, network, networking, firewall, router, VPN, Active Directory, MFA, authentication, identity, advisory, hardening, segmentation, SASE
+- Publisher feeds: https://www.wired.com/feed/category/security/latest/rss
 
 ### Cloud and Data Centers (`cloud-infrastructure`)
 
@@ -322,6 +327,7 @@ Cloud platform launches, outages and pricing, plus data center capacity and powe
 
 - Queries: `(AWS OR Azure OR "Google Cloud") (outage OR launch OR pricing OR region)` / `"data center" (capacity OR power OR construction OR investment)`
 - Must mention one of (group 1): cloud, AWS, Azure, Google Cloud, data center, data centers, Kubernetes, outage, infrastructure, hyperscaler
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://www.cnbc.com/id/19854910/device/rss/rss.html
 
 ### Corporate Enterprise AI (`enterprise-ai`)
 
@@ -330,6 +336,7 @@ How companies deploy AI: adoption, results, spending and workforce effects.
 - Queries: `"enterprise AI" (deployment OR adoption OR ROI OR CEO OR companies)` / `(companies OR enterprises OR CEOs) ("AI agents" OR "generative AI") deployment`
 - Must mention one of (group 1): AI, A.I., artificial intelligence, machine learning, generative AI, GenAI, LLM, large language model, agentic, AI agent, AI agents, chatbot
 - Must mention one of (group 2): enterprise, corporate, company, companies, business, Fortune 500, CEO, CIO, CTO, ROI, adoption, deployment, workforce, firm, industry
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://www.cnbc.com/id/19854910/device/rss/rss.html, https://www.wired.com/feed/tag/ai/latest/rss
 
 ### AI Tools and Prompting (`ai-tools`)
 
@@ -338,7 +345,7 @@ New features in AI assistants, prompting techniques and practical AI productivit
 - Queries: `(ChatGPT OR Claude OR Gemini OR Copilot OR Grok) (feature OR launches OR update OR tips)` / `("prompt engineering" OR "AI assistant" OR "AI tools") (productivity OR workflow OR tips)`
 - Must mention one of (group 1): AI, A.I., artificial intelligence, machine learning, generative AI, GenAI, LLM, large language model, agentic, AI agent, AI agents, chatbot, Claude, ChatGPT, Gemini, Copilot, Grok, Anthropic, OpenAI
 - Must mention one of (group 2): prompt, prompting, prompt engineering, tool, tools, assistant, workflow, automation, productivity, app, feature, features, launch, launches, launched, release, released, plugin, extension, update
-- Publisher feeds: https://www.wired.com/feed/tag/ai/latest/rss
+- Publisher feeds: https://www.wired.com/feed/tag/ai/latest/rss, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml
 
 ### Open Source and Developer Tools (`open-source`)
 
@@ -346,6 +353,7 @@ Open source releases, licensing changes and developer platform news.
 
 - Queries: `("open source" OR "open-source") (release OR project OR license)` / `(GitHub OR Python OR Linux OR Rust) (release OR update OR security)`
 - Must mention one of (group 1): open source, open-source, GitHub, Linux, Python, JavaScript, Rust, developer, developers, repository, programming
+- Publisher feeds: https://www.wired.com/feed/rss
 
 ### Technology Headlines (`tech-news`)
 
@@ -354,7 +362,7 @@ The big tech stories: Apple, Google, Microsoft, Amazon and Meta, new products an
 - Queries: `(Apple OR Google OR Microsoft OR Amazon OR Meta OR Nvidia) (launch OR announces OR lawsuit OR antitrust)` / `(smartphone OR "artificial intelligence" OR chips OR software) (company OR launch OR announces)`
 - Must mention one of (group 1): Apple, Google, Microsoft, Amazon, Meta, Nvidia, Tesla, OpenAI, Anthropic, tech, technology, smartphone, iPhone, Android, chip, chips, software, app, apps, AI, artificial intelligence
 - Leave out: sponsored content, deal of the day, promo code, coupon
-- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://www.wired.com/feed/rss, https://moxie.foxnews.com/google-publisher/tech.xml
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://www.wired.com/feed/rss, https://moxie.foxnews.com/google-publisher/tech.xml, https://www.cnbc.com/id/19854910/device/rss/rss.html
 
 ### Gadgets and Reviews (`gadgets`)
 
@@ -381,6 +389,7 @@ Social Security, Medicare, 401(k) and IRA rule changes and retirement income pla
 - Queries: `("Social Security" OR Medicare) (COLA OR "Part B" OR "retirement age" OR benefits)` / `("401(k)" OR IRA OR Roth) (rules OR limits OR "required minimum distribution" OR contribution)`
 - Must mention one of (group 1): Social Security, Medicare, 401(k), IRA, IRAs, Roth, retirement, retire, retirees, pension, annuity, required minimum distribution, RMD, COLA
 - Leave out: Bitcoin, crypto, sponsored content
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/YourMoney.xml
 
 ### Markets and the Economy (`markets-economy`)
 
@@ -389,7 +398,7 @@ Stock market moves, interest rates, inflation, jobs and growth reports.
 - Queries: `(stocks OR "S&P 500" OR Nasdaq OR Dow) (close OR rally OR selloff OR record)` / `(inflation OR "jobs report" OR GDP OR "Federal Reserve") economy`
 - Must mention one of (group 1): stocks, stock market, S&P 500, Nasdaq, Dow, Treasury, yields, inflation, jobs report, unemployment, GDP, Federal Reserve, economy, recession, earnings, interest rates
 - Leave out: sponsored content
-- Publisher feeds: https://www.cnbc.com/id/20910258/device/rss/rss.html
+- Publisher feeds: https://www.cnbc.com/id/20910258/device/rss/rss.html, https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.cnbc.com/id/100003114/device/rss/rss.html
 
 ### Housing and Real Estate (`housing`)
 
@@ -407,6 +416,7 @@ Help for owners: loans, taxes, hiring, SBA programs and the economy for Main Str
 - Queries: `"small business" (owners OR loans OR SBA OR taxes OR hiring)` / `("small businesses" OR entrepreneurs OR "Main Street") (survey OR rule OR program OR economy)`
 - Must mention one of (group 1): small business, small businesses, SBA, entrepreneur, entrepreneurs, owners, Main Street, startup, startups
 - Leave out: sponsored content, promo code
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.cnbc.com/id/100003114/device/rss/rss.html
 
 ### Crypto and Digital Assets (`crypto`)
 
@@ -415,6 +425,7 @@ Bitcoin and other digital assets: prices, regulation, ETFs and major hacks.
 - Queries: `(bitcoin OR ethereum OR crypto OR cryptocurrency) (price OR SEC OR ETF OR regulation)` / `(stablecoin OR blockchain OR "crypto exchange") (rule OR hack OR launch OR lawsuit)`
 - Must mention one of (group 1): bitcoin, ethereum, crypto, cryptocurrency, stablecoin, blockchain, digital assets, Coinbase, ETF
 - Leave out: sponsored content, promo code, airdrop, price prediction
+- Publisher feeds: https://www.cnbc.com/id/10000664/device/rss/rss.html, https://rss.nytimes.com/services/xml/rss/nyt/Business.xml
 
 ### Energy and Gas Prices (`energy`)
 
@@ -423,6 +434,7 @@ Gas and oil prices, electric bills, power grids and the energy industry.
 - Queries: `("gas prices" OR "oil prices" OR OPEC OR crude) (price OR drivers OR output)` / `("electricity prices" OR "power grid" OR utility OR "natural gas") (rates OR bills OR outage OR demand)`
 - Must mention one of (group 1): gas prices, gasoline, oil, crude, OPEC, electricity, power grid, grid, utility, utilities, natural gas, energy, solar, nuclear, pipeline
 - Leave out: sponsored content
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml, https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.cnbc.com/id/100003114/device/rss/rss.html
 
 ### Health and Science (`health-science`)
 
@@ -431,7 +443,7 @@ New research, medical findings, public health and space science.
 - Queries: `(study OR researchers OR scientists) (health OR medicine OR disease)` / `(NASA OR telescope OR space) discovery`
 - Must mention one of (group 1): study, researchers, scientists, research, trial, FDA, NIH, CDC, NASA, discovery, vaccine, disease, medicine, health
 - Leave out: sponsored content, supplement deal
-- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Health.xml
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Health.xml, https://rss.nytimes.com/services/xml/rss/nyt/Science.xml
 
 ### Space and Astronomy (`space`)
 
@@ -503,6 +515,7 @@ Game releases, consoles, esports and the gaming industry.
 - Queries: `("video game" OR PlayStation OR Xbox OR Nintendo OR Steam) (release OR launch OR update OR console)` / `(esports OR "game studio" OR "Game Awards" OR GTA) (players OR release OR tournament)`
 - Must mention one of (group 1): video game, video games, game, games, gaming, PlayStation, Xbox, Nintendo, Switch, Steam, esports, console, gamers
 - Leave out: sponsored content, promo code, game show, football game, basketball game
+- Publisher feeds: https://www.wired.com/feed/category/culture/latest/rss, https://rss.nytimes.com/services/xml/rss/nyt/Arts.xml
 
 ### Arts and Culture (`arts-culture`)
 
@@ -520,6 +533,7 @@ True stories of people who overcame adversity, made a comeback or helped others.
 - Queries: `(inspiring OR comeback OR overcame OR resilience) story` / `("against the odds" OR "beat the odds" OR survivor OR perseverance) inspiring`
 - Must mention one of (group 1): comeback, overcame, overcome, overcomes, overcoming, resilience, resilient, inspiring, inspirational, against the odds, beat the odds, triumph, persevere, perseverance, persevered, survivor, turnaround, adversity, second chance, defied
 - Leave out: album, Reels, vlog, lyrics, trailer, episode, tour dates, recap, finale, spoiler, box office, climate resilience, cyber resilience, supply chain resilience, stocks, shares, market rally, novel, webtoon
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml
 
 ### Travel (`travel`)
 
@@ -555,6 +569,7 @@ Home improvement, gardening, cleaning, energy savings and household safety recal
 - Queries: `("home improvement" OR renovation OR gardening OR garden) (tips OR trend OR experts OR season)` / `("Consumer Product Safety Commission" OR recall) (furniture OR appliance OR household OR product)`
 - Must mention one of (group 1): home improvement, renovation, remodel, garden, gardening, lawn, plants, kitchen, appliance, appliances, furniture, household, recall, homeowners
 - Leave out: sponsored content, promo code, nursing home, home run, home game
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/RealEstate.xml
 
 ### Pets and Animals (`pets`)
 
@@ -563,6 +578,7 @@ Pet health, adoption, recalls of pet food and amazing animal stories.
 - Queries: `(pets OR dogs OR cats OR "pet food") (veterinarians OR recall OR adoption OR health)` / `(animal OR wildlife OR shelter OR zoo) (rescue OR adopted OR born OR rescued)`
 - Must mention one of (group 1): pet, pets, dog, dogs, puppy, cat, cats, kitten, pet food, veterinarian, veterinarians, vet, adoption, shelter, animal, animals, zoo, wildlife
 - Leave out: sponsored content, promo code, hot dog, top dog, Cats musical
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml
 
 ### Parenting and Family (`parenting-family`)
 
@@ -571,6 +587,7 @@ Raising kids: schools, child health, screen time, child care costs and family li
 - Queries: `(parents OR parenting OR kids OR children) (study OR tips OR schools OR experts)` / `("child care" OR "screen time" OR pediatricians OR teens) (parents OR study OR costs)`
 - Must mention one of (group 1): parents, parenting, kids, children, child, child care, childcare, teens, teenagers, pediatricians, screen time, toddlers, babies, family, families
 - Leave out: sponsored content, parent company
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Well.xml, https://rss.nytimes.com/services/xml/rss/nyt/US.xml
 
 ### Outdoors and National Parks (`outdoors`)
 
@@ -579,6 +596,7 @@ National and state parks, hiking, camping, fishing and hunting seasons.
 - Queries: `("national park" OR "state park" OR hiking OR camping) (visitors OR trail OR reopens OR closure)` / `(fishing OR hunting OR "wildlife officials") (season OR rules OR license)`
 - Must mention one of (group 1): national park, national parks, state park, hiking, hikers, trail, trails, camping, campground, fishing, hunting, outdoors, wildlife
 - Leave out: sponsored content, promo code
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Travel.xml, https://moxie.foxnews.com/google-publisher/travel.xml
 
 ### Faith and Religion (`faith-religion`)
 
@@ -587,6 +605,7 @@ News from churches, synagogues, mosques and faith communities, and religion in p
 - Queries: `(church OR churches OR pastor OR pope OR synagogue OR mosque) (community OR congregation OR leaders)` / `(faith OR religious OR religion) (leaders OR community OR survey OR freedom)`
 - Must mention one of (group 1): church, churches, pastor, pope, Vatican, synagogue, mosque, faith, religious, religion, congregation, worship, bishop, ministry
 - Leave out: sponsored content
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml
 
 ### Local Community ({location}) (`local-news`)
 
@@ -630,7 +649,7 @@ Artificial intelligence across the Department of Defense and the military servic
 - Queries: `Pentagon military enterprise AI artificial intelligence deployment` / `(CDAO OR DISA OR DARPA OR Pentagon) AI strategy networks`
 - Must mention one of (group 1): AI, A.I., artificial intelligence, machine learning, generative AI, GenAI, LLM, large language model, agentic, AI agent, AI agents, chatbot, autonomous, autonomy, algorithm
 - Must mention one of (group 2): Pentagon, DoD, Department of War, Department of Defense, Army, Navy, Air Force, Marine Corps, Marines, Space Force, CDAO, DISA, DARPA, military, defense, warfighter, combatant command
-- Publisher feeds: https://www.defenseone.com/rss/all/
+- Publisher feeds: https://www.defenseone.com/rss/all/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml
 
 ### Federal Workforce Actions (RIF, VERA, VSIP) (`federal-workforce`)
 
@@ -639,7 +658,7 @@ Reductions in force, early retirement and buyout offers, hiring freezes and rest
 - Queries: `(RIF OR "reduction in force" OR VERA OR VSIP OR "deferred resignation" OR buyout OR layoffs) (federal OR agency OR OPM)` / `"federal employees" (layoffs OR RIF OR shutdown OR furlough OR "early retirement")`
 - Must mention one of (group 1): RIF, reduction in force, reductions in force, VERA, VSIP, early retirement, buyout, buyouts, deferred resignation, DRP, layoff, layoffs, furlough, workforce reduction, workforce cuts, job cuts, hiring freeze, restructuring, reorganization, downsizing, probationary, Schedule F, shutdown
 - Must mention one of (group 2): federal, civilian, civil service, OPM, agency, agencies, government, DoD, Pentagon, Department of War
-- Publisher feeds: https://www.govexec.com/rss/workforce/, https://federalnewsnetwork.com/category/workforce/feed/
+- Publisher feeds: https://www.govexec.com/rss/workforce/, https://federalnewsnetwork.com/category/workforce/feed/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml
 
 ### Federal Pay, Leave and Benefits (`federal-pay`)
 
@@ -649,7 +668,7 @@ Federal pay raises or freezes, locality pay, annual leave rules, Open Season and
 - Must mention one of (group 1): pay raise, pay freeze, pay increase, pay adjustment, locality pay, General Schedule, salary, wage, annual leave, sick leave, use-or-lose, use or lose, lump sum, lump-sum, leave year, pay period, Open Season, FEHB, FEGLI, FEDVIP, TSP, benefits, administrative leave, step increase, within-grade
 - Must mention one of (group 2): federal, feds, OPM, General Schedule, civil service, federal workforce, federal employees, federal workers, agency, agencies
 - Leave out: job seekers, apply now, job posting, job opening
-- Publisher feeds: https://www.govexec.com/rss/pay-benefits/
+- Publisher feeds: https://www.govexec.com/rss/pay-benefits/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml
 
 ### Federal Retirement (FERS, TSP, FEHB) (`federal-retirement`)
 
@@ -668,7 +687,7 @@ IT modernization, cloud, cybersecurity and AI programs in federal, state and loc
 - Queries: `("federal IT" OR "government technology" OR "agency CIO" OR "state CIO") (modernization OR cloud OR cybersecurity OR AI)` / `(agency OR agencies OR government) ("IT modernization" OR "digital services" OR "cloud migration")`
 - Must mention one of (group 1): federal, government, agency, agencies, state government, public sector, city, county, Pentagon, DoD
 - Must mention one of (group 2): technology, IT, modernization, cloud, cybersecurity, AI, software, digital, data, network, networks
-- Publisher feeds: https://www.nextgov.com/rss/all/
+- Publisher feeds: https://www.nextgov.com/rss/all/, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml
 
 ### Military and Veterans (`military-veterans`)
 
@@ -677,6 +696,7 @@ Service members, veterans benefits and the VA, deployments and defense budgets.
 - Queries: `(veterans OR "VA benefits" OR "Department of Veterans Affairs") (benefits OR claims OR care OR rule)` / `(Army OR Navy OR "Air Force" OR Marines OR "Space Force") (troops OR deployment OR budget OR "service members")`
 - Must mention one of (group 1): veterans, veteran, VA, Veterans Affairs, military, troops, service members, Army, Navy, Air Force, Marines, Marine Corps, Space Force, Coast Guard, Pentagon, deployment
 - Leave out: sponsored content, Swiss Army knife, army of fans
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml, https://moxie.foxnews.com/google-publisher/politics.xml
 
 ### Career Growth and Skills (`career-skills`)
 
@@ -686,6 +706,7 @@ Certifications, in-demand skills, pay surveys and job market trends.
 - Must mention one of (group 1): career, careers, certification, certifications, skills, upskilling, reskilling, salary, salaries, wages, promotion, hiring, job market, jobs, workforce
 - Must mention one of (group 2): IT, tech, technology, workers, employees, employers, professionals, workforce, job, jobs, career, careers, employment, labor market, job market, hiring
 - Leave out: apply now, job posting, job opening, hiring event, election, elections, ballot
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.cnbc.com/id/100003114/device/rss/rss.html
 
 ### Schools and Education (`education`)
 
@@ -694,4 +715,4 @@ K-12 schools and colleges: tuition, student loans, testing and education policy.
 - Queries: `(schools OR teachers OR students OR "school district") ("test scores" OR policy OR funding OR enrollment)` / `(college OR university OR "student loans" OR FAFSA OR tuition) (students OR policy OR costs)`
 - Must mention one of (group 1): school, schools, teacher, teachers, students, student, school district, college, colleges, university, universities, student loans, FAFSA, tuition, education, classroom, enrollment
 - Leave out: sponsored content, school of thought, old school
-- Publisher feeds: https://www.k12dive.com/feeds/news/
+- Publisher feeds: https://www.k12dive.com/feeds/news/, https://rss.nytimes.com/services/xml/rss/nyt/US.xml

@@ -93,6 +93,22 @@ def route_world(page, calls, gdelt_status=200):
 
 
 @pytest.fixture(scope="module")
+def http_app():
+    """The app served over http, as on GitHub Pages. Chromium keeps local storage for
+    file:// pages unreliably across a reload, so the reload test needs a real origin."""
+    import functools
+    import http.server
+    import threading
+    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(ROOT / "app"))
+    handler.log_message = lambda *a, **k: None
+    httpd = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    yield "http://127.0.0.1:%d/index.html" % httpd.server_address[1]
+    httpd.shutdown()
+    httpd.server_close()
+
+
+@pytest.fixture(scope="module")
 def browser():
     try:
         with sync_api.sync_playwright() as p:
@@ -111,7 +127,8 @@ def open_page(browser, url, device=None, calls=None, gdelt_status=200, state=Non
     ctx.add_init_script("window.DB_COLLECT_GAP = 0;")
     if state is not None:
         # Only the first load gets the saved choices; a reload keeps what the app saved since.
-        ctx.add_init_script("if (!localStorage.getItem('db.state.v1')) localStorage.setItem('db.state.v1', %s);" % json.dumps(json.dumps(state)))
+        # Init scripts also run inside the brief's frame, so only the top page may seed.
+        ctx.add_init_script("if (window.top === window && !localStorage.getItem('db.state.v1')) localStorage.setItem('db.state.v1', %s);" % json.dumps(json.dumps(state)))
     page = ctx.new_page()
     errors = []
     page.on("pageerror", lambda e: errors.append(str(e)))
@@ -152,12 +169,12 @@ def test_web_version_interview_collects_and_shows_the_page(browser):
     ctx.close()
 
 
-def test_returning_visitor_gets_the_brief_by_itself_once_a_day(browser):
+def test_returning_visitor_gets_the_brief_by_itself_once_a_day(browser, http_app):
     cfg = json.loads((ROOT / "examples" / "sample-settings.json").read_text())
     cfg["categories"] = [c for c in cfg["categories"] if not c.get("needs_location")]
     state = {"version": 1, "tab": "setup", "step": 7, "config": cfg, "setup_done": True, "auto_run": True}
     calls = []
-    ctx, page, errors = open_page(browser, APP, calls=calls, state=state)
+    ctx, page, errors = open_page(browser, http_app, calls=calls, state=state)
     page.wait_for_selector("iframe.page", timeout=30000)
     assert page.evaluate("DB_APP.state().tab") == "brief"
     searches = len([c for c in calls if c not in ("forecast", "feed")])

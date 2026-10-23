@@ -273,22 +273,27 @@
     };
     if (opts.cancelled && opts.cancelled()) throw new Error("cancelled");
     progress("Publisher feeds", 0, total);
-    // Feeds: a few at a time, they are quick.
-    const jobs = [];
-    for (const c of cats) for (const url of c.feeds || []) jobs.push({ c: c, url: url });
+    // Feeds: each address once, a few at a time, then shared by every category that lists it.
+    const urls = [];
+    for (const c of cats) for (const url of c.feeds || []) if (urls.indexOf(url) < 0) urls.push(url);
+    const got = {};
     let next = 0;
     async function worker() {
-      while (next < jobs.length) {
-        const j = jobs[next++];
-        let items = [], err = "";
-        try { items = parseFeed(await getText(j.url, opts)); } catch (e) { err = String(e.message || e); }
-        const nowMs = now.getTime();
-        const fresh = items.filter(it => { const ms = E.parseIso(it.published); return ms !== null && (nowMs - ms) / 3600000 <= b.window_hours; }).length;
-        health[j.c.id].feeds.push({ url: j.url, items: items.length, fresh: fresh, added: add(j.c.id, items), error: err });
-        tick(j.c.name);
+      while (next < urls.length) {
+        const url = urls[next++];
+        try { got[url] = { items: parseFeed(await getText(url, opts)), err: "" }; } catch (e) { got[url] = { items: [], err: String(e.message || e) }; }
+        for (const c of cats) if ((c.feeds || []).indexOf(url) >= 0) tick(c.name);
       }
     }
     await Promise.all([worker(), worker(), worker(), worker()]);
+    const nowMs = now.getTime();
+    for (const c of cats) {
+      for (const url of c.feeds || []) {
+        const g = got[url] || { items: [], err: "not read" };
+        const fresh = g.items.filter(it => { const ms = E.parseIso(it.published); return ms !== null && (nowMs - ms) / 3600000 <= b.window_hours; }).length;
+        health[c.id].feeds.push({ url: url, items: g.items.length, fresh: fresh, added: add(c.id, g.items), error: g.err });
+      }
+    }
 
     const freshShort = c => {
       const trial = E.selectBrief({ [c.id]: pools[c.id] }, Object.assign({}, n, { categories: n.categories.filter(x => x.id === c.id) }), ledger, nowIso, nowIso.slice(0, 10), "web");

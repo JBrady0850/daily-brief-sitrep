@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.1 (2026-10-23)
+
+- More categories read publisher feeds that allow web pages (The New York
+  Times, Fox News, Wired, CNBC, ESPN and CBS Sports), so most categories fill
+  even when the GDELT news search is busy. Only the five categories about
+  your own town (local news, local government, local sports, things to do,
+  and weather and safety in your town) still depend on the search.
+- Each feed address is read once per run and shared by every category that
+  lists it.
+- The test workflow stops a stalled job after 20 minutes.
+
 ## 0.2.0 (2026-10-23)
 
 The web address is now the whole app: it collects the news itself, remembers

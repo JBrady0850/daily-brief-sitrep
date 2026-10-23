@@ -303,6 +303,13 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
         if progress:
             progress(label, step, total_steps)
 
+    feed_cache: dict = {}  # each feed address is read once per run, however many categories list it
+
+    def read_feed(url: str) -> tuple:
+        if url not in feed_cache:
+            feed_cache[url] = _fetch_parse(url, fetcher, False)
+        return feed_cache[url]
+
     for cat in cats:
         pool: list = []
         seen: set = set()
@@ -326,7 +333,7 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
             if pause:
                 time.sleep(pause)
         for url in cat["feeds"]:
-            items, err = _fetch_parse(url, fetcher, False)
+            items, err = read_feed(url)
             h["feeds"].append({"url": url, "items": len(items), "fresh": _fresh_count(items, now_ms, b["window_hours"]),
                                "added": add(items), "error": err})
             tick(cat["name"])

@@ -224,7 +224,10 @@ window.DB_LIBRARY = {
     "lawsuit",
     "sponsored content"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://moxie.foxnews.com/google-publisher/us.xml"
+   ],
    "color": "#a06527",
    "icon": "star",
    "skip_listicles": true,
@@ -312,7 +315,11 @@ window.DB_LIBRARY = {
     "Storm Area",
     "Seattle Storm"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://moxie.foxnews.com/google-publisher/us.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml"
+   ],
    "color": "#2b6cc4",
    "icon": "alert",
    "skip_listicles": false,
@@ -352,7 +359,10 @@ window.DB_LIBRARY = {
     "economic outlook",
     "market outlook"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml"
+   ],
    "color": "#3673c8",
    "icon": "sun",
    "skip_listicles": false,
@@ -976,7 +986,10 @@ window.DB_LIBRARY = {
     "sportsbook",
     "promo code"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://www.espn.com/espn/rss/nfl/news",
+    "https://www.cbssports.com/rss/headlines/nfl/"
+   ],
    "color": "#6c3483",
    "icon": "chart",
    "skip_listicles": false,
@@ -1054,7 +1067,9 @@ window.DB_LIBRARY = {
     ]
    ],
    "exclude": [],
-   "feeds": [],
+   "feeds": [
+    "https://www.wired.com/feed/category/security/latest/rss"
+   ],
    "color": "#34495e",
    "skip_listicles": false,
    "needs_location": false,
@@ -1084,7 +1099,10 @@ window.DB_LIBRARY = {
     ]
    ],
    "exclude": [],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+    "https://www.cnbc.com/id/19854910/device/rss/rss.html"
+   ],
    "color": "#0b5e8f",
    "skip_listicles": false,
    "needs_location": false,
@@ -1134,7 +1152,11 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "skip_listicles": true,
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+    "https://www.cnbc.com/id/19854910/device/rss/rss.html",
+    "https://www.wired.com/feed/tag/ai/latest/rss"
+   ],
    "color": "#5b3485",
    "needs_location": false,
    "icon": "chip"
@@ -1196,7 +1218,8 @@ window.DB_LIBRARY = {
    "exclude": [],
    "skip_listicles": true,
    "feeds": [
-    "https://www.wired.com/feed/tag/ai/latest/rss"
+    "https://www.wired.com/feed/tag/ai/latest/rss",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"
    ],
    "color": "#a04000",
    "needs_location": false,
@@ -1227,7 +1250,9 @@ window.DB_LIBRARY = {
     ]
    ],
    "exclude": [],
-   "feeds": [],
+   "feeds": [
+    "https://www.wired.com/feed/rss"
+   ],
    "color": "#1b6e3d",
    "skip_listicles": false,
    "needs_location": false,
@@ -1276,7 +1301,8 @@ window.DB_LIBRARY = {
    "feeds": [
     "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
     "https://www.wired.com/feed/rss",
-    "https://moxie.foxnews.com/google-publisher/tech.xml"
+    "https://moxie.foxnews.com/google-publisher/tech.xml",
+    "https://www.cnbc.com/id/19854910/device/rss/rss.html"
    ],
    "color": "#34495e",
    "icon": "phone",
@@ -1408,7 +1434,9 @@ window.DB_LIBRARY = {
     "sponsored content"
    ],
    "skip_listicles": true,
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/YourMoney.xml"
+   ],
    "color": "#922b21",
    "needs_location": false,
    "icon": "hourglass"
@@ -1446,7 +1474,9 @@ window.DB_LIBRARY = {
     "sponsored content"
    ],
    "feeds": [
-    "https://www.cnbc.com/id/20910258/device/rss/rss.html"
+    "https://www.cnbc.com/id/20910258/device/rss/rss.html",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html"
    ],
    "color": "#0f6e5c",
    "skip_listicles": false,
@@ -1515,7 +1545,10 @@ window.DB_LIBRARY = {
     "sponsored content",
     "promo code"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+   ],
    "color": "#12836d",
    "icon": "cart",
    "skip_listicles": false,
@@ -1549,7 +1582,10 @@ window.DB_LIBRARY = {
     "airdrop",
     "price prediction"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://www.cnbc.com/id/10000664/device/rss/rss.html",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml"
+   ],
    "color": "#a2680c",
    "icon": "crypto",
    "skip_listicles": false,
@@ -1586,7 +1622,11 @@ window.DB_LIBRARY = {
    "exclude": [
     "sponsored content"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Climate.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+   ],
    "color": "#946f10",
    "icon": "bolt",
    "skip_listicles": false,
@@ -1625,7 +1665,8 @@ window.DB_LIBRARY = {
    ],
    "skip_listicles": true,
    "feeds": [
-    "https://rss.nytimes.com/services/xml/rss/nyt/Health.xml"
+    "https://rss.nytimes.com/services/xml/rss/nyt/Health.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Science.xml"
    ],
    "color": "#0f6e5c",
    "needs_location": false,
@@ -1961,7 +2002,10 @@ window.DB_LIBRARY = {
     "football game",
     "basketball game"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://www.wired.com/feed/category/culture/latest/rss",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Arts.xml"
+   ],
    "color": "#283593",
    "icon": "gamepad",
    "skip_listicles": true,
@@ -2062,7 +2106,10 @@ window.DB_LIBRARY = {
     "novel",
     "webtoon"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://moxie.foxnews.com/google-publisher/us.xml"
+   ],
    "color": "#8a5a00",
    "skip_listicles": false,
    "needs_location": false,
@@ -2230,7 +2277,9 @@ window.DB_LIBRARY = {
     "home run",
     "home game"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/RealEstate.xml"
+   ],
    "color": "#4f822c",
    "icon": "house",
    "skip_listicles": true,
@@ -2274,7 +2323,10 @@ window.DB_LIBRARY = {
     "top dog",
     "Cats musical"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://moxie.foxnews.com/google-publisher/us.xml"
+   ],
    "color": "#8d6e63",
    "icon": "paw",
    "skip_listicles": true,
@@ -2312,7 +2364,10 @@ window.DB_LIBRARY = {
     "sponsored content",
     "parent company"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Well.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml"
+   ],
    "color": "#bc5500",
    "icon": "people",
    "skip_listicles": true,
@@ -2348,7 +2403,10 @@ window.DB_LIBRARY = {
     "sponsored content",
     "promo code"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Travel.xml",
+    "https://moxie.foxnews.com/google-publisher/travel.xml"
+   ],
    "color": "#33691e",
    "icon": "mountain",
    "skip_listicles": true,
@@ -2384,7 +2442,10 @@ window.DB_LIBRARY = {
    "exclude": [
     "sponsored content"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://moxie.foxnews.com/google-publisher/us.xml"
+   ],
    "color": "#5d4037",
    "icon": "sunrise",
    "skip_listicles": false,
@@ -2612,7 +2673,9 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
-    "https://www.defenseone.com/rss/all/"
+    "https://www.defenseone.com/rss/all/",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
+    "https://moxie.foxnews.com/google-publisher/politics.xml"
    ],
    "color": "#1f3a5f",
    "skip_listicles": false,
@@ -2670,7 +2733,9 @@ window.DB_LIBRARY = {
    "exclude": [],
    "feeds": [
     "https://www.govexec.com/rss/workforce/",
-    "https://federalnewsnetwork.com/category/workforce/feed/"
+    "https://federalnewsnetwork.com/category/workforce/feed/",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
+    "https://moxie.foxnews.com/google-publisher/politics.xml"
    ],
    "color": "#0b5e8f",
    "skip_listicles": false,
@@ -2734,7 +2799,8 @@ window.DB_LIBRARY = {
     "job opening"
    ],
    "feeds": [
-    "https://www.govexec.com/rss/pay-benefits/"
+    "https://www.govexec.com/rss/pay-benefits/",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml"
    ],
    "color": "#1b6e3d",
    "skip_listicles": false,
@@ -2849,7 +2915,9 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
-    "https://www.nextgov.com/rss/all/"
+    "https://www.nextgov.com/rss/all/",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
+    "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml"
    ],
    "color": "#34495e",
    "skip_listicles": false,
@@ -2890,7 +2958,11 @@ window.DB_LIBRARY = {
     "Swiss Army knife",
     "army of fans"
    ],
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://moxie.foxnews.com/google-publisher/us.xml",
+    "https://moxie.foxnews.com/google-publisher/politics.xml"
+   ],
    "color": "#4a5c2a",
    "icon": "medal",
    "skip_listicles": false,
@@ -2952,7 +3024,10 @@ window.DB_LIBRARY = {
     "ballot"
    ],
    "skip_listicles": true,
-   "feeds": [],
+   "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+   ],
    "color": "#1b6e3d",
    "needs_location": false,
    "icon": "briefcase"
@@ -2993,7 +3068,8 @@ window.DB_LIBRARY = {
     "old school"
    ],
    "feeds": [
-    "https://www.k12dive.com/feeds/news/"
+    "https://www.k12dive.com/feeds/news/",
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml"
    ],
    "color": "#3949ab",
    "icon": "graduation",
