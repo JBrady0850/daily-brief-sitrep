@@ -16,7 +16,7 @@ own in plain words.
 
 ## 1. Open the app
 
-### [OWNER.github.io/daily-brief-sitrep](https://OWNER.github.io/daily-brief-sitrep/)
+### [jbrady0850.github.io/daily-brief-sitrep](https://jbrady0850.github.io/daily-brief-sitrep/)
 
 Open the link on a computer, tablet or phone. It runs the setup interview, edits
 your categories, shows the newsletter, and makes your settings file. Your

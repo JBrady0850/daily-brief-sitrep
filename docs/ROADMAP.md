@@ -135,6 +135,6 @@ needs a decision because it puts a server, however small, in the path.
    the repository.
 4. Bump `VERSION` in `app/js/engine.js`, `dailybrief/engine.py` and `app/sw.js`,
    and add a CHANGELOG entry.
-5. After the first publish, replace `OWNER` in the README links with the
-   GitHub account name, turn on **Settings, Template repository** so readers
-   can use **Use this template**, and turn on Pages (Source: GitHub Actions).
+5. In a fork or a new home for the project, change the app link at the top of
+   the README, turn on **Settings, Template repository** so readers can use
+   **Use this template**, and turn on Pages (Source: GitHub Actions).
