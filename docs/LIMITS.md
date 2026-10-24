@@ -1,4 +1,4 @@
-# Limits (v0.4.0)
+# Limits (v0.5.1)
 
 - The web page reads only the sources that allow web pages to read them: the
   GDELT news index, and publisher feeds such as ESPN, CBS Sports, NASA, The New
@@ -12,10 +12,18 @@
   feed, including feeds web pages cannot read. It covers the 62 library
   categories that do not depend on your town. It is up to four hours old, and
   in a public repository GitHub stops scheduled workflows after 60 days with no
-  new commits; the page then falls back to the news index.
+  new commits; the page then falls back to the news index. Google News
+  sometimes turns GitHub's servers away (every search on 2026-10-24 got
+  "Service Unavailable"). After three refusals in a row the run reads the
+  feeds only, and stories from the file already on the site stay while they
+  are within four days and on topic. A feeds-only test run on 2026-10-24 had
+  stories for 59 of 62 categories. Bing News also offers search feeds, but
+  their terms allow personal use in a feed reader only, so the public backup
+  collection does not use them.
 - The GDELT index turns requests away when it is busy or when one connection
   asks too often (HTTP 503 and 429, seen on 2026-10-23; after a day of heavy
-  testing it refused one home connection for hours). The town categories and
+  testing it refused one home connection for hours, and at 02:20 UTC on
+  2026-10-24 it refused the first request from two unrelated networks). The town categories and
   categories you type yourself depend on it, unless you add a local news feed
   on the town question that allows web pages to read it. Many local sites do
   not: of 18 local news feeds tried in one region on 2026-10-24, none did

@@ -198,3 +198,42 @@ def test_town_searches_add_the_state_and_failed_searches_are_marked_unchecked():
     assert town_urls and all("%22Illinois%22" in u for u in town_urls), town_urls
     assert all("Illinois" not in u for u in calls if "zero" in u), "only town searches add the state"
     assert all(c.get("unchecked") is True for c in brief["categories"])
+
+
+def test_three_failed_searches_in_a_row_end_the_searching_for_the_run():
+    calls = []
+
+    def fetcher(url):
+        calls.append(url)
+        if "news.google.com" in url:
+            raise C.FetchError("Service Unavailable")
+        return feed_bytes("rss_feed.xml")
+    cfg = settings()
+    cfg["categories"].append({"id": "more", "name": "More", "queries": ["buyout"], "require": [["buyout"]]})
+    brief, health = C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=fetcher, pause=0)
+    assert len([u for u in calls if "news.google.com" in u]) == C.GOOGLE_GIVE_UP
+    assert health["more"]["queries"][0]["error"] == C.SKIPPED
+    assert any(h["feeds"] for h in health.values()), "the feeds are still read"
+    assert any(c["items"] for c in brief["categories"])
+    assert brief["categories"][2].get("unchecked") is True, "a desk with only skipped searches was not checked"
+
+
+def test_a_search_that_works_resets_the_count_and_the_count_can_be_shared():
+    answers = iter([C.FetchError("Service Unavailable"), C.FetchError("Service Unavailable"), b"ok"] + [C.FetchError("x")] * 9)
+
+    def fetcher(url):
+        if "news.google.com" not in url:
+            return feed_bytes("rss_feed.xml")
+        a = next(answers)
+        if isinstance(a, Exception):
+            raise a
+        return feed_bytes("google_news.xml")
+    shared = {}
+    one = {"version": 1, "categories": [{"id": "a", "name": "A", "queries": ["one", "two", "three", "four"], "require": [["zzzz"]]}],
+           "brief": {"window_hours": 24, "backfill_max_hours": 24}}
+    _, h = C.collect(one, NOW, None, fetcher, None, 0, shared)
+    errors = [q["error"] for q in h["a"]["queries"]]
+    assert errors[:3] == ["Service Unavailable", "Service Unavailable", ""] and errors[3] == "x"
+    assert shared["failures"] == 1
+    _, h = C.collect(one, NOW, None, fetcher, None, 0, shared)
+    assert [q["error"] for q in h["a"]["queries"]] == ["x", "x", C.SKIPPED, C.SKIPPED], "the shared count carries over"

@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.5.0"
+VERSION = "0.5.1"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -309,6 +309,36 @@ def is_local_category(cat: Any) -> bool:
     return (is_obj(cat) and cat.get("needs_location") is True) or "{location}" in t or "{local_terms}" in t
 
 
+AREA_MAX = 4  # the town and up to three nearby places in one search
+
+
+def area_terms(local: list) -> list:
+    """The town first, then nearby places of three or more letters, at most AREA_MAX."""
+    out: list = []
+    for t in local:
+        v = collapse(str(t).replace('"', ""))
+        if not v or (out and len(v) < 3):
+            continue
+        if v.lower() not in [x.lower() for x in out]:
+            out.append(v)
+        if len(out) >= AREA_MAX:
+            break
+    return out
+
+
+def area_query(q: Any, area: list) -> str:
+    """In a search, the quoted town ("{location}") outside a group stands for your area:
+    ("Town" OR "Nearby place" ...). Inside a group it stays the town (groups never nest)."""
+    key = '"{location}"'
+    parts = str(q).split(key)
+    s = parts[0]
+    for part in parts[1:]:
+        depth = s.count("(") - s.count(")")
+        group = "(" + " OR ".join('"' + t + '"' for t in area) + ")"
+        s += (group if depth == 0 and len(area) > 1 else key) + part
+    return s
+
+
 def resolve_category(cat: dict, reader: dict) -> dict:
     c = clone(cat)
     loc = collapse((reader or {}).get("location"))
@@ -324,7 +354,8 @@ def resolve_category(cat: dict, reader: dict) -> dict:
             local.append(v)
     c["name"] = sub(c.get("name") or "")
     c["description"] = sub(c.get("description") or "")
-    c["queries"] = [sub(q) for q in (c.get("queries") or [])]
+    area = area_terms(local) if loc else []
+    c["queries"] = [sub(area_query(q, area)) for q in (c.get("queries") or [])]
     groups = []
     for group in c.get("require") or []:
         out = []

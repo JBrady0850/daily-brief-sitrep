@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.1 (2026-10-24)
+
+The backup collection survives a run that Google News turns away.
+
+- On 2026-10-24 Google News answered every search from GitHub's servers with
+  "Service Unavailable", and the backup run ran out of time after 36 of 62
+  categories. Now three refused searches in a row end the searching for that
+  run, and every category still reads its feeds: a test run with Google
+  refusing finished in 36 seconds with stories for 59 of 62 categories.
+- Stories from the file already on the site stay when they are still within
+  four days and on topic, so one bad run cannot empty a category. The new
+  `build-cache --previous` option names that file; the Pages workflow
+  downloads it from the site first.
+- The desktop app and the GitHub copy stop asking Google News after three
+  refused searches in a row, too, and read the feeds for the rest of the run
+  (the web page already does this with its news index).
+- Town searches now ask for your town **or** the nearby places you listed (up
+  to four names), instead of the town alone. The nearby places already counted
+  as local; now they are searched too. A small town's news often names only its
+  county: in a test for one small city on 2026-10-24, Google News found 11
+  stories for the five town categories this way, against 3 for the town name
+  alone.
+
 ## 0.5.0 (2026-10-24)
 
 Town categories no longer depend on the news search alone.

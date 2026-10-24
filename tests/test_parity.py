@@ -353,7 +353,7 @@ def test_town_categories_agree():
     assert town_cat["feeds"] == ["https://tv.example.com/feed", "https://paper.example.com/rss"], "own feeds join town categories once"
     assert town_cat["require"] == [["Springfield", "Sangamon County"]]
     assert E.resolve_category(plain, readers[0])["feeds"] == [], "other categories never get them"
-    assert E.resolve_category(custom, readers[0])["queries"] == ['"Springfield" Illinois parade']
+    assert E.resolve_category(custom, readers[0])["queries"] == ['("Springfield" OR "Sangamon County") Illinois parade']
     assert any("local_feeds" in e for e in E.validate_config(cfgs[0])["errors"]), "a bad link is refused"
     assert any("local_feeds" in e for e in E.validate_config(cfgs[1])["errors"]) and any("region" in e for e in E.validate_config(cfgs[1])["errors"])
 
@@ -370,3 +370,30 @@ def test_unchecked_desks_render_the_same(sample_brief, sample_settings):
     assert "Not checked today: the news search did not answer" in p["html"] and "Not checked today, because the news search did not answer: " in p["html"]
     assert "No new items for: " + b["categories"][1]["name"] in p["html"]
     assert "Not checked today: the news search did not answer. Try again later." in p["text"]
+
+
+def test_town_searches_name_the_nearby_places_the_same_way():
+    """A town search asks for the town or a nearby place the reader named (both engines)."""
+    lists = [["Springfield"], ["Springfield", "Sangamon County", "springfield", "IL", "Chatham", "Rochester", "Auburn"],
+             ['Spring"field', "  Sangamon   County "], [], ["", "Chatham"]]
+    queries = ['"{location}" council', '("high school" OR "{location}") prep', '"{location}" (a OR b) "{location}"', "no town here",
+               '"{location}"("x" OR y)']
+    reqs, pys = [], []
+    for terms in lists:
+        reqs.append({"fn": "areaTerms", "args": [terms]}); pys.append(E.area_terms(terms))
+        for q in queries:
+            area = E.area_terms(terms)
+            reqs.append({"fn": "areaQuery", "args": [q, area]}); pys.append(E.area_query(q, area))
+    for p, j in zip(pys, js_calls(reqs)):
+        assert same(p, j), json.dumps([p, j])
+    assert E.area_terms(lists[1]) == ["Springfield", "Sangamon County", "Chatham", "Rochester"], "no repeats, no short names, four at most"
+    area = E.area_terms(lists[1])
+    assert E.area_query('"{location}" council', area) == '("Springfield" OR "Sangamon County" OR "Chatham" OR "Rochester") council'
+    assert E.area_query('("high school" OR "{location}") prep', area) == '("high school" OR "{location}") prep', "groups never nest"
+    assert E.area_query('"{location}" council', ["Springfield"]) == '"{location}" council', "the town alone stays as it was"
+    town = {"id": "local-news", "name": "Local ({location})", "queries": ['"{location}" council'], "require": [["{local_terms}"]],
+            "needs_location": True}
+    got = E.resolve_category(town, {"location": "Springfield", "local_terms": ["Sangamon County"]})
+    assert got["queries"] == ['("Springfield" OR "Sangamon County") council'] and got["name"] == "Local (Springfield)"
+    assert E.resolve_category(town, {"location": "", "local_terms": ["Sangamon County"]})["queries"] == ['"" council'], \
+        "no town, no area search (as before)"

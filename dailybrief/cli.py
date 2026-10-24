@@ -240,7 +240,14 @@ def cmd_check_feeds(a: argparse.Namespace) -> int:
 def cmd_build_cache(a: argparse.Namespace) -> int:
     """The backup collection the web page reads when the news index is busy."""
     from . import newscache
-    data = newscache.build(_now_iso(), pause=a.pause, budget=a.budget, log=newscache.stderr_log)
+    previous = None
+    if a.previous:
+        try:
+            with open(a.previous, encoding="utf-8") as fh:
+                previous = json.load(fh)
+        except (OSError, ValueError) as exc:
+            newscache.stderr_log(f"No earlier backup collection to keep ({type(exc).__name__}); starting fresh.")
+    data = newscache.build(_now_iso(), pause=a.pause, budget=a.budget, log=newscache.stderr_log, previous=previous)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n"
@@ -252,7 +259,8 @@ def cmd_build_cache(a: argparse.Namespace) -> int:
     empty = sorted(k for k, v in cats.items() if not v)
     src = data["sources"]
     print(f"Wrote {out}: {sum(len(v) for v in cats.values())} stories in {len(cats)} categories, {len(text)} bytes.")
-    print(f"Searches: {src['searches']} ({src['searches_failed']} failed). Feeds: {src['feeds']} ({src['feeds_failed']} failed).")
+    print(f"Searches: {src['searches']} ({src['searches_failed']} failed, {src['searches_skipped']} skipped). "
+          f"Feeds: {src['feeds']} ({src['feeds_failed']} failed). Kept from the last run: {src['carried']}.")
     if empty:
         print("No stories for: " + ", ".join(empty))
     return OK if sum(len(v) for v in cats.values()) else FAIL
@@ -352,6 +360,7 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--out", default="app/data/news-cache.json", help="where to write it")
     s.add_argument("--pause", type=float, default=collect.GOOGLE_PAUSE, help="seconds between Google News requests")
     s.add_argument("--budget", type=float, default=600, help="stop starting new categories after this many seconds")
+    s.add_argument("--previous", help="the last published news-cache.json; its recent stories are kept")
     s.set_defaults(func=cmd_build_cache)
 
     s = sub.add_parser("scan", help="look for personal data and secrets before you publish")

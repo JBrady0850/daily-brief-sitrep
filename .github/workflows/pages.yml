@@ -3,7 +3,9 @@ name: Publish app to GitHub Pages
 # Until then this workflow skips with a notice instead of failing.
 # Every run also rebuilds the backup collection (app/data/news-cache.json): stories for
 # every library category from Google News and every library feed, which the web page
-# reads when the GDELT news index is busy. Free, no key, no secret.
+# reads when the GDELT news index is busy. Recent stories from the file already on the
+# site are kept, so a run that Google News turns away cannot empty a category.
+# Free, no key, no secret.
 on:
   push:
     branches: [main]
@@ -50,12 +52,18 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
+      - id: site
+        uses: actions/configure-pages@v6
       - name: Backup collection (Google News and every library feed)
         # A failed collection never stops the app from publishing; the page then uses the news index.
         continue-on-error: true
         timeout-minutes: 15
-        run: python -m dailybrief build-cache --out app/data/news-cache.json
-      - uses: actions/configure-pages@v6
+        env:
+          SITE: ${{ steps.site.outputs.base_url }}
+        run: |
+          curl -fsSL --max-time 30 -o "$RUNNER_TEMP/previous-news-cache.json" "$SITE/data/news-cache.json" \
+            || echo "No backup collection on the site yet."
+          python -m dailybrief build-cache --out app/data/news-cache.json --previous "$RUNNER_TEMP/previous-news-cache.json"
       - uses: actions/upload-pages-artifact@v5
         with:
           path: app

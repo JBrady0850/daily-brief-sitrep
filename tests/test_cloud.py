@@ -199,3 +199,7 @@ def test_pages_workflow_rebuilds_the_backup_collection_on_a_schedule():
     assert "secrets." not in wf
     assert "github.event_name != 'schedule' || github.repository == 'JBrady0850/daily-brief-sitrep'" in wf, "copies skip the schedule"
     assert "app/data/news-cache.json" in (ROOT / ".gitignore").read_text(), "the built file is never committed"
+    # The file already on the site is downloaded first, so its recent stories stay.
+    assert wf.index("id: site") < wf.index("Backup collection"), "the site address is known before the collection"
+    assert '"$SITE/data/news-cache.json"' in step + wf[wf.index("build-cache"):] and "|| echo" in wf
+    assert '--previous "$RUNNER_TEMP/previous-news-cache.json"' in wf

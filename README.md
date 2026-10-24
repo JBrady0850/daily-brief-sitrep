@@ -102,12 +102,13 @@ download or copy; see [CHANGELOG.md](CHANGELOG.md).
 | Order | Source | When |
 |---|---|---|
 | 1 | Publisher feeds that allow web pages (The New York Times, Fox News, CNBC, ESPN, CBS Sports, Wired, NASA, Dark Reading, Industry Dive trade sites and others) | Every brief |
-| 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, published beside the app | When a category is still short |
+| 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, published beside the app; recent stories from the last run stay, so a bad run cannot empty a category | When a category is still short |
 | 3 | The GDELT news index | Only for what is still short, mostly categories about your town and topics you typed |
 
 **Your town.** The town question keeps your town, its state and the nearby
 towns or county that count as local; picking your town for the forecast fills in
-the state and county. Town news is the hardest to find from a web page, so the
+the state and county. Town searches ask for your town or any of those nearby
+places, because a small town's news often names only its county. Town news is the hardest to find from a web page, so the
 question also takes your local TV station's or paper's news feed, with a
 **Check** button that says whether this page can read it. If the news search
 does not answer on a given day, a town category says "Not checked today"

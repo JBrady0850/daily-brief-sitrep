@@ -27,6 +27,8 @@ USER_AGENT = "Mozilla/5.0 (compatible; DailyBrief/" + E.VERSION + "; personal ne
 TIMEOUT = 20
 MAX_BYTES = 5_000_000
 GOOGLE_PAUSE = 0.6
+GOOGLE_GIVE_UP = 3   # searches in a row that failed; the rest of the run reads the feeds only
+SKIPPED = "skipped: Google News turned away the last searches, so this brief uses the feeds"
 
 Fetcher = Callable[[str], bytes]
 
@@ -283,9 +285,26 @@ def _fresh_count(items: list, now_ms: int, window: int) -> int:
 
 
 def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Optional[Fetcher] = None,
-            progress: Optional[Callable[[str, int, int], None]] = None, pause: float = GOOGLE_PAUSE) -> tuple:
-    """Returns (candidates, health). candidates maps category id to items."""
+            progress: Optional[Callable[[str, int, int], None]] = None, pause: float = GOOGLE_PAUSE,
+            searches: Optional[dict] = None) -> tuple:
+    """Returns (candidates, health). candidates maps category id to items.
+
+    After GOOGLE_GIVE_UP failed searches in a row, the rest of the run skips Google
+    News and reads the feeds only (the web page does the same with its news index).
+    Pass the same `searches` dict to several calls to share that count between them."""
     fetcher = fetcher or fetch
+    state = searches if searches is not None else {}
+    state.setdefault("failures", 0)
+
+    def search(q: str, days: int) -> tuple:
+        if state["failures"] >= GOOGLE_GIVE_UP:
+            return [], SKIPPED
+        items, err = _fetch_parse(E.google_news_url(q, days, n), fetcher, True)
+        state["failures"] = state["failures"] + 1 if err else 0
+        if pause:
+            time.sleep(pause)
+        return items, err
+
     n = E.normalize_config(cfg)
     b = n["brief"]
     now_ms = E.parse_iso(now_iso)
@@ -336,11 +355,9 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
         if cat["id"] in local_ids:
             queries = [q + ' "' + region.replace('"', "") + '"' for q in queries]
         for q in queries:
-            items, err = _fetch_parse(E.google_news_url(q, days1, n), fetcher, True)
+            items, err = search(q, days1)
             h["queries"].append({"query": q, "days": days1, "items": len(items), "added": add(items), "error": err})
             tick(cat["name"])
-            if pause:
-                time.sleep(pause)
         for url in feeds_of(cat):
             items, err = read_feed(url)
             on_topic = url in (cat.get("topic_feeds") or [])
@@ -355,10 +372,8 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
             fresh = len([i for i in trial["categories"][0]["items"] if i["recency"] == "news"])
             if fresh < want:
                 for q in queries:
-                    items, err = _fetch_parse(E.google_news_url(q, days2, n), fetcher, True)
+                    items, err = search(q, days2)
                     h["queries"].append({"query": q, "days": days2, "items": len(items), "added": add(items), "error": err})
-                    if pause:
-                        time.sleep(pause)
         candidates[cat["id"]] = pool
         health[cat["id"]] = h
     return candidates, health

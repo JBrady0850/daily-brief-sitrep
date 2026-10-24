@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.5.0";
+  const VERSION = "0.5.1";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -187,6 +187,34 @@
     return !!(cat && cat.needs_location === true) || t.indexOf("{location}") >= 0 || t.indexOf("{local_terms}") >= 0;
   }
 
+  const AREA_MAX = 4;  // the town and up to three nearby places in one search
+
+  /* The town first, then nearby places of three or more letters, at most AREA_MAX. */
+  function areaTerms(local) {
+    const out = [];
+    for (const t of local) {
+      const v = collapse(String(t).split('"').join(""));
+      if (!v || (out.length && v.length < 3)) continue;
+      if (out.map(x => x.toLowerCase()).indexOf(v.toLowerCase()) < 0) out.push(v);
+      if (out.length >= AREA_MAX) break;
+    }
+    return out;
+  }
+
+  /* In a search, the quoted town ("{location}") outside a group stands for your area:
+     ("Town" OR "Nearby place" ...). Inside a group it stays the town (groups never nest). */
+  function areaQuery(q, area) {
+    const key = '"{location}"';
+    const parts = String(q).split(key);
+    let s = parts[0];
+    for (let i = 1; i < parts.length; i++) {
+      const depth = s.split("(").length - s.split(")").length;
+      const group = "(" + area.map(t => '"' + t + '"').join(" OR ") + ")";
+      s += (depth === 0 && area.length > 1 ? group : key) + parts[i];
+    }
+    return s;
+  }
+
   function resolveCategory(cat, reader) {
     const c = clone(cat);
     const loc = collapse(reader && reader.location);
@@ -199,7 +227,8 @@
     }
     c.name = sub(c.name || "");
     c.description = sub(c.description || "");
-    c.queries = (c.queries || []).map(sub);
+    const area = loc ? areaTerms(local) : [];
+    c.queries = (c.queries || []).map(q => sub(areaQuery(q, area)));
     c.require = (c.require || []).map(group => {
       const out = [];
       for (const term of group) {
@@ -879,7 +908,7 @@
   return {
     VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_LEDGER, MAX_RECENT,
     clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, validImage, isNum, hostOf, round1, pad2,
-    isAcronym, termHit, countHits, isLocalCategory, resolveCategory, normalizeConfig, validateConfig,
+    isAcronym, termHit, countHits, isLocalCategory, areaTerms, areaQuery, resolveCategory, normalizeConfig, validateConfig,
     categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
     emptyLedger, cleanLedger, ledgerHas, ledgerAdd, ledgerSize, humanizeAge, classify, cutSummary,
     gateItem, cleanItem, selectBrief, filterSeen, checkBrief, buildPrompt, extractJson, googleNewsUrl, cronLines

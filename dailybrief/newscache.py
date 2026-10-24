@@ -14,7 +14,10 @@ do not allow web pages to read them. Free, no key, no account.
 
 It works one category at a time against a time budget, asks Google News once
 per category (a four-day search), reads each feed address once, and writes
-whatever it gathered when the budget runs out.
+whatever it gathered when the budget runs out. Google News sometimes turns
+GitHub's servers away (503); after three refusals in a row the run reads the
+feeds only. Stories from the last published file that are still recent and on
+topic are kept, so one bad run cannot empty a category.
 """
 import json
 import sys
@@ -79,13 +82,24 @@ def _remember(fetcher: C.Fetcher) -> C.Fetcher:
     return fetch
 
 
+def previous_stories(data: object) -> dict:
+    """The stories of an earlier backup file, by category; anything unreadable counts as none."""
+    if not isinstance(data, dict) or data.get("schema") != SCHEMA or not isinstance(data.get("categories"), dict):
+        return {}
+    return {k: [x for x in v if isinstance(x, dict)] for k, v in data["categories"].items() if isinstance(v, list)}
+
+
 def build(now_iso: str, lib: Optional[dict] = None, fetcher: Optional[C.Fetcher] = None,
           pause: float = C.GOOGLE_PAUSE, per_category: int = PER_CATEGORY, budget: float = BUDGET_SECONDS,
-          log: Optional[Callable[[str], None]] = None, clock: Callable[[], float] = time.monotonic) -> dict:
-    """Collects every non-town library category and returns the file's content."""
+          log: Optional[Callable[[str], None]] = None, clock: Callable[[], float] = time.monotonic,
+          previous: Optional[dict] = None) -> dict:
+    """Collects every non-town library category and returns the file's content.
+    `previous` is the last published file; its stories still recent and on topic stay."""
     lib = lib or library()
     say = log or (lambda s: None)
     get = _remember(fetcher or quick_fetch)
+    prev = previous_stories(previous)
+    searches: dict = {}  # shared by every category, so Google's refusals end the searching early
     cats = []
     for c in lib["categories"]:
         if is_local(c):
@@ -99,29 +113,52 @@ def build(now_iso: str, lib: Optional[dict] = None, fetcher: Optional[C.Fetcher]
     now_ms = E.parse_iso(now_iso)
     start = clock()
     out: dict = {}
-    sources = {"searches": 0, "searches_failed": 0, "feeds": 0, "feeds_failed": 0, "skipped": 0}
+    sources = {"searches": 0, "searches_failed": 0, "searches_skipped": 0, "feeds": 0, "feeds_failed": 0,
+               "skipped": 0, "carried": 0}
+    told = False
     for k, cat in enumerate(cfg["categories"], 1):
-        if clock() - start > budget:
-            sources["skipped"] += 1
-            continue
-        one = dict(cfg, categories=[cat])
-        candidates, health = C.collect(one, now_iso, None, get, None, pause)
         rcat = E.resolve_category(cat, cfg["reader"])
-        kept = [x for x in (_keep(it, now_ms, rcat, cfg) for it in candidates.get(cat["id"], [])) if x]
-        kept.sort(key=lambda x: x["published"], reverse=True)
-        out[cat["id"]] = kept[:per_category]
-        h = health.get(cat["id"], {"queries": [], "feeds": []})
-        for q in h["queries"]:
-            sources["searches"] += 1
-            sources["searches_failed"] += 1 if q.get("error") else 0
-        for f in h["feeds"]:
-            sources["feeds"] += 1
-            sources["feeds_failed"] += 1 if f.get("error") else 0
-        errs = [x.get("error") for x in h["queries"] + h["feeds"] if x.get("error")]
-        say("[%d/%d] %-22s %2d stories  %4.0fs%s" % (k, len(cfg["categories"]), cat["id"], len(out[cat["id"]]), clock() - start,
-                                                   ("  problems: " + "; ".join(errs[:2])) if errs else ""))
+        fresh: list = []
+        errs: list = []
+        elapsed = clock() - start
+        over = elapsed > budget
+        if over:
+            sources["skipped"] += 1
+        else:
+            one = dict(cfg, categories=[cat])
+            candidates, health = C.collect(one, now_iso, None, get, None, pause, searches)
+            fresh = [x for x in (_keep(it, now_ms, rcat, cfg) for it in candidates.get(cat["id"], [])) if x]
+            h = health.get(cat["id"], {"queries": [], "feeds": []})
+            for q in h["queries"]:
+                skipped = q.get("error") == C.SKIPPED
+                sources["searches_skipped" if skipped else "searches"] += 1
+                sources["searches_failed"] += 1 if q.get("error") and not skipped else 0
+            for f in h["feeds"]:
+                sources["feeds"] += 1
+                sources["feeds_failed"] += 1 if f.get("error") else 0
+            errs = [x["error"] for x in h["queries"] + h["feeds"] if x.get("error") and x["error"] != C.SKIPPED]
+        # Earlier stories still recent and on topic stay, below anything new with the same address.
+        have = {E.norm_url(x["url"]) for x in fresh}
+        carried = []
+        for x in (_keep(p, now_ms, rcat, cfg) for p in prev.get(cat["id"], [])):
+            if x and E.norm_url(x["url"]) not in have:
+                have.add(E.norm_url(x["url"]))
+                x["_carried"] = True
+                carried.append(x)
+        both = sorted(fresh + carried, key=lambda x: x["published"], reverse=True)[:per_category]
+        kept_old = sum(1 for x in both if x.pop("_carried", False))
+        if over and not both:
+            continue  # no time for this category and nothing earlier to keep
+        out[cat["id"]] = both
+        sources["carried"] += kept_old
+        say("[%d/%d] %-22s %2d stories%s  %4.0fs%s" % (
+            k, len(cfg["categories"]), cat["id"], len(both), (" (%d kept from the last run)" % kept_old) if kept_old else "",
+            elapsed if over else clock() - start, ("  problems: " + "; ".join(errs[:2])) if errs else ""))
+        if not told and searches.get("failures", 0) >= C.GOOGLE_GIVE_UP:
+            told = True
+            say("Google News turned away %d searches in a row; the rest of this run reads the feeds only." % C.GOOGLE_GIVE_UP)
     if sources["skipped"]:
-        say("Time budget reached: %d categories skipped." % sources["skipped"])
+        say("Time budget reached: %d categories had no time for new stories." % sources["skipped"])
     return {"schema": SCHEMA, "generated_at": now_iso, "categories": out, "sources": sources}
 
 

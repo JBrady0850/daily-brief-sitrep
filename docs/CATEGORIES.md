@@ -28,6 +28,11 @@ words your own category. Each category has:
 - `{location}` in a name or search becomes your town, and `{region}` your state
   or region. In a must-mention line, `{local_terms}` stands for your town plus
   the nearby towns and county you listed.
+- In a search, a quoted `"{location}"` that is not inside a group searches your
+  area: your town or any nearby place you listed, up to four names in all, for
+  example `("Springfield" OR "Sangamon County") council`. Nearby names shorter
+  than three letters are left out of searches (the news index refuses them).
+  Inside a group it stays your town, because groups cannot nest.
 - Town categories (those with `{location}`, `{local_terms}` or `needs_location`)
   also read the local news feeds you add on the town question. Their stories
   still need to name your town or a nearby place. The desktop app and the GitHub
