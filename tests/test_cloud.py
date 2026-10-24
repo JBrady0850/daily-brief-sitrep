@@ -197,4 +197,5 @@ def test_pages_workflow_rebuilds_the_backup_collection_on_a_schedule():
     step = wf[wf.index("Backup collection"):wf.index("build-cache")]
     assert "continue-on-error: true" in step, "a failed collection never stops the app from publishing"
     assert "secrets." not in wf
+    assert "github.event_name != 'schedule' || github.repository == 'JBrady0850/daily-brief-sitrep'" in wf, "copies skip the schedule"
     assert "app/data/news-cache.json" in (ROOT / ".gitignore").read_text(), "the built file is never committed"

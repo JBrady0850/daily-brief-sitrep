@@ -20,6 +20,9 @@ concurrency:
   cancel-in-progress: true
 jobs:
   check:
+    # The schedule rebuilds the backup collection for the public site only; copies made
+    # from the template skip it (a public copy with its own Pages site can drop this line).
+    if: github.event_name != 'schedule' || github.repository == 'JBrady0850/daily-brief-sitrep'
     runs-on: ubuntu-24.04
     outputs:
       enabled: ${{ steps.pages.outputs.enabled }}
