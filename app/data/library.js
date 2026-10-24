@@ -2869,6 +2869,8 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
+    "https://federalnewsnetwork.com/feed/",
+    "https://www.fedweek.com/feed/",
     "https://www.govexec.com/rss/workforce/",
     "https://federalnewsnetwork.com/category/workforce/feed/",
     "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
@@ -2939,6 +2941,9 @@ window.DB_LIBRARY = {
     "job opening"
    ],
    "feeds": [
+    "https://federalnewsnetwork.com/feed/",
+    "https://www.fedsmith.com/feed/",
+    "https://www.fedweek.com/feed/",
     "https://www.govexec.com/rss/pay-benefits/",
     "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
     "https://moxie.foxnews.com/google-publisher/latest.xml",

@@ -671,7 +671,7 @@ Reductions in force, early retirement and buyout offers, hiring freezes and rest
 - Queries: `(RIF OR "reduction in force" OR VERA OR VSIP OR "deferred resignation" OR buyout OR layoffs) (federal OR agency OR OPM)` / `"federal employees" (layoffs OR RIF OR shutdown OR furlough OR "early retirement")`
 - Must mention one of (group 1): RIF, reduction in force, reductions in force, VERA, VSIP, early retirement, buyout, buyouts, deferred resignation, DRP, layoff, layoffs, furlough, workforce reduction, workforce cuts, job cuts, hiring freeze, restructuring, reorganization, downsizing, probationary, Schedule F, shutdown
 - Must mention one of (group 2): federal, civilian, civil service, OPM, agency, agencies, government, DoD, Pentagon, Department of War
-- Publisher feeds: https://www.govexec.com/rss/workforce/, https://federalnewsnetwork.com/category/workforce/feed/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/, https://rss.nytimes.com/services/xml/rss/nyt/US.xml
+- Publisher feeds: https://federalnewsnetwork.com/feed/, https://www.fedweek.com/feed/, https://www.govexec.com/rss/workforce/, https://federalnewsnetwork.com/category/workforce/feed/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/, https://rss.nytimes.com/services/xml/rss/nyt/US.xml
 
 ### Federal Pay, Leave and Benefits (`federal-pay`)
 
@@ -681,7 +681,7 @@ Federal pay raises or freezes, locality pay, annual leave rules, Open Season and
 - Must mention one of (group 1): pay raise, pay freeze, pay increase, pay adjustment, locality pay, General Schedule, salary, wage, annual leave, sick leave, use-or-lose, use or lose, lump sum, lump-sum, leave year, pay period, Open Season, FEHB, FEGLI, FEDVIP, TSP, benefits, administrative leave, step increase, within-grade
 - Must mention one of (group 2): federal, feds, OPM, General Schedule, civil service, federal workforce, federal employees, federal workers, agency, agencies
 - Leave out: job seekers, apply now, job posting, job opening
-- Publisher feeds: https://www.govexec.com/rss/pay-benefits/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/
+- Publisher feeds: https://federalnewsnetwork.com/feed/, https://www.fedsmith.com/feed/, https://www.fedweek.com/feed/, https://www.govexec.com/rss/pay-benefits/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/
 
 ### Federal Retirement (FERS, TSP, FEHB) (`federal-retirement`)
 

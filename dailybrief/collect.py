@@ -453,8 +453,9 @@ def weather(cfg: dict, now_iso: str, fetcher: Optional[Fetcher] = None) -> Optio
 
 
 def mark_unchecked(brief: dict, health: dict) -> dict:
-    """An empty desk whose searches all failed was not checked; a town desk whose local
-    stations answered was (mirrors markUnchecked in collect.js)."""
+    """An empty desk whose searches all failed was not checked; it was when the backup
+    collection covers it or, for a town desk, its local stations answered (mirrors
+    markUnchecked in collect.js)."""
     for bc in brief.get("categories") or []:
         h = (health or {}).get(bc.get("id"))
         if not h or bc.get("items"):
@@ -463,7 +464,9 @@ def mark_unchecked(brief: dict, health: dict) -> dict:
         local = h.get("local")
         stations = (isinstance(local, dict) and not local.get("error")) or \
             any(f.get("station") and not f.get("error") for f in h.get("feeds") or [])
-        if tried and all(q.get("error") for q in tried) and not stations:
+        backup = h.get("backup")
+        covered = isinstance(backup, dict) and not backup.get("error") and backup.get("covered") is True
+        if tried and all(q.get("error") for q in tried) and not stations and not covered:
             bc["unchecked"] = True
     return brief
 

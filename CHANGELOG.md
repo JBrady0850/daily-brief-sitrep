@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.6.2 (2026-10-24)
+
+"Not checked today" only when nothing could check the desk.
+
+- A desk whose news searches failed now counts as checked when the backup
+  collection covers its category, because GitHub searched it (Google News and
+  its feeds) within the last four hours. Such a desk says "No new items",
+  meaning nothing new that you have not already been sent, instead of "Not
+  checked today". On 2026-10-24 the Federal Workforce and Federal Pay desks
+  said "Not checked today" on a second brief of the day, while the backup
+  held their stories, already shown in the first brief.
+- Federal Workforce Actions and Federal Pay, Leave and Benefits read more
+  federal news feeds on GitHub (FedWeek, FedSmith, Federal News Network). In a
+  check on 2026-10-24 they offered up to 4 more on-topic stories for workforce
+  actions and up to 9 for pay and benefits from the last four days.
+
 ## 0.6.1 (2026-10-24)
 
 A tab left open across a release no longer builds the brief with the old code.

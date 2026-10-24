@@ -570,8 +570,23 @@ def test_the_backup_collection_fills_categories_when_the_news_index_refuses(brow
     assert health["defense-ai"]["backup"]["added"] == 6 and health["pets"]["backup"]["items"] == 0
     assert all("defense" not in c for c in calls if c not in ("feed", "forecast", "refused")), "a full category is never searched"
     assert "refused" in calls, "the short category still tried the news index"
+    assert by["pets"].get("unchecked") is True, "not in the backup collection and the search failed: not checked"
     page.click("#briefview summary:has-text('Sources and filters')")
     assert "6 from the backup collection" in page.inner_text("#briefview")
+    assert errors == []
+    ctx.close()
+    # The backup collection searched the category on GitHub and has nothing new for it:
+    # the desk was checked, so it says "No new items", not "Not checked today".
+    covered = backup_file(["defense-ai"])
+    covered["categories"]["pets"] = []
+    ctx, page, errors = open_page(browser, http_app, calls=[], gdelt_status=429, state=state)
+    page.route("**/data/news-cache.json", lambda r: r.fulfill(status=200, body=json.dumps(covered), headers={"content-type": "application/json"}))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    by = {c["id"]: c for c in page.evaluate("DB_APP.state().brief.categories")}
+    assert by["pets"]["items"] == [] and not by["pets"].get("unchecked")
+    text = page.frame_locator("iframe.page").locator("main").inner_text()
+    assert "Not checked today" not in text and "No new items" in text
     assert errors == []
     ctx.close()
 

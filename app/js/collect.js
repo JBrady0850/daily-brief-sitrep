@@ -347,7 +347,8 @@
       try { backup = parseBackup(await getText(opts.backupUrl || BACKUP_URL, opts)); } catch (e) { err = String(e.message || e); }
       for (const c of shortAfterFeeds) {
         const items = backup && Object.prototype.hasOwnProperty.call(backup.categories, c.id) ? backup.categories[c.id].filter(it => it && typeof it === "object") : [];
-        health[c.id].backup = { items: items.length, added: add(c.id, items), error: backup ? "" : err, collected_at: backup ? backup.generated_at : "" };
+        health[c.id].backup = { items: items.length, added: add(c.id, items), error: backup ? "" : err, collected_at: backup ? backup.generated_at : "",
+          covered: !!backup && Object.prototype.hasOwnProperty.call(backup.categories, c.id) };
       }
     }
     // Local news: stories from the local TV stations in the reader's state, gathered on
@@ -413,15 +414,17 @@
   }
 
   /* An empty desk whose searches all failed was not checked, which is not the
-     same as "nothing new"; the page says so. A town desk whose local station
-     file was read was checked, even when the searches failed. */
+     same as "nothing new"; the page says so. A desk was still checked when the
+     backup collection covers it (GitHub searched it within the last four hours)
+     or, for a town desk, when its local stations answered. */
   function markUnchecked(brief, health) {
     for (const bc of brief.categories || []) {
       const h = health && health[bc.id];
       if (!h || (bc.items && bc.items.length)) continue;
       const tried = (h.queries || []).filter(q => !q.note);
       const stations = (h.local && !h.local.error) || (h.feeds || []).some(f => f.station && !f.error);
-      if (tried.length && tried.every(q => q.error) && !stations) bc.unchecked = true;
+      const backup = !!(h.backup && !h.backup.error && h.backup.covered);
+      if (tried.length && tried.every(q => q.error) && !stations && !backup) bc.unchecked = true;
     }
     return brief;
   }

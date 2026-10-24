@@ -9,7 +9,7 @@ import json
 
 from conftest import ROOT, js_calls
 
-from dailybrief import engine as E, render as R
+from dailybrief import collect as C, engine as E, render as R
 from dailybrief.jsdata import library
 
 NOW = "2026-10-23T12:00:00Z"
@@ -409,3 +409,27 @@ def test_state_codes_agree():
     assert [E.state_code(x) for x in inputs[:10]] == ["FL", "FL", "FL", "NY", "WA", "DC", "DC", "DC", "WV", ""]
     js_table = js_calls([{"fn": "stateCode", "args": [name]} for name in E.US_STATES])
     assert js_table == list(E.US_STATES.values()) and len(E.US_STATES) == 51
+
+
+def test_a_desk_the_backup_collection_covers_counts_as_checked():
+    """Searches all failed, but GitHub's backup collection searched this category: the
+    desk says "No new items", not "Not checked today" (both collectors agree)."""
+    failed = [{"query": "q", "error": "the news index turned the search away (busy or offline)"}]
+    cases = [
+        {"queries": failed, "feeds": []},                                                       # nothing answered
+        {"queries": failed, "feeds": [], "backup": {"items": 2, "error": "", "covered": True}},   # backup searched it
+        {"queries": failed, "feeds": [], "backup": {"items": 0, "error": "", "covered": False}},  # not in the backup
+        {"queries": failed, "feeds": [], "backup": {"items": 0, "error": "the site answered 404", "covered": False}},
+        {"queries": failed, "feeds": [], "local": {"state": "IL", "items": 3, "error": ""}},
+        {"queries": [{"query": "q", "error": "", "note": "not needed"}], "feeds": []},
+    ]
+    reqs, pys = [], []
+    for h in cases:
+        brief = {"categories": [{"id": "x", "items": []}]}
+        reqs.append({"fn": "collect.markUnchecked", "args": [brief, {"x": h}]})
+        pys.append(C.mark_unchecked(json.loads(json.dumps(brief)), {"x": h}))
+    got = js_calls(reqs)
+    for p, j in zip(pys, got):
+        assert same(p, j), json.dumps([p, j])
+    flags = [bool(b["categories"][0].get("unchecked")) for b in pys]
+    assert flags == [True, False, True, True, False, False]
