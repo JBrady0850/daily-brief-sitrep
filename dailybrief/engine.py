@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.6.2"
+VERSION = "0.6.3"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -407,6 +407,11 @@ def normalize_config(cfg: Any) -> dict:
             m["color"] = PALETTE[i % len(PALETTE)]
         norm.append(m)
     out["categories"] = norm
+    # Email delivery was removed in 0.2.0: older settings lose it quietly.
+    out.pop("email", None)
+    if is_obj(out.get("delivery")) and isinstance(out["delivery"].get("channels"), list):
+        ch = [c for c in out["delivery"]["channels"] if c != "email"]
+        out["delivery"]["channels"] = ch if ch else ["issue"]
     return out
 
 
@@ -422,7 +427,7 @@ def validate_config(cfg: Any) -> dict:
     if "version" in cfg and (not is_int(cfg["version"]) or cfg["version"] != 1):
         errors.append("version must be 1.")
     for k in cfg:
-        if k not in DEFAULTS:
+        if k not in DEFAULTS and k != "email":
             warnings.append('Unknown setting "' + k + '" is ignored.')
     n = normalize_config(cfg)
     b = n["brief"]
@@ -531,10 +536,8 @@ def validate_config(cfg: Any) -> dict:
         errors.append("delivery.time must be a time like 06:15, or empty.")
     if not is_str(dv["timezone"]) or (dv["timezone"] and not re.match(r"^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*\Z", dv["timezone"])):
         errors.append("delivery.timezone must be a time zone name like America/New_York, or empty.")
-    if not str_list(dv["channels"]) or not dv["channels"] or not all(c in ("email", "issue") for c in dv["channels"]):
+    if not str_list(dv["channels"]) or not dv["channels"] or not all(c == "issue" for c in dv["channels"]):
         errors.append('delivery.channels must be ["issue"].')
-    elif "email" in dv["channels"]:
-        warnings.append("delivery.channels lists email, which was removed in version 0.2.0; the brief arrives as a GitHub issue.")
     w = n["weather"]
     if not is_obj(w) or not isinstance(w.get("enabled"), bool):
         errors.append("weather.enabled must be true or false.")
@@ -550,8 +553,6 @@ def validate_config(cfg: Any) -> dict:
         errors.append("sources.avoid_hosts must be a list of text.")
     if not isinstance(n["style"]["no_em_dashes"], bool):
         errors.append("style.no_em_dashes must be true or false.")
-    if "email" in n:
-        warnings.append("The email settings are no longer used (email delivery was removed in version 0.2.0); delete them.")
     return {"errors": errors, "warnings": warnings}
 
 

@@ -433,3 +433,23 @@ def test_a_desk_the_backup_collection_covers_counts_as_checked():
         assert same(p, j), json.dumps([p, j])
     flags = [bool(b["categories"][0].get("unchecked")) for b in pys]
     assert flags == [True, False, True, True, False, False]
+
+
+def test_settings_from_before_0_2_0_lose_email_quietly():
+    CAT = {"id": "net", "name": "Network", "queries": ['"zero trust"'], "require": [["zero trust"]]}
+    old = [{"version": 1, "delivery": {"time": "06:15", "timezone": "", "channels": ["issue", "email"]},
+            "email": {"to": ["someone@example.com"]}, "categories": [CAT]},
+           {"version": 1, "delivery": {"time": "", "timezone": "", "channels": ["email"]}, "categories": [CAT]},
+           {"version": 1, "delivery": {"time": "", "timezone": "", "channels": ["issue", "fax"]}, "categories": [CAT]}]
+    reqs, pys = [], []
+    for cfg in old:
+        for fn, py in (("normalizeConfig", E.normalize_config), ("validateConfig", E.validate_config)):
+            reqs.append({"fn": fn, "args": [cfg]})
+            pys.append(py(json.loads(json.dumps(cfg))))
+    for p, j in zip(pys, js_calls(reqs)):
+        assert same(p, j), json.dumps([p, j])
+    n0, v0, n1, v1, n2, v2 = pys
+    assert n0["delivery"]["channels"] == ["issue"] and "email" not in n0
+    assert v0 == {"errors": [], "warnings": []}, "no warning on every review"
+    assert n1["delivery"]["channels"] == ["issue"] and v1["errors"] == [] and v1["warnings"] == []
+    assert v2["errors"] == ['delivery.channels must be ["issue"].'], "other unknown channels are still errors"

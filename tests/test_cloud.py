@@ -145,8 +145,8 @@ def test_run_delivers_by_issue_and_records_history(tmp_path, monkeypatch, capsys
     assert code == 0 and posted and posted[0][1] == "Daily Brief - "
     assert "Delivered: GitHub issue #4" in text and "Not delivered" not in text and "email" not in text.lower()
     assert store.load_ledger()["sent_dates"] == ["2026-10-23"]
-    # Settings from version 0.1.0 still listing email get a warning, not an error.
-    assert "lists email, which was removed in version 0.2.0" in capsys.readouterr().out
+    # Settings from version 0.1.0 still listing email load quietly: no error, no warning.
+    assert "email" not in capsys.readouterr().out.lower()
 
 
 def test_run_fails_when_the_issue_cannot_be_posted(tmp_path, monkeypatch, capsys):

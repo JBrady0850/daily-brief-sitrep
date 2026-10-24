@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.3 (2026-10-24)
+
+- Choices saved before 0.2.0 no longer show "delivery.channels lists email"
+  under "Worth a look" on every review. The retired email channel and email
+  settings are dropped quietly when the choices load, when a backup is
+  restored and when a settings file is checked, in the web page, the desktop
+  app and the GitHub copy. Any other unknown channel is still an error.
+
 ## 0.6.2 (2026-10-24)
 
 "Not checked today" only when nothing could check the desk.

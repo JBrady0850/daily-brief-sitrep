@@ -50,17 +50,28 @@
       st.config = E.configFromPack(LIB, "starter", {});
       st.config.categories = st.config.categories.filter(c => !c.needs_location);
     }
-    st.config = E.merge(E.DEFAULTS, st.config);
+    st.config = dropEmail(E.merge(E.DEFAULTS, st.config));
     if (!st.config.delivery.timezone) st.config.delivery.timezone = browserZone();
     // Unsaved changes to saved choices survive a reload; anything else is dropped.
     if (st.setup_done && st.editing && st.draft && typeof st.draft === "object") {
-      st.draft = E.merge(E.DEFAULTS, st.draft);
-      delete st.draft.email;
+      st.draft = dropEmail(E.merge(E.DEFAULTS, st.draft));
     } else {
       st.editing = false;
       st.draft = null;
     }
     return st;
+  }
+
+  /* Email delivery was removed in 0.2.0. Choices saved before then still list it;
+     they lose it quietly instead of showing a warning on every review. */
+  function dropEmail(c) {
+    if (!c || typeof c !== "object") return c;
+    delete c.email;
+    if (c.delivery && Array.isArray(c.delivery.channels)) {
+      const ch = c.delivery.channels.filter(x => x !== "email");
+      c.delivery.channels = ch.length ? ch : ["issue"];
+    }
+    return c;
   }
 
   function browserZone() {
@@ -1363,8 +1374,7 @@
     // Only the known parts of the state come back, and the settings are checked like an import.
     const st = defaultState();
     for (const k of Object.keys(st)) if (k in obj.state && k !== "version") st[k] = obj.state[k];
-    st.config = E.merge(E.DEFAULTS, obj.state.config);
-    delete st.config.email;
+    st.config = dropEmail(E.merge(E.DEFAULTS, obj.state.config));
     if (st.tab === "email" || st.tab === "deliver") st.tab = "daily";
     if (st.brief && (typeof st.brief !== "object" || !Array.isArray(st.brief.categories))) st.brief = null;
     st.editing = false;

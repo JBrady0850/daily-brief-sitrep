@@ -762,3 +762,20 @@ def test_a_tab_left_open_across_a_release_reloads_once_and_then_builds(browser, 
     assert len(loads) == 2
     assert errors == []
     ctx.close()
+
+
+def test_choices_saved_before_email_was_removed_review_without_a_warning(browser):
+    """Settings from version 0.1.0 list email as a delivery channel; the review shows no
+    email warning, and the saved choices lose the retired channel."""
+    state = {"version": 1, "tab": "setup", "step": 7, "setup_done": False,
+             "config": {"version": 1, "delivery": {"time": "06:15", "timezone": "America/Chicago", "channels": ["issue", "email"]},
+                        "email": {"to": ["someone@example.com"]},
+                        "categories": [{"id": "net", "name": "Network", "queries": ['"zero trust"'], "require": [["zero trust"]]}]}}
+    ctx, page, errors = open_page(browser, APP, state=state)
+    page.wait_for_selector("text=Review and save")
+    text = page.inner_text("main") if page.query_selector("main") else page.inner_text("body")
+    assert "email" not in text.lower(), "no warning about the retired email channel"
+    assert page.evaluate("DB_APP.state().config.delivery.channels") == ["issue"]
+    assert "email" not in page.evaluate("Object.keys(DB_APP.state().config)")
+    assert errors == []
+    ctx.close()

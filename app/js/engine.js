@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.6.2";
+  const VERSION = "0.6.3";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -276,6 +276,12 @@
       if (!isStr(m.color) || !/^#[0-9a-fA-F]{6}$/.test(m.color)) m.color = PALETTE[i % PALETTE.length];
       return m;
     });
+    // Email delivery was removed in 0.2.0: older settings lose it quietly.
+    delete out.email;
+    if (isObj(out.delivery) && Array.isArray(out.delivery.channels)) {
+      const ch = out.delivery.channels.filter(c => c !== "email");
+      out.delivery.channels = ch.length ? ch : ["issue"];
+    }
     return out;
   }
 
@@ -293,7 +299,7 @@
     if (!isObj(cfg)) return { errors: ["The settings are not a JSON object."], warnings };
     if (cfg.version !== undefined && cfg.version !== 1) errors.push("version must be 1.");
     for (const k of Object.keys(cfg)) {
-      if (!has(DEFAULTS, k)) warnings.push("Unknown setting \"" + k + "\" is ignored.");
+      if (!has(DEFAULTS, k) && k !== "email") warnings.push("Unknown setting \"" + k + "\" is ignored.");
     }
     const n = normalizeConfig(cfg);
     const b = n.brief;
@@ -389,10 +395,8 @@
     const dv = n.delivery;
     if (!isStr(dv.time) || (dv.time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(dv.time))) errors.push("delivery.time must be a time like 06:15, or empty.");
     if (!isStr(dv.timezone) || (dv.timezone && !/^[A-Za-z_]+(\/[A-Za-z0-9_+-]+)*$/.test(dv.timezone))) errors.push("delivery.timezone must be a time zone name like America/New_York, or empty.");
-    if (!strList(dv.channels) || !dv.channels.length || !dv.channels.every(c => c === "email" || c === "issue")) {
+    if (!strList(dv.channels) || !dv.channels.length || !dv.channels.every(c => c === "issue")) {
       errors.push('delivery.channels must be ["issue"].');
-    } else if (dv.channels.indexOf("email") >= 0) {
-      warnings.push("delivery.channels lists email, which was removed in version 0.2.0; the brief arrives as a GitHub issue.");
     }
     const w = n.weather;
     if (!isObj(w) || typeof w.enabled !== "boolean") errors.push("weather.enabled must be true or false.");
@@ -405,7 +409,6 @@
     }
     if (!strList(n.sources.avoid_hosts)) errors.push("sources.avoid_hosts must be a list of text.");
     if (typeof n.style.no_em_dashes !== "boolean") errors.push("style.no_em_dashes must be true or false.");
-    if ("email" in n) warnings.push("The email settings are no longer used (email delivery was removed in version 0.2.0); delete them.");
     return { errors, warnings };
   }
 
