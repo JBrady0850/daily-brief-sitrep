@@ -292,7 +292,11 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
     days1 = max(1, math.ceil(b["window_hours"] / 24))
     days2 = max(days1, math.ceil(b["backfill_max_hours"] / 24))
     cats = [E.resolve_category(c, n["reader"]) for c in n["categories"]]
-    total_steps = sum(len([q for q in c["queries"] if E.collapse(q)]) + len(c["feeds"]) for c in cats)
+    def feeds_of(c: dict) -> list:
+        """A category's feeds plus its on-topic feeds, each address once."""
+        return list(c["feeds"]) + [u for u in c.get("topic_feeds") or [] if u not in c["feeds"]]
+
+    total_steps = sum(len([q for q in c["queries"] if E.collapse(q)]) + len(feeds_of(c)) for c in cats)
     step = 0
     candidates: dict = {}
     health: dict = {}
@@ -315,13 +319,13 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
         seen: set = set()
         h = {"queries": [], "feeds": []}
 
-        def add(items: list) -> int:
+        def add(items: list, on_topic: bool = False) -> int:
             added = 0
             for it in items:
                 key = E.norm_url(it.get("url"))
                 if key and key not in seen:
                     seen.add(key)
-                    pool.append(it)
+                    pool.append(dict(it, on_topic=True) if on_topic else it)
                     added += 1
             return added
 
@@ -332,10 +336,11 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
             tick(cat["name"])
             if pause:
                 time.sleep(pause)
-        for url in cat["feeds"]:
+        for url in feeds_of(cat):
             items, err = read_feed(url)
+            on_topic = url in (cat.get("topic_feeds") or [])
             h["feeds"].append({"url": url, "items": len(items), "fresh": _fresh_count(items, now_ms, b["window_hours"]),
-                               "added": add(items), "error": err})
+                               "added": add(items, on_topic), "error": err, "on_topic": on_topic})
             tick(cat["name"])
         # Second pass: a category short of fresh, on-topic news may use labelled older items.
         if days2 > days1:

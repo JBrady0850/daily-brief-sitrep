@@ -1,10 +1,15 @@
 name: Publish app to GitHub Pages
 # One-time setup: repository Settings > Pages > Build and deployment > Source: "GitHub Actions".
 # Until then this workflow skips with a notice instead of failing.
+# Every run also rebuilds the backup collection (app/data/news-cache.json): stories for
+# every library category from Google News and every library feed, which the web page
+# reads when the GDELT news index is busy. Free, no key, no secret.
 on:
   push:
     branches: [main]
-    paths: ["app/**", ".github/workflows/pages.yml"]
+    paths: ["app/**", "dailybrief/**", ".github/workflows/pages.yml"]
+  schedule:
+    - cron: "23 */4 * * *"   # the backup collection, every four hours
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,11 +38,20 @@ jobs:
     needs: check
     if: needs.check.outputs.enabled == 'true'
     runs-on: ubuntu-24.04
+    timeout-minutes: 25
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Backup collection (Google News and every library feed)
+        # A failed collection never stops the app from publishing; the page then uses the news index.
+        continue-on-error: true
+        timeout-minutes: 15
+        run: python -m dailybrief build-cache --out app/data/news-cache.json
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:

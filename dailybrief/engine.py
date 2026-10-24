@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.3.0"
+VERSION = "0.4.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -338,7 +338,7 @@ def normalize_config(cfg: Any) -> dict:
     norm = []
     for i, c in enumerate([c for c in cats if is_obj(c)]):
         base = {"id": "", "name": "", "description": "", "queries": [], "require": [], "exclude": [],
-                "feeds": [], "color": PALETTE[i % len(PALETTE)], "items": None,
+                "feeds": [], "topic_feeds": [], "color": PALETTE[i % len(PALETTE)], "items": None,
                 "skip_listicles": False, "needs_location": False, "icon": ""}
         m = merge(base, c)
         if not is_str(m["color"]) or not _HEX.match(m["color"]):
@@ -423,6 +423,8 @@ def validate_config(cfg: Any) -> dict:
             errors.append(label + ": exclude must be a list of text.")
         if not str_list(c["feeds"]) or not all(valid_url(f) for f in c["feeds"]):
             errors.append(label + ": feeds must be a list of http or https links.")
+        if not str_list(c["topic_feeds"]) or not all(valid_url(f) for f in c["topic_feeds"]):
+            errors.append(label + ": topic_feeds must be a list of http or https links.")
         if c["items"] is not None and (not is_int(c["items"]) or c["items"] < 1 or c["items"] > 10):
             errors.append(label + ": items must be a whole number from 1 to 10.")
         texts = [c["name"], c["description"]]
@@ -711,6 +713,9 @@ def gate_item(item: dict, cat: dict, cfg: dict) -> Optional[str]:
     for term in cat.get("exclude") or []:
         if term_hit(text, term):
             return "excluded term"
+    # A story from one of the category's on-topic feeds needs no must-mention term.
+    if item.get("on_topic"):
+        return None
     for group in cat.get("require") or []:
         if group and not any(term_hit(text, term) for term in group):
             return "off topic"
@@ -727,6 +732,7 @@ def clean_item(raw: Any, max_chars: int) -> dict:
         "published": None,
         "summary": no_em_dash(cut_summary(raw.get("summary") or "", max_chars)),
         "image": "",
+        "on_topic": raw.get("on_topic") is True,
     }
     img = collapse(raw.get("image"))
     if valid_image(img):

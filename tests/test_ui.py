@@ -516,3 +516,61 @@ def test_choosing_categories_keeps_your_place(browser):
     assert page.evaluate("document.querySelector('details[data-key=group-life]').open")
     assert errors == []
     ctx.close()
+
+
+def test_on_topic_feeds_fill_a_category_in_the_browser(browser):
+    calls = []
+    cfg = json.loads((ROOT / "examples" / "sample-settings.json").read_text())
+    cfg["categories"] = [c for c in cfg["categories"] if c["id"] == "travel"]
+    cfg["categories"][0]["feeds"] = []
+    cfg["categories"][0]["topic_feeds"] = ["https://feeds.example.com/fresh.xml"]
+    cfg["categories"][0]["require"] = [["zzzz-no-story-says-this"]]
+    state = {"version": 1, "tab": "brief", "config": cfg, "setup_done": True}
+    ctx, page, errors = open_page(browser, APP, calls=calls, state=state)
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=30000)
+    brief = page.evaluate("DB_APP.state().brief")
+    assert len(brief["categories"][0]["items"]) == 5
+    assert all("on_topic" not in i for i in brief["categories"][0]["items"])
+    assert [c for c in calls if c not in ("forecast", "feed")] == [], "a full category needs no news search"
+    assert page.evaluate("DB_APP.state().health.travel.feeds[0].on_topic") is True
+    assert errors == []
+    ctx.close()
+
+
+def backup_file(ids, n=6):
+    now = datetime.now(timezone.utc)
+    cats = {}
+    for cid in ids:
+        cats[cid] = [{"title": "Backup story %d for %s" % (k, cid), "url": "https://backup.example.com/%s/%d" % (cid, k),
+                      "source": "Example Wire", "source_url": "https://backup.example.com", "summary": "",
+                      "published": (now - timedelta(hours=k + 1)).strftime("%Y-%m-%dT%H:%M:%SZ"), "image": "", "on_topic": True}
+                     for k in range(n)]
+    return {"schema": "daily-brief-news-cache/1", "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "categories": cats}
+
+
+def test_the_backup_collection_fills_categories_when_the_news_index_refuses(browser, http_app):
+    calls = []
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    cats = [dict(pick["defense-ai"], feeds=[], topic_feeds=[]), dict(pick["pets"], feeds=[], topic_feeds=[])]
+    state = {"version": 1, "tab": "brief", "config": {"version": 1, "categories": cats}, "setup_done": True}
+    ctx, page, errors = open_page(browser, http_app, calls=calls, gdelt_status=429, state=state)
+    asked = []
+    page.route("**/data/news-cache.json", lambda r: (asked.append(1), r.fulfill(status=200, body=json.dumps(backup_file(["defense-ai"])),
+                                                                          headers={"content-type": "application/json"})))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    brief = page.evaluate("DB_APP.state().brief")
+    by = {c["id"]: c for c in brief["categories"]}
+    assert len(by["defense-ai"]["items"]) == 5 and by["defense-ai"]["items"][0]["title"].startswith("Backup story")
+    assert by["pets"]["items"] == [], "not in the backup collection, and the news index refused"
+    assert asked == [1], "the backup file is read once"
+    health = page.evaluate("DB_APP.state().health")
+    assert health["defense-ai"]["backup"]["added"] == 6 and health["pets"]["backup"]["items"] == 0
+    assert all("defense" not in c for c in calls if c not in ("feed", "forecast", "refused")), "a full category is never searched"
+    assert "refused" in calls, "the short category still tried the news index"
+    page.click("#briefview summary:has-text('Sources and filters')")
+    assert "6 from the backup collection" in page.inner_text("#briefview")
+    assert errors == []
+    ctx.close()

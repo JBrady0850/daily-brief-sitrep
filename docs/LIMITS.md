@@ -1,13 +1,22 @@
-# Limits (v0.2.0)
+# Limits (v0.4.0)
 
 - The web page reads only the sources that allow web pages to read them: the
   GDELT news index, and publisher feeds such as ESPN, CBS Sports, NASA, The New
   York Times, Fox News, CNBC and Wired. Google News and most other feeds do not
   allow it; the desktop app and the GitHub copy read those instead. A feed that
   refuses shows as "not readable from a web page" under Sources and filters.
-- The GDELT index sometimes turns requests away when it is busy (seen as HTTP
-  503 on 2026-10-23, about every other search in a live run). The page reads
-  the feeds first and searches GDELT only for categories the feeds left short.
+- The page reads, in order: the publisher feeds, then the backup collection,
+  then the GDELT news index, and only for what is still short. The backup
+  collection is a file this project's GitHub workflow rebuilds every four hours
+  (at 23 minutes past the hour, in UTC) from Google News and every library
+  feed, including feeds web pages cannot read. It covers the 62 library
+  categories that do not depend on your town. It is up to four hours old, and
+  in a public repository GitHub stops scheduled workflows after 60 days with no
+  new commits; the page then falls back to the news index.
+- The GDELT index turns requests away when it is busy or when one connection
+  asks too often (HTTP 503 and 429, seen on 2026-10-23; after a day of heavy
+  testing it refused one home connection for hours). The town categories and
+  categories you type yourself depend on it.
   It asks one search at a time, waits six seconds between searches (twelve
   after a refusal), retries a refused search once, and after three refused
   searches in a row uses the feeds alone for the rest of the run. A live run

@@ -3,9 +3,11 @@
 - No account, no analytics, no server of ours.
 - The web page keeps your settings, the no-repeat history and the last brief in
   this browser's local storage. **Settings, Erase everything** removes them.
-- When it collects a brief, the web page sends each category's searches to the
-  GDELT news index (api.gdeltproject.org) and reads the publisher feeds your
-  categories list. When the forecast is on, it sends your town's map position,
+- When it collects a brief, the web page reads the publisher feeds your
+  categories list and the backup collection, a file on this site's own address
+  that holds no information about you (reading it sends nothing). Only for
+  categories still short does it send their searches to the GDELT news index
+  (api.gdeltproject.org). When the forecast is on, it sends your town's map position,
   rounded to about a kilometre, to Open-Meteo, and the town search sends the
   name you type. Requests carry no cookies and no referrer.
 - Story photos load from the publishers' own sites when you view the brief,

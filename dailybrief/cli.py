@@ -237,6 +237,26 @@ def cmd_check_feeds(a: argparse.Namespace) -> int:
     return FAIL if bad else OK
 
 
+def cmd_build_cache(a: argparse.Namespace) -> int:
+    """The backup collection the web page reads when the news index is busy."""
+    from . import newscache
+    data = newscache.build(_now_iso(), pause=a.pause)
+    out = Path(a.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    text = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n"
+    tmp = out.with_suffix(out.suffix + ".tmp")
+    tmp.write_text(text, encoding="utf-8", newline="\n")
+    tmp.replace(out)
+    cats = data["categories"]
+    empty = sorted(k for k, v in cats.items() if not v)
+    src = data["sources"]
+    print(f"Wrote {out}: {sum(len(v) for v in cats.values())} stories in {len(cats)} categories, {len(text)} bytes.")
+    print(f"Searches: {src['searches']} ({src['searches_failed']} failed). Feeds: {src['feeds']} ({src['feeds_failed']} failed).")
+    if empty:
+        print("No stories for: " + ", ".join(empty))
+    return OK if sum(len(v) for v in cats.values()) else FAIL
+
+
 def cmd_scan(a: argparse.Namespace) -> int:
     terms = privacy.load_terms(a.terms) if a.terms else []
     findings = privacy.scan_tree(Path(a.path), terms)
@@ -326,6 +346,11 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("check-feeds", help="test every publisher feed in the library (needs internet)")
     s.add_argument("--config")
     s.set_defaults(func=cmd_check_feeds)
+
+    s = sub.add_parser("build-cache", help="collect the backup news file the web page reads (needs internet)")
+    s.add_argument("--out", default="app/data/news-cache.json", help="where to write it")
+    s.add_argument("--pause", type=float, default=collect.GOOGLE_PAUSE, help="seconds between Google News requests")
+    s.set_defaults(func=cmd_build_cache)
 
     s = sub.add_parser("scan", help="look for personal data and secrets before you publish")
     s.add_argument("path", nargs="?", default=".")

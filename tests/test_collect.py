@@ -76,6 +76,20 @@ def test_collect_and_select_with_health_report():
     assert any("when%3A3d" in u for u in calls)
 
 
+def test_on_topic_feeds_count_only_for_the_category_that_names_them():
+    feed = "https://dedicated.example.com/feed"
+    cfg = {"version": 1, "brief": {"items_per_category": 3}, "categories": [
+        {"id": "plain", "name": "Plain", "queries": [], "require": [["zzzz"]], "feeds": [feed]},
+        {"id": "topic", "name": "Topic", "queries": [], "require": [["zzzz"]], "topic_feeds": [feed]}]}
+    calls = []
+    brief, health = C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=fake_fetcher(calls), pause=0)
+    plain, topic = brief["categories"]
+    assert plain["items"] == [] and plain["rejected"]["off topic"] >= 1
+    assert len(topic["items"]) >= 1
+    assert health["topic"]["feeds"][0]["on_topic"] and not health["plain"]["feeds"][0]["on_topic"]
+    assert calls.count(feed) == 1, "the feed is read once"
+
+
 def test_one_failing_source_never_stops_the_brief():
     def boom(url):
         raise RuntimeError("network down")

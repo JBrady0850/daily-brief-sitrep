@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.4.0 (2026-10-24)
+
+A busy news index no longer empties a brief.
+
+- **Backup collection.** The project's GitHub workflow now rebuilds a file of
+  stories for every library category every four hours, from Google News and
+  every library feed (including feeds web pages cannot read), and publishes it
+  beside the app. The page reads it after the publisher feeds and before the
+  GDELT news index, so GDELT is asked only for what is still short: mostly the
+  categories about your town and topics you typed. Reading the file sends
+  nothing about you anywhere. `python -m dailybrief build-cache` builds it.
+- **On-topic feeds.** A category can list feeds about its topic and nothing
+  else (a tennis feed for tennis). Their stories count as on topic without a
+  must-mention word; the leave-out words and every other filter still apply.
+  Both engines and both collectors support it, and the category editor has a
+  box for it.
+- **More feeds a web page can read.** A live check of all 67 categories with
+  GDELT switched off found 16 empty; 31 categories gained feeds verified
+  readable from the published page (more New York Times and Fox News sections,
+  CNBC sections, ESPN fantasy and tennis, Dark Reading, the GitHub blog and ten
+  Industry Dive trade sites), 16 of them as on-topic feeds.
+- The building panel shows a Backup collection stage, and Sources and filters
+  counts the stories it gave.
+
 ## 0.3.0 (2026-10-23)
 
 Setting up and reading the brief are now clearly separate.

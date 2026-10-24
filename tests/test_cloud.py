@@ -188,3 +188,13 @@ def test_run_does_not_send_a_brief_that_fails_its_check(tmp_path, monkeypatch):
     assert code == 1 and not posted
     assert "failed its check and was not sent" in summary.read_text() and "planted defect" in summary.read_text()
     assert store.load_ledger()["sent_dates"] == []
+
+
+def test_pages_workflow_rebuilds_the_backup_collection_on_a_schedule():
+    wf = (ROOT / ".github" / "workflows" / "pages.yml").read_text()
+    assert '- cron: "23 */4 * * *"' in wf, "every four hours"
+    assert "python -m dailybrief build-cache --out app/data/news-cache.json" in wf
+    step = wf[wf.index("Backup collection"):wf.index("build-cache")]
+    assert "continue-on-error: true" in step, "a failed collection never stops the app from publishing"
+    assert "secrets." not in wf
+    assert "app/data/news-cache.json" in (ROOT / ".gitignore").read_text(), "the built file is never committed"

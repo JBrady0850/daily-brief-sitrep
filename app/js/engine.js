@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.3.0";
+  const VERSION = "0.4.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -210,7 +210,7 @@
     const cats = Array.isArray(out.categories) ? out.categories : [];
     out.categories = cats.filter(isObj).map((c, i) => {
       const base = {
-        id: "", name: "", description: "", queries: [], require: [], exclude: [], feeds: [],
+        id: "", name: "", description: "", queries: [], require: [], exclude: [], feeds: [], topic_feeds: [],
         color: PALETTE[i % PALETTE.length], items: null, skip_listicles: false, needs_location: false, icon: ""
       };
       const m = merge(base, c);
@@ -293,6 +293,7 @@
       }
       if (!strList(c.exclude)) errors.push(label + ": exclude must be a list of text.");
       if (!strList(c.feeds) || !c.feeds.every(validUrl)) errors.push(label + ": feeds must be a list of http or https links.");
+      if (!strList(c.topic_feeds) || !c.topic_feeds.every(validUrl)) errors.push(label + ": topic_feeds must be a list of http or https links.");
       if (c.items !== null && (!isInt(c.items) || c.items < 1 || c.items > 10)) {
         errors.push(label + ": items must be a whole number from 1 to 10.");
       }
@@ -535,6 +536,8 @@
       if (/^(top|best)\s+\d+\b/.test(t) || termHit(t, "to watch") || /\bbest\b.*\b20\d\d\b/.test(t)) return "list article";
     }
     for (const term of cat.exclude || []) if (termHit(text, term)) return "excluded term";
+    // A story from one of the category's on-topic feeds needs no must-mention term.
+    if (item.on_topic) return null;
     for (const group of cat.require || []) {
       if (group.length && !group.some(term => termHit(text, term))) return "off topic";
     }
@@ -549,7 +552,8 @@
       source_url: collapse(raw && raw.source_url),
       published: null,
       summary: noEmDash(cutSummary((raw && raw.summary) || "", maxChars)),
-      image: ""
+      image: "",
+      on_topic: !!(raw && raw.on_topic === true)
     };
     const img = collapse(raw && raw.image);
     if (validImage(img)) it.image = img;

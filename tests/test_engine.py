@@ -103,6 +103,25 @@ def test_gates_reject_off_topic_excluded_social_and_paperwork():
     assert cat["rejected"] == {"off topic": 1, "excluded term": 1, "social or avoided site": 1, "paperwork notice": 1}
 
 
+def test_on_topic_feed_stories_need_no_must_mention_term_but_still_pass_every_other_filter():
+    cands = {"sec": [
+        item("Bakery opens downtown", 1, on_topic=True),
+        item("Free security webinar next week", 1, on_topic=True),
+        item("Garden show draws crowds", 1),
+    ]}
+    b = E.select_brief(cands, cfg_one(), None, NOW, "2026-10-23")
+    cat = b["categories"][0]
+    assert [i["title"] for i in cat["items"]] == ["Bakery opens downtown"]
+    assert cat["rejected"] == {"excluded term": 1, "off topic": 1}
+    assert "on_topic" not in cat["items"][0], "the flag never reaches the brief"
+    assert not E.clean_item({"title": "x", "on_topic": "yes"}, 100)["on_topic"], "only a real true counts"
+    c = cfg_one()
+    c["categories"][0]["topic_feeds"] = ["not a link"]
+    assert any("topic_feeds" in e for e in E.validate_config(c)["errors"])
+    c["categories"][0]["topic_feeds"] = ["https://feeds.example.com/security.xml"]
+    assert not E.validate_config(c)["errors"]
+
+
 def test_listicles_skipped_only_when_asked():
     c = cfg_one()
     c["categories"][0]["skip_listicles"] = True

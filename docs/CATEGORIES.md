@@ -13,6 +13,7 @@ words your own category. Each category has:
 | Searches | News searches, one per line; use OR between choices and quotes around phrases | `"zero trust" (network OR security)` |
 | Must mention | One line per group, terms separated by commas. A story must mention at least one term from every line | Line 1: `zero trust, CISA, firewall, VPN` |
 | Leave out | Stories that mention any of these are dropped | `webinar, sponsored content` |
+| On-topic feeds | Feeds about this topic and nothing else. Their stories count as on topic without a "must mention" term; the "leave out" terms and every other filter still apply | `https://rss.nytimes.com/services/xml/rss/nyt/Tennis.xml` |
 | Publisher feeds | RSS or Atom links also read for this desk. The web page can read only feeds that allow web pages (see docs/LIMITS.md); the desktop app and the GitHub copy read them all | `https://www.espn.com/espn/rss/nfl/news` |
 | Icon | The picture on the desk's heading, from `app/data/icons.js` | `football` |
 | Stories | How many stories this desk shows (default: the setting for all) | 3 |

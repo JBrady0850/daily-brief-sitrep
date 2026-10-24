@@ -97,11 +97,24 @@ every rule, and the ranked list of improvements.
 Email sending was removed in version 0.2.0. The brief is a web page you open,
 download or copy; see [CHANGELOG.md](CHANGELOG.md).
 
+## Where the news comes from
+
+| Order | Source | When |
+|---|---|---|
+| 1 | Publisher feeds that allow web pages (The New York Times, Fox News, CNBC, ESPN, CBS Sports, Wired, NASA, Dark Reading, Industry Dive trade sites and others) | Every brief |
+| 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, published beside the app | When a category is still short |
+| 3 | The GDELT news index | Only for what is still short, mostly categories about your town and topics you typed |
+
+A category may also name **on-topic feeds**, such as a tennis feed for the
+tennis category; their stories count as on topic without a must-mention word.
+See [docs/CATEGORIES.md](docs/CATEGORIES.md).
+
 ## Privacy
 
 No account of ours and no tracking. Settings and the no-repeat history stay in
-your browser. The page sends your category searches to the GDELT news index,
-reads the publisher feeds your categories list, and, when the forecast is on,
+your browser. The page reads the publisher feeds your categories list and the
+backup collection on its own site, sends the searches of categories still short
+to the GDELT news index, and, when the forecast is on,
 sends your town's rounded map position to Open-Meteo. Story photos load from
 the publishers' own sites. See [docs/PRIVACY.md](docs/PRIVACY.md) and
 [docs/LIMITS.md](docs/LIMITS.md).

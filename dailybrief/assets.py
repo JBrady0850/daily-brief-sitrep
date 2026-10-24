@@ -58,6 +58,8 @@ def library_markdown(lib: dict) -> str:
             out.append("- Leave out: " + ", ".join(c["exclude"]))
         if c.get("feeds"):
             out.append("- Publisher feeds: " + ", ".join(c["feeds"]))
+        if c.get("topic_feeds"):
+            out.append("- On-topic feeds (no must-mention term needed): " + ", ".join(c["topic_feeds"]))
         out.append("")
     return "\n".join(out).rstrip() + "\n"
 

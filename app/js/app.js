@@ -757,7 +757,10 @@
         oninput: e => { cat.require = lines(e.target.value).map(commas).filter(g => g.length); changed(); } }),
         "Short all-capital terms such as AI or CVE match only in capitals."),
       field("Leave out stories that mention (commas)", h("input", { type: "text", value: (cat.exclude || []).join(", "), oninput: e => { cat.exclude = commas(e.target.value); changed(); } })),
-      field("Publisher feeds (desktop app), one link per line", h("textarea", { rows: 2, value: (cat.feeds || []).join("\n"), oninput: e => { cat.feeds = lines(e.target.value); changed(); } })),
+      field("Publisher feeds, one link per line", h("textarea", { rows: 2, value: (cat.feeds || []).join("\n"), oninput: e => { cat.feeds = lines(e.target.value); changed(); } }),
+        "Their stories still need a must-mention term. This web page can read only feeds that allow it; the desktop app reads them all."),
+      field("On-topic feeds, one link per line", h("textarea", { rows: 2, value: (cat.topic_feeds || []).join("\n"), oninput: e => { cat.topic_feeds = lines(e.target.value); changed(); } }),
+        "Feeds about this topic and nothing else, such as a tennis feed for a tennis category. Their stories count as on topic without a must-mention term."),
       field("Stories in this category", select([["", "Use the default"]].concat([1, 2, 3, 4, 5, 6, 7, 8, 10].map(n => [n, String(n)])), cat.items || "",
         v => { cat.items = v ? +v : null; changed(); })),
       h("div", { class: "check" }, h("input", { type: "checkbox", id: "lst" + i, checked: !!cat.skip_listicles, onchange: e => { cat.skip_listicles = e.target.checked; changed(); } }),
@@ -852,7 +855,8 @@
   const STAGES = [
     ["choices", "Your choices", "Saved in this browser"],
     ["feeds", "Publisher feeds", "Reading the news sites' own feeds"],
-    ["search", "News search", "Searching the news index for categories the feeds left short"],
+    ["backup", "Backup collection", "Stories this site gathers on GitHub every four hours"],
+    ["search", "News search", "Searching the news index for whatever is still short"],
     ["layout", "Your page", "Picking the freshest stories and laying out the page"]
   ];
   const DESKTOP_STAGES = [
@@ -1051,8 +1055,12 @@
       const hh = health[cat.id];
       if (!hh) continue;
       const errs = hh.queries.concat(hh.feeds).filter(x => x.error);
+      // A missing backup file matters only on the published site; a downloaded copy never has one.
+      if (hh.backup && hh.backup.error && location.protocol === "https:") errs.push({ url: "backup collection", error: hh.backup.error });
       const rej = Object.keys(cat.rejected || {}).map(k => k + " " + cat.rejected[k]).join(", ");
-      rows.push(h("tr", null, h("th", { text: cat.name }), h("td", { text: hh.queries.reduce((a, x) => a + x.items, 0) + " search results, " + hh.feeds.reduce((a, x) => a + x.items, 0) + " feed items" }),
+      const found = hh.queries.reduce((a, x) => a + x.items, 0) + " search results, " + hh.feeds.reduce((a, x) => a + x.items, 0) + " feed items" +
+        (hh.backup && hh.backup.items ? ", " + hh.backup.items + " from the backup collection" : "");
+      rows.push(h("tr", null, h("th", { text: cat.name }), h("td", { text: found }),
         h("td", { text: rej || "none" }), h("td", { class: errs.length ? "badtext" : "", text: errs.length ? errs.map(x => (x.query || x.url) + ": " + x.error).join("; ") : "none" })));
     }
     if (health._weather) rows.push(h("tr", null, h("th", { text: "Weather" }), h("td", { text: "forecast" }), h("td", { text: "" }), h("td", { class: "badtext", text: health._weather.error })));
@@ -1302,7 +1310,7 @@
       proj ? h("p", null, "Project page and download: ", h("a", { href: proj, target: "_blank", rel: "noopener", text: proj.replace("https://", "") }), " | ",
         h("a", { href: proj + "/issues/new", target: "_blank", rel: "noopener", text: "report a problem or suggest an idea" })) : null,
       h("h2", { text: "Where the news comes from" }),
-      h("p", { text: "Browsers only let a page read another site when that site allows it. This page uses the free sources that do: the GDELT news index, which watches news sites worldwide, and the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired). The forecast comes from Open-Meteo. Google News does not allow web pages, so the desktop app and the GitHub copy read it from a computer or a server instead." }),
+      h("p", { text: "Browsers only let a page read another site when that site allows it. This page reads, in order: the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired); the backup collection, a file this site's GitHub project rebuilds every four hours from Google News and every library feed; and, only for what is still short, the GDELT news index, which watches news sites worldwide. The forecast comes from Open-Meteo. The desktop app and the GitHub copy read Google News directly." }),
       h("h2", { text: "How stories are picked" }),
       h("ol", null,
         h("li", { text: "Search each category, then keep a story only if it mentions a term from every must-mention line and none of the leave-out terms." }),
@@ -1317,7 +1325,7 @@
       h("h2", { text: "Limits" }),
       h("ul", null,
         h("li", { text: "Stories from the GDELT index and Google News come with a headline only; publisher feeds add a short summary and often a photo." }),
-        h("li", { text: "The GDELT index sometimes turns requests away when it is busy. The page waits and retries once; a category can come back short on a busy morning." }),
+        h("li", { text: "The GDELT index turns requests away when it is busy (too many requests). The page reads the backup collection first, so most categories fill without it; the categories about your town and categories you typed yourself still depend on it." }),
         h("li", { text: "Google News links open through a Google redirect page." }),
         h("li", { text: "AI assistants can still make mistakes. The prompt requires links from a live search; check a link before you act on a story." })),
       h("p", { class: "hint", text: "Daily Brief " + E.VERSION + ". Free and open source under the MIT licence." })));

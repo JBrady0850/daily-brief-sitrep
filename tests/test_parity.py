@@ -162,6 +162,20 @@ def test_selection_and_history_agree():
     assert py[1]["withheld"] == 1 and py[0]["total"] > 8
 
 
+def test_on_topic_feed_stories_agree():
+    cfg = {"version": 1, "categories": [{"id": "t", "name": "Tennis", "queries": ["tennis"], "require": [["tennis"]],
+                                         "exclude": ["betting"], "topic_feeds": ["https://feeds.example.com/tennis.xml"]}]}
+    cands = {"t": [{"title": "Swiatek wins in straight sets", "url": "https://e.com/1", "published": ago(2), "on_topic": True},
+                   {"title": "Best betting picks for the final", "url": "https://e.com/2", "published": ago(2), "on_topic": True},
+                   {"title": "Golf major moves to June", "url": "https://e.com/3", "published": ago(2)},
+                   {"title": "Odd flag", "url": "https://e.com/4", "published": ago(2), "on_topic": 1}]}
+    py = [E.select_brief(cands, cfg, None, NOW, "2026-10-23", "web"), E.validate_config(cfg)]
+    got = js_calls([{"fn": "selectBrief", "args": [cands, cfg, None, NOW, "2026-10-23", "web"]}, {"fn": "validateConfig", "args": [cfg]}])
+    for p, j in zip(py, got):
+        assert same(p, j), json.dumps([p, j])[:2000]
+    assert [i["title"] for i in py[0]["categories"][0]["items"]] == ["Swiatek wins in straight sets"]
+
+
 def test_checks_agree(sample_brief, sample_settings):
     bad = copy.deepcopy(sample_brief)
     it = bad["categories"][0]["items"]

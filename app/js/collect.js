@@ -25,9 +25,25 @@
   // Pause between GDELT requests. Tests set window.DB_COLLECT_GAP before this file loads.
   const GAP_MS = root && typeof root.DB_COLLECT_GAP === "number" ? root.DB_COLLECT_GAP : 6000;
   const TIMEOUT_MS = 25000;
+  // The backup collection, published beside the app by GitHub every four hours (dailybrief/newscache.py).
+  const BACKUP_URL = "data/news-cache.json";
+  const BACKUP_SCHEMA = "daily-brief-news-cache/1";
   const LANGS = { en: "english", es: "spanish", fr: "french", de: "german", it: "italian", pt: "portuguese", nl: "dutch" };
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* The backup collection file: {schema, generated_at, categories: {id: [story]}}.
+     Every story still goes through the same checks as any other. */
+  function parseBackup(text) {
+    let d;
+    try { d = JSON.parse(text); } catch (e) { throw new Error("the backup collection file is damaged"); }
+    if (!d || d.schema !== BACKUP_SCHEMA || !d.categories || typeof d.categories !== "object" || Array.isArray(d.categories)) {
+      throw new Error("not a backup collection file");
+    }
+    const cats = {};
+    for (const k of Object.keys(d.categories)) if (Array.isArray(d.categories[k])) cats[k] = d.categories[k].slice(0, 40);
+    return { generated_at: typeof d.generated_at === "string" ? d.generated_at : "", categories: cats };
+  }
 
   /* GDELT reads the same query language as Google News for what the library
      uses: quoted phrases, OR inside parentheses, AND by spaces. */
@@ -260,15 +276,17 @@
     const progress = typeof opts.progress === "function" ? opts.progress : () => {};
     let done = 0;
     let phase = "feeds";  // reported with every step, so the page can show which stage is running
-    const feedCount = cats.reduce((a, c) => a + (c.feeds || []).length, 0);
+    // A category's feeds plus its on-topic feeds, each address once.
+    const feedsOf = c => (c.feeds || []).concat((c.topic_feeds || []).filter(u => (c.feeds || []).indexOf(u) < 0));
+    const feedCount = cats.reduce((a, c) => a + feedsOf(c).length, 0);
     let total = feedCount + cats.filter(c => (c.queries || []).some(q => E.collapse(q))).length;
     const tick = label => { done += 1; progress(label, done, total, phase); };
     for (const c of cats) { pools[c.id] = []; seen[c.id] = {}; health[c.id] = { queries: [], feeds: [] }; }
-    const add = (cid, items) => {
+    const add = (cid, items, onTopic) => {
       let added = 0;
       for (const it of items) {
         const k = E.normUrl(it.url);
-        if (k && !seen[cid][k]) { seen[cid][k] = true; pools[cid].push(it); added += 1; }
+        if (k && !seen[cid][k]) { seen[cid][k] = true; pools[cid].push(onTopic ? Object.assign({}, it, { on_topic: true }) : it); added += 1; }
       }
       return added;
     };
@@ -276,23 +294,24 @@
     progress("Publisher feeds", 0, total, phase);
     // Feeds: each address once, a few at a time, then shared by every category that lists it.
     const urls = [];
-    for (const c of cats) for (const url of c.feeds || []) if (urls.indexOf(url) < 0) urls.push(url);
+    for (const c of cats) for (const url of feedsOf(c)) if (urls.indexOf(url) < 0) urls.push(url);
     const got = {};
     let next = 0;
     async function worker() {
       while (next < urls.length) {
         const url = urls[next++];
         try { got[url] = { items: parseFeed(await getText(url, opts)), err: "" }; } catch (e) { got[url] = { items: [], err: String(e.message || e) }; }
-        for (const c of cats) if ((c.feeds || []).indexOf(url) >= 0) tick(c.name);
+        for (const c of cats) if (feedsOf(c).indexOf(url) >= 0) tick(c.name);
       }
     }
     await Promise.all([worker(), worker(), worker(), worker()]);
     const nowMs = now.getTime();
     for (const c of cats) {
-      for (const url of c.feeds || []) {
+      for (const url of feedsOf(c)) {
         const g = got[url] || { items: [], err: "not read" };
         const fresh = g.items.filter(it => { const ms = E.parseIso(it.published); return ms !== null && (nowMs - ms) / 3600000 <= b.window_hours; }).length;
-        health[c.id].feeds.push({ url: url, items: g.items.length, fresh: fresh, added: add(c.id, g.items), error: g.err });
+        const onTopic = (c.topic_feeds || []).indexOf(url) >= 0;
+        health[c.id].feeds.push({ url: url, items: g.items.length, fresh: fresh, added: add(c.id, g.items, onTopic), error: g.err, on_topic: onTopic });
       }
     }
 
@@ -301,6 +320,20 @@
       const want = c.items || b.items_per_category;
       return trial.categories[0].items.filter(i => i.recency === "news").length < want;
     };
+    // The backup collection: stories gathered on GitHub every four hours for every
+    // library category, published beside this page. One read, and only when a
+    // category is still short, so the news index is asked as little as possible.
+    const shortAfterFeeds = cats.filter(freshShort);
+    if (shortAfterFeeds.length && opts.backup !== false) {
+      phase = "backup";
+      progress("Backup collection", done, total, phase);
+      let backup = null, err = "";
+      try { backup = parseBackup(await getText(opts.backupUrl || BACKUP_URL, opts)); } catch (e) { err = String(e.message || e); }
+      for (const c of shortAfterFeeds) {
+        const items = backup && Object.prototype.hasOwnProperty.call(backup.categories, c.id) ? backup.categories[c.id].filter(it => it && typeof it === "object") : [];
+        health[c.id].backup = { items: items.length, added: add(c.id, items), error: backup ? "" : err, collected_at: backup ? backup.generated_at : "" };
+      }
+    }
     phase = "search";
     progress("News search", done, total, phase);
     let first = true;
@@ -359,6 +392,6 @@
     return { brief: brief, health: health };
   }
 
-  return { GDELT, GAP_MS, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
+  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
     weather, geocode, collect, runBrief, localDate };
 });
