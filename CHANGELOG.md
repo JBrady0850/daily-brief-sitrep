@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.1 (2026-10-24)
+
+A tab left open across a release no longer builds the brief with the old code.
+
+- Before every brief, and when the page comes back into view, the page asks the
+  site which version it serves. When the site's version is newer, the page
+  reloads once and then builds the brief, so a phone tab opened before a
+  release still gets the new sources (such as 0.6.0's local station news). It
+  never reloads twice for the same version.
+- The status line names the version that built the brief when it is older than
+  the page ("Built by version 0.5.1; check again to use 0.6.1").
+
 ## 0.6.0 (2026-10-24)
 
 Town news comes from GitHub alone.

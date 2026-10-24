@@ -33,7 +33,7 @@
   // ------------------------------------------------------------ state
   function defaultState() {
     return { version: 1, tab: "setup", step: 0, config: null, brief: null, health: null, setup_done: false, auto_run: false,
-      editing: false, draft: null, setup_saved: "", welcome: "", brief_sig: "" };
+      editing: false, draft: null, setup_saved: "", welcome: "", brief_sig: "", brief_version: "" };
   }
 
   function loadState() {
@@ -865,7 +865,9 @@
     if (fresh) {
       const t = timeOf(state.brief.generated_at);
       const n = N.stats(state.brief).total;
-      return h("p", { class: "status good", id: "status" }, ico("check"), "Ready" + (t ? ", built at " + t : "") + ". " + n + (n === 1 ? " story." : " stories."));
+      const old = state.brief_version && state.brief_version !== E.VERSION;
+      return h("p", { class: "status good", id: "status" }, ico("check"), "Ready" + (t ? ", built at " + t : "") + ". " + n + (n === 1 ? " story." : " stories.") +
+        (old ? " Built by version " + state.brief_version + "; check again to use " + E.VERSION + "." : ""));
     }
     if (state.brief && state.brief.source === "sample") return h("p", { class: "status idle", id: "status" }, "Not built yet today. Showing the sample brief.");
     if (state.brief) return h("p", { class: "status idle", id: "status" }, "Not built yet today. The page below is from " + N.prettyDate(state.brief.date) + ".");
@@ -933,11 +935,37 @@
     return runWeb(useHistory !== false);
   }
 
+  /* A tab left open across a release keeps running the code it loaded. Before a brief,
+     and when the page comes back into view, ask the site which version it serves (sw.js
+     names it). When it is newer, reload once for that version, and carry on with the
+     brief after the reload, so every brief uses the published code. */
+  const VERSION_CHECK = location.protocol === "https:" || window.DB_VERSION_CHECK === true;
+  async function siteVersion() {
+    try {
+      const r = await fetch("sw.js", { cache: "no-store", credentials: "same-origin" });
+      const m = r.ok ? /VERSION = "db-v([^"]+)"/.exec(await r.text()) : null;
+      return m ? m[1] : "";
+    } catch (e) { return ""; }
+  }
+  async function reloadForNewVersion(next) {
+    if (!VERSION_CHECK || desktop) return false;
+    const v = await siteVersion();
+    if (!v || v === E.VERSION) return false;
+    try {
+      if (sessionStorage.getItem("db.reloaded_for") === v) return false;  // already tried once; never loop
+      sessionStorage.setItem("db.reloaded_for", v);
+      sessionStorage.setItem("db.after_reload", next || "");
+    } catch (e) { return false; }
+    location.reload();
+    return true;
+  }
+
   async function runWeb(useHistory) {
     if (webRun) return;
     const v = E.validateConfig(saved());
     if (v.errors.length) { toast("Fix your choices first."); return; }
     if (!C) { toast("The collector did not load. Reload the page."); return; }
+    if (await reloadForNewVersion(useHistory ? "run" : "run-all")) return;
     webRun = { state: "running", done: 0, total: 0, step: "", phase: "feeds", cancelled: false };
     if (state.tab === "brief") refresh();
     const ledger = useHistory ? history : null;
@@ -1000,6 +1028,7 @@
     state.brief = brief;
     state.health = health;
     state.brief_sig = brief && brief.source !== "sample" && brief.source !== "ai" ? sig(saved()) : "";
+    state.brief_version = state.brief_sig ? E.VERSION : "";  // the version that collected it
     save();
     if (goToBrief && ready() && state.tab !== "brief") show("brief"); else rerender();
     // Just after setup, the welcome message stays in view; later runs jump to the page.
@@ -1412,7 +1441,19 @@
     rerender();
     if (wantsAuto()) getToday(true);
   });
-  setTimeout(() => { if (!desktop && wantsAuto() && !webRun) { if (state.tab !== "brief") show("brief"); getToday(true); } }, 1200);
+  // After a reload for a new version, finish what was asked: the brief.
+  let afterReload = "";
+  try { afterReload = sessionStorage.getItem("db.after_reload") || ""; sessionStorage.removeItem("db.after_reload"); } catch (e) { /* nothing to finish */ }
+  setTimeout(() => {
+    if (desktop || webRun) return;
+    if (afterReload === "run" || afterReload === "run-all") { if (state.tab !== "brief") show("brief"); getToday(afterReload === "run"); return; }
+    if (wantsAuto()) { if (state.tab !== "brief") show("brief"); getToday(true); }
+  }, 1200);
+  // Coming back to a tab left open: load a newer version if the site has one, unless
+  // a brief is being built or choices are being changed.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && !webRun && !job && !state.editing) reloadForNewVersion("");
+  });
   if ("serviceWorker" in navigator && location.protocol === "https:") {
     navigator.serviceWorker.register("sw.js").catch(() => { /* offline support is optional */ });
   }

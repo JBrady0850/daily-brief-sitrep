@@ -1,4 +1,4 @@
-# Limits (v0.6.0)
+# Limits (v0.6.1)
 
 - The web page reads only the sources that allow web pages to read them: the
   GDELT news index, and publisher feeds such as ESPN, CBS Sports, NASA, The New

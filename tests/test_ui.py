@@ -712,3 +712,38 @@ def test_a_slow_news_index_cannot_hold_the_brief(browser, http_app):
     assert page.evaluate("DB_APP.state().brief.categories[0].unchecked") is True
     assert errors == []
     ctx.close()
+
+
+def test_a_tab_left_open_across_a_release_reloads_once_and_then_builds(browser, http_app):
+    """The site serves a newer version than the page loaded: the brief button reloads the
+    page once for it, and the brief is built after the reload. No reload loop."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    state = {"version": 1, "tab": "brief", "setup_done": True,
+             "config": {"version": 1, "categories": [dict(pick["defense-ai"], feeds=[], topic_feeds=[])]}}
+    p, b = browser
+    ctx = b.new_context(viewport={"width": 1100, "height": 900})
+    ctx.add_init_script("window.DB_COLLECT_GAP = 0; window.DB_VERSION_CHECK = true;")
+    ctx.add_init_script("if (window.top === window && !localStorage.getItem('db.state.v1')) localStorage.setItem('db.state.v1', %s);"
+                        % json.dumps(json.dumps(state)))
+    page = ctx.new_page()
+    errors, loads = [], []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    page.on("load", lambda: loads.append(1))
+    route_world(page, [])
+    page.route("**/sw.js", lambda r: r.fulfill(status=200, body='const VERSION = "db-v9.9.9";', headers={"content-type": "text/javascript"}))
+    page.route("**/data/news-cache.json", lambda r: r.fulfill(status=404, body=""))
+    page.goto(http_app)
+    page.wait_for_selector("button:has-text(\"Get today's brief\")")
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    assert len(loads) == 2, "one reload for the new version"
+    assert page.evaluate("sessionStorage.getItem('db.reloaded_for')") == "9.9.9"
+    assert page.evaluate("DB_APP.state().brief.categories[0].id") == "defense-ai", "the brief was built after the reload"
+    assert page.evaluate("DB_APP.state().brief_version") == page.evaluate("DB_ENGINE.VERSION")
+    # Still older than the site after the reload: the next brief does not reload again.
+    page.click("button:has-text('Check for newer stories')")
+    page.wait_for_function("!document.querySelector('#status.busy')", timeout=60000)
+    assert len(loads) == 2
+    assert errors == []
+    ctx.close()
