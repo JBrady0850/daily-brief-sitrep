@@ -240,12 +240,13 @@ def cmd_check_feeds(a: argparse.Namespace) -> int:
 def cmd_build_cache(a: argparse.Namespace) -> int:
     """The backup collection the web page reads when the news index is busy."""
     from . import newscache
-    data = newscache.build(_now_iso(), pause=a.pause)
+    data = newscache.build(_now_iso(), pause=a.pause, budget=a.budget, log=newscache.stderr_log)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     text = json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n"
     tmp = out.with_suffix(out.suffix + ".tmp")
-    tmp.write_text(text, encoding="utf-8", newline="\n")
+    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:  # Python 3.9 has no write_text(newline=)
+        fh.write(text)
     tmp.replace(out)
     cats = data["categories"]
     empty = sorted(k for k, v in cats.items() if not v)
@@ -350,6 +351,7 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("build-cache", help="collect the backup news file the web page reads (needs internet)")
     s.add_argument("--out", default="app/data/news-cache.json", help="where to write it")
     s.add_argument("--pause", type=float, default=collect.GOOGLE_PAUSE, help="seconds between Google News requests")
+    s.add_argument("--budget", type=float, default=600, help="stop starting new categories after this many seconds")
     s.set_defaults(func=cmd_build_cache)
 
     s = sub.add_parser("scan", help="look for personal data and secrets before you publish")

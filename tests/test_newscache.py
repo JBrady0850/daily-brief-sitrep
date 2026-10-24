@@ -61,8 +61,23 @@ def test_the_backup_keeps_only_the_newest_stories_per_category():
     assert all(len(v) <= 2 for v in data["categories"].values())
 
 
+def test_each_feed_is_read_once_one_search_per_category_and_a_time_budget():
+    calls = []
+    lib = {"version": 1, "groups": [], "packs": [], "categories": [
+        {"id": "a", "name": "A", "queries": ["one", "two"], "require": [["buyout"]], "feeds": ["https://shared.example.com/feed"]},
+        {"id": "b", "name": "B", "queries": ["three"], "require": [["buyout"]], "feeds": ["https://shared.example.com/feed"]},
+        {"id": "c", "name": "C", "queries": ["four"], "require": [["buyout"]]}]}
+    ticks = iter([0, 0, 1, 2, 999, 999])
+    lines = []
+    data = NC.build(NOW, lib, fake_fetcher(calls), pause=0, budget=100, log=lines.append, clock=lambda: next(ticks))
+    assert calls.count("https://shared.example.com/feed") == 1
+    assert len([u for u in calls if "news.google.com" in u]) == 2, "one search per category, none for the skipped one"
+    assert sorted(data["categories"]) == ["a", "b"] and data["sources"]["skipped"] == 1
+    assert any("[1/3] a" in s for s in lines) and any("budget" in s for s in lines)
+
+
 def test_build_cache_command_writes_the_file(tmp_path, monkeypatch, capsys):
-    monkeypatch.setattr(C, "fetch", fake_fetcher([]))
+    monkeypatch.setattr(NC, "quick_fetch", fake_fetcher([]))
     monkeypatch.setattr(NC, "library", lambda: LIB)
     out = tmp_path / "data" / "news-cache.json"
     code = cli.main(["build-cache", "--out", str(out), "--pause", "0"])

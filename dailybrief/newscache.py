@@ -11,17 +11,24 @@ The file comes from the app's own address, so a browser may read it, and
 reading it sends nothing about the reader anywhere. Here, on GitHub, the
 collector reads Google News and every library feed, including the feeds that
 do not allow web pages to read them. Free, no key, no account.
+
+It works one category at a time against a time budget, asks Google News once
+per category (a four-day search), reads each feed address once, and writes
+whatever it gathered when the budget runs out.
 """
 import json
-from typing import Optional
+import sys
+import time
+from typing import Callable, Optional
 
 from . import collect as C, engine as E
 from .jsdata import library
 
 SCHEMA = "daily-brief-news-cache/1"
-PER_CATEGORY = 20       # newest stories kept for each category
+PER_CATEGORY = 20       # newest on-topic stories kept for each category
 MAX_AGE_HOURS = 96      # a little beyond the longest "older stories" window the app offers
 SUMMARY_CHARS = 300
+BUDGET_SECONDS = 600    # stop starting new categories after ten minutes
 FIELDS = ("title", "url", "source", "source_url", "published", "summary", "image")
 
 
@@ -50,26 +57,73 @@ def _keep(it: dict, now_ms: int, cat: dict, cfg: dict) -> Optional[dict]:
     return out
 
 
+def quick_fetch(url: str) -> bytes:
+    """Shorter waits than the desktop app: a slow site costs seconds, not minutes."""
+    return C.fetch(url, timeout=12, retries=1)
+
+
+def _remember(fetcher: C.Fetcher) -> C.Fetcher:
+    """Reads each feed address once for the whole run; a failure is remembered too."""
+    seen: dict = {}
+
+    def fetch(url: str) -> bytes:
+        if url not in seen:
+            try:
+                seen[url] = (fetcher(url), None)
+            except Exception as exc:  # noqa: BLE001 - replayed for every category that lists it
+                seen[url] = (b"", exc)
+        data, exc = seen[url]
+        if exc:
+            raise exc
+        return data
+    return fetch
+
+
 def build(now_iso: str, lib: Optional[dict] = None, fetcher: Optional[C.Fetcher] = None,
-          pause: float = C.GOOGLE_PAUSE, per_category: int = PER_CATEGORY) -> dict:
+          pause: float = C.GOOGLE_PAUSE, per_category: int = PER_CATEGORY, budget: float = BUDGET_SECONDS,
+          log: Optional[Callable[[str], None]] = None, clock: Callable[[], float] = time.monotonic) -> dict:
     """Collects every non-town library category and returns the file's content."""
     lib = lib or library()
-    cats = [E.category_from_library(lib, c["id"]) for c in lib["categories"] if not is_local(c)]
-    cfg = E.normalize_config({"version": 1, "categories": cats})
-    candidates, health = C.collect(cfg, now_iso, None, fetcher, None, pause)
+    say = log or (lambda s: None)
+    get = _remember(fetcher or quick_fetch)
+    cats = []
+    for c in lib["categories"]:
+        if is_local(c):
+            continue
+        cat = E.category_from_library(lib, c["id"])
+        cat["queries"] = [q for q in cat.get("queries") or [] if E.collapse(q)][:1]  # one Google search each
+        cats.append(cat)
+    # One four-day window, so each category needs a single search and no second pass.
+    cfg = E.normalize_config({"version": 1, "brief": {"window_hours": MAX_AGE_HOURS, "backfill_max_hours": MAX_AGE_HOURS},
+                              "categories": cats})
     now_ms = E.parse_iso(now_iso)
-    by_id = {c["id"]: E.resolve_category(c, cfg["reader"]) for c in cfg["categories"]}
+    start = clock()
     out: dict = {}
-    for cid, items in candidates.items():
-        kept = [k for k in (_keep(it, now_ms, by_id[cid], cfg) for it in items) if k]
+    sources = {"searches": 0, "searches_failed": 0, "feeds": 0, "feeds_failed": 0, "skipped": 0}
+    for k, cat in enumerate(cfg["categories"], 1):
+        if clock() - start > budget:
+            sources["skipped"] += 1
+            continue
+        one = dict(cfg, categories=[cat])
+        candidates, health = C.collect(one, now_iso, None, get, None, pause)
+        rcat = E.resolve_category(cat, cfg["reader"])
+        kept = [x for x in (_keep(it, now_ms, rcat, cfg) for it in candidates.get(cat["id"], [])) if x]
         kept.sort(key=lambda x: x["published"], reverse=True)
-        out[cid] = kept[:per_category]
-    sources = {"searches": 0, "searches_failed": 0, "feeds": 0, "feeds_failed": 0}
-    for h in health.values():
+        out[cat["id"]] = kept[:per_category]
+        h = health.get(cat["id"], {"queries": [], "feeds": []})
         for q in h["queries"]:
             sources["searches"] += 1
             sources["searches_failed"] += 1 if q.get("error") else 0
         for f in h["feeds"]:
             sources["feeds"] += 1
             sources["feeds_failed"] += 1 if f.get("error") else 0
+        errs = [x.get("error") for x in h["queries"] + h["feeds"] if x.get("error")]
+        say("[%d/%d] %-22s %2d stories  %4.0fs%s" % (k, len(cfg["categories"]), cat["id"], len(out[cat["id"]]), clock() - start,
+                                                   ("  problems: " + "; ".join(errs[:2])) if errs else ""))
+    if sources["skipped"]:
+        say("Time budget reached: %d categories skipped." % sources["skipped"])
     return {"schema": SCHEMA, "generated_at": now_iso, "categories": out, "sources": sources}
+
+
+def stderr_log(line: str) -> None:
+    print(line, file=sys.stderr, flush=True)
