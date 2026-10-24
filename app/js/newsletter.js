@@ -335,7 +335,8 @@ p.wxs a{color:#2b6cc4;}
       return '<li class="it th"><div class="tx">' + text + "</div>" + wrap("thumb") + "</li>";
     });
     const body = rows.length ? '<ul class="items">' + rows.join("") + "</ul>"
-      : '<p class="none">No new items. Nothing was published in the last ' + win + " hours that you have not already been sent.</p>";
+      : cat.unchecked === true ? '<p class="none">Not checked today: the news search did not answer, so this desk could not be searched. Try again later.</p>'
+        : '<p class="none">No new items. Nothing was published in the last ' + win + " hours that you have not already been sent.</p>";
     const nNews = items.filter(i => i.recency === "news").length;
     const nBack = items.filter(i => i.recency === "backfill").length;
     const nRef = items.filter(i => i.recency === "reference").length;
@@ -357,7 +358,7 @@ p.wxs a{color:#2b6cc4;}
   function sourceLabel(brief) {
     if (brief.source === "sample") return "sample data, not real news";
     if (brief.source === "ai") return "written by an AI assistant with web search" + (E.collapse(brief.model) ? " (" + E.collapse(brief.model) + ")" : "");
-    if (brief.source === "web") return "collected in your browser from the GDELT news index and publisher feeds";
+    if (brief.source === "web") return "collected in your browser from publisher feeds, the backup collection and the GDELT news index";
     return "collected by the Daily Brief from Google News and publisher feeds";
   }
 
@@ -382,8 +383,11 @@ p.wxs a{color:#2b6cc4;}
     const legend = segs.map(x => '<span class="lg"><span class="sw" style="background:' + x[2] + '"></span>' + x[0] + " " + x[1] + "</span>").join("");
     const bar = cells ? '<div class="srcbar">' + cells + '</div><div class="lgd">Today\'s stories by age: ' + legend + "</div>" : "";
     const cd = countdownData(n, day);
-    const gap = s.empty.length ? '<div class="gap">No new items for: ' + s.empty.map(c => esc(c.name)).join(", ") + ". Nothing was published in the last " +
-      win + " hours that had not already been sent in an earlier brief.</div>" : "";
+    const quiet = s.empty.filter(c => c.unchecked !== true);
+    const unchecked = s.empty.filter(c => c.unchecked === true);
+    const gap = (quiet.length ? '<div class="gap">No new items for: ' + quiet.map(c => esc(c.name)).join(", ") + ". Nothing was published in the last " +
+      win + " hours that had not already been sent in an earlier brief.</div>" : "") +
+      (unchecked.length ? '<div class="gap">Not checked today, because the news search did not answer: ' + unchecked.map(c => esc(c.name)).join(", ") + ". Try again later.</div>" : "");
     const sample = brief.source === "sample" ? '<div class="sample">Sample brief: invented headlines that show the layout. Nothing here is real news and the links go to example.com.</div>' : "";
     const cards = (brief.categories || []).map((c, i) => cardHtml(c, brief, n, i, win)).join("");
     const subject = subjectLine(brief, n);
@@ -438,7 +442,8 @@ p.wxs a{color:#2b6cc4;}
       if (E.collapse(cat.signal)) L.push("  Signal: " + E.collapse(cat.signal));
       if (E.collapse(cat.so_what)) L.push("  So what: " + E.collapse(cat.so_what));
       const items = Array.isArray(cat.items) ? cat.items : [];
-      if (!items.length) L.push("  No new items in the last " + win + " hours that you have not already been sent.");
+      if (!items.length) L.push(cat.unchecked === true ? "  Not checked today: the news search did not answer. Try again later."
+        : "  No new items in the last " + win + " hours that you have not already been sent.");
       for (const it of items) {
         const age = ageOf(it, brief);
         const label = it.recency === "reference" ? "REFERENCE, undated" : it.recency === "backfill" ? "OLDER, " + E.humanizeAge(age) : E.humanizeAge(age);

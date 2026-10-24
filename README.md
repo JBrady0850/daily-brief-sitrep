@@ -105,6 +105,14 @@ download or copy; see [CHANGELOG.md](CHANGELOG.md).
 | 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, published beside the app | When a category is still short |
 | 3 | The GDELT news index | Only for what is still short, mostly categories about your town and topics you typed |
 
+**Your town.** The town question keeps your town, its state and the nearby
+towns or county that count as local; picking your town for the forecast fills in
+the state and county. Town news is the hardest to find from a web page, so the
+question also takes your local TV station's or paper's news feed, with a
+**Check** button that says whether this page can read it. If the news search
+does not answer on a given day, a town category says "Not checked today"
+instead of "No new items".
+
 A category may also name **on-topic feeds**, such as a tennis feed for the
 tennis category; their stories count as on topic without a must-mention word.
 See [docs/CATEGORIES.md](docs/CATEGORIES.md).

@@ -19,7 +19,7 @@ FORECAST = {"current": {"temperature_2m": 51.4, "weather_code": 3},
             "daily": {"time": [(datetime.now() + timedelta(days=k)).strftime("%Y-%m-%d") for k in range(4)],
                       "weather_code": [3, 61, 0, 95], "temperature_2m_max": [58.2, 55, 61.5, 60.1],
                       "temperature_2m_min": [44.1, 47.9, 43, 50], "precipitation_probability_max": [10, 80, 0, 65]}}
-TOWNS = {"results": [{"name": "Springfield", "admin1": "Illinois", "country": "United States", "country_code": "US",
+TOWNS = {"results": [{"name": "Springfield", "admin1": "Illinois", "admin2": "Sangamon County", "country": "United States", "country_code": "US",
                       "latitude": 39.80172, "longitude": -89.64371}]}
 # Headlines the fake news index hands out, by a word in the search.
 STORIES = {
@@ -574,3 +574,63 @@ def test_the_backup_collection_fills_categories_when_the_news_index_refuses(brow
     assert "6 from the backup collection" in page.inner_text("#briefview")
     assert errors == []
     ctx.close()
+
+
+def local_feed():
+    now = datetime.now(timezone.utc)
+    titles = ["Springfield council approves new park", "Sangamon County fair opens Friday", "State budget talks continue"]
+    items = "".join("<item><title>%s</title><link>https://tv.example.com/story/%d</link><pubDate>%s</pubDate></item>"
+                    % (t, k, (now - timedelta(hours=k + 1)).strftime("%a, %d %b %Y %H:%M:%S GMT")) for k, t in enumerate(titles))
+    return '<?xml version="1.0"?><rss version="2.0"><channel><title>Example TV</title>' + items + "</channel></rss>"
+
+
+def test_town_question_fills_the_state_and_county_and_checks_a_local_feed(browser):
+    ctx, page, errors = open_page(browser, APP)
+    page.route("**/local-news.xml", lambda r: r.fulfill(status=200, body=local_feed(), headers=dict(CORS, **{"content-type": "application/rss+xml"})))
+    page.click("button:has-text('Next question')")
+    page.click("button:has-text('Next question')")
+    page.fill("#town", "Springfield")
+    page.fill(".wxpick input[aria-label='Town for the forecast']", "Springfield")
+    page.click("text=Find my town")
+    page.click(".wxpick .chip >> text=Springfield, Illinois")
+    r = page.evaluate("DB_APP.state().config.reader")
+    assert r["region"] == "Illinois" and "Sangamon County" in r["local_terms"]
+    assert page.input_value("#region") == "Illinois"
+    page.fill("#localfeeds", "https://tv.example.com/local-news.xml")
+    page.click(".localfeeds button:has-text('Check')")
+    page.wait_for_selector(".localfeeds li")
+    assert "readable, 3 stories, 2 name your town or a nearby place" in page.inner_text(".localfeeds")
+    assert page.evaluate("DB_APP.state().config.reader.local_feeds") == ["https://tv.example.com/local-news.xml"]
+    assert errors == []
+    ctx.close()
+
+
+def test_town_categories_use_your_local_feed_and_say_when_they_could_not_be_checked(browser, http_app):
+    calls = []
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    reader = {"location": "Springfield", "region": "Illinois", "local_terms": ["Sangamon County"],
+              "local_feeds": ["https://tv.example.com/local-news.xml"]}
+    state = {"version": 1, "tab": "brief", "setup_done": True,
+             "config": {"version": 1, "reader": reader, "categories": [pick["local-news"], pick["local-events"]]}}
+    ctx, page, errors = open_page(browser, http_app, calls=calls, gdelt_status=429, state=state)
+    page.route("**/local-news.xml", lambda r: r.fulfill(status=200, body=local_feed(), headers=dict(CORS, **{"content-type": "application/rss+xml"})))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    by = {c["id"]: c for c in page.evaluate("DB_APP.state().brief.categories")}
+    assert [i["title"] for i in by["local-news"]["items"]] == ["Springfield council approves new park", "Sangamon County fair opens Friday"]
+    events = by["local-events"]
+    assert events["items"] == [] or all("fair" in i["title"].lower() or "opens" in i["title"].lower() for i in events["items"])
+    ctx.close()
+    # Without a local feed, a refused search leaves the desk unchecked, and the page says so.
+    reader2 = dict(reader, local_feeds=[])
+    state2 = dict(state, config={"version": 1, "reader": reader2, "categories": [pick["local-news"]]})
+    ctx, page, errors2 = open_page(browser, http_app, calls=[], gdelt_status=429, state=state2)
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    assert page.evaluate("DB_APP.state().brief.categories[0].unchecked") is True
+    frame = page.frame_locator("iframe.page")
+    assert "Not checked today" in frame.locator("main").inner_text()
+    assert errors == [] and errors2 == []
+    ctx.close()
+

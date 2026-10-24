@@ -349,6 +349,9 @@ def card_html(cat: dict, brief: dict, cfg: dict, index: int, win: Any) -> str:
             rows.append('<li class="it th"><div class="tx">' + text + "</div>" + wrap("thumb") + "</li>")
     if rows:
         body = '<ul class="items">' + "".join(rows) + "</ul>"
+    elif cat.get("unchecked") is True:
+        body = ('<p class="none">Not checked today: the news search did not answer, so this desk could not be searched. '
+                "Try again later.</p>")
     else:
         body = ('<p class="none">No new items. Nothing was published in the last ' + _js_str(win)
                 + " hours that you have not already been sent.</p>")
@@ -381,7 +384,7 @@ def source_label(brief: dict) -> str:
         model = E.collapse(brief.get("model"))
         return "written by an AI assistant with web search" + (" (" + model + ")" if model else "")
     if brief.get("source") == "web":
-        return "collected in your browser from the GDELT news index and publisher feeds"
+        return "collected in your browser from publisher feeds, the backup collection and the GDELT news index"
     return "collected by the Daily Brief from Google News and publisher feeds"
 
 
@@ -418,9 +421,14 @@ def render(brief: dict, cfg: Any = None) -> dict:
            + legend + "</div>") if cells else ""
     cd = countdown_data(n, day)
     gap = ""
-    if s["empty"]:
-        gap = ('<div class="gap">No new items for: ' + ", ".join(esc(c.get("name")) for c in s["empty"])
+    quiet = [c for c in s["empty"] if c.get("unchecked") is not True]
+    unchecked = [c for c in s["empty"] if c.get("unchecked") is True]
+    if quiet:
+        gap = ('<div class="gap">No new items for: ' + ", ".join(esc(c.get("name")) for c in quiet)
                + ". Nothing was published in the last " + W + " hours that had not already been sent in an earlier brief.</div>")
+    if unchecked:
+        gap += ('<div class="gap">Not checked today, because the news search did not answer: '
+                + ", ".join(esc(c.get("name")) for c in unchecked) + ". Try again later.</div>")
     sample = ('<div class="sample">Sample brief: invented headlines that show the layout. Nothing here is real news and the '
               'links go to example.com.</div>') if brief.get("source") == "sample" else ""
     cards = "".join(card_html(c, brief, n, i, win) for i, c in enumerate(brief.get("categories") or []))
@@ -495,7 +503,8 @@ def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, titl
             L.append("  So what: " + E.collapse(cat.get("so_what")))
         items = cat.get("items") if isinstance(cat.get("items"), list) else []
         if not items:
-            L.append("  No new items in the last " + W + " hours that you have not already been sent.")
+            L.append("  Not checked today: the news search did not answer. Try again later." if cat.get("unchecked") is True
+                     else "  No new items in the last " + W + " hours that you have not already been sent.")
         for it in items:
             age = age_of(it, brief)
             r = it.get("recency")

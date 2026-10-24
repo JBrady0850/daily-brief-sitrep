@@ -10,6 +10,8 @@
   (api.gdeltproject.org). When the forecast is on, it sends your town's map position,
   rounded to about a kilometre, to Open-Meteo, and the town search sends the
   name you type. Requests carry no cookies and no referrer.
+- Local news feed links you add on the town question stay in this browser; the
+  page reads those feeds directly, like any other feed.
 - Story photos load from the publishers' own sites when you view the brief,
   without a referrer. Downloaded pages load them the same way when opened.
 - The desktop app keeps its copy in a `.daily-brief` folder in your home folder

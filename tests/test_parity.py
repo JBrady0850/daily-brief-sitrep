@@ -327,3 +327,46 @@ def test_pages_with_photos_and_weather_are_identical(sample_brief, sample_settin
     assert 'class="wx"' in html and "&lt;b&gt;Example&lt;/b&gt; City" in html and "<svg onload" not in html
     assert "59&deg;F" not in html and "52&deg;F" in html and "WEATHER, <B>EXAMPLE</B> CITY:" in got[0]["text"]
     assert 'class="wx"' not in got[2]["html"]
+
+
+def test_town_categories_agree():
+    town = {"id": "local-news", "name": "Local ({location})", "queries": ['"{location}" council'], "require": [["{local_terms}"]],
+            "needs_location": True, "feeds": ["https://tv.example.com/feed"]}
+    plain = {"id": "tech", "name": "Tech", "queries": ["tech"], "require": [["tech"]], "feeds": []}
+    custom = {"id": "mine", "name": "Mine", "queries": ['"{location}" {region} parade'], "require": [["parade"]]}
+    readers = [{"location": "Springfield", "region": "Illinois", "local_terms": ["Sangamon County"],
+                "local_feeds": ["https://tv.example.com/feed", "https://paper.example.com/rss", "not a link"]},
+               {"location": "", "region": "", "local_terms": [], "local_feeds": []}, None]
+    reqs, pys = [], []
+    for c in (town, plain, custom):
+        reqs.append({"fn": "isLocalCategory", "args": [c]}); pys.append(E.is_local_category(c))
+        for r in readers:
+            reqs.append({"fn": "resolveCategory", "args": [c, r]}); pys.append(E.resolve_category(c, r))
+    cfgs = [{"version": 1, "reader": readers[0], "categories": [town]},
+            {"version": 1, "reader": {"region": 5, "local_feeds": ["https://a.example.com/x"] * 6}, "categories": [plain]}]
+    for cfg in cfgs:
+        reqs.append({"fn": "validateConfig", "args": [cfg]}); pys.append(E.validate_config(cfg))
+    got = js_calls(reqs)
+    for p, j in zip(pys, got):
+        assert same(p, j), json.dumps([p, j])[:1500]
+    town_cat = E.resolve_category(town, readers[0])
+    assert town_cat["feeds"] == ["https://tv.example.com/feed", "https://paper.example.com/rss"], "own feeds join town categories once"
+    assert town_cat["require"] == [["Springfield", "Sangamon County"]]
+    assert E.resolve_category(plain, readers[0])["feeds"] == [], "other categories never get them"
+    assert E.resolve_category(custom, readers[0])["queries"] == ['"Springfield" Illinois parade']
+    assert any("local_feeds" in e for e in E.validate_config(cfgs[0])["errors"]), "a bad link is refused"
+    assert any("local_feeds" in e for e in E.validate_config(cfgs[1])["errors"]) and any("region" in e for e in E.validate_config(cfgs[1])["errors"])
+
+
+def test_unchecked_desks_render_the_same(sample_brief, sample_settings):
+    b = copy.deepcopy(sample_brief)
+    b["categories"][0]["items"] = []
+    b["categories"][0]["unchecked"] = True
+    b["categories"][1]["items"] = []
+    got = js_calls([{"fn": "render", "args": [b, sample_settings]}])[0]
+    p = R.render(b, sample_settings)
+    for k in ("subject", "text", "html"):
+        assert p[k] == got[k], k
+    assert "Not checked today: the news search did not answer" in p["html"] and "Not checked today, because the news search did not answer: " in p["html"]
+    assert "No new items for: " + b["categories"][1]["name"] in p["html"]
+    assert "Not checked today: the news search did not answer. Try again later." in p["text"]

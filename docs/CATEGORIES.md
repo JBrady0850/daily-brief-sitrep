@@ -25,8 +25,13 @@ words your own category. Each category has:
 - Short all-capital terms (2 to 6 letters, such as `AI`, `CVE`, `TSP`) match only
   in capitals, so `AI` never matches "said" and `IT` never matches "it".
 - Terms with punctuation work: `401(k)`, `S&P 500`, `zero-day`.
-- `{location}` in a name or search becomes your town. In a must-mention line,
-  `{local_terms}` stands for your town plus the nearby towns you listed.
+- `{location}` in a name or search becomes your town, and `{region}` your state
+  or region. In a must-mention line, `{local_terms}` stands for your town plus
+  the nearby towns and county you listed.
+- Town categories (those with `{location}`, `{local_terms}` or `needs_location`)
+  also read the local news feeds you add on the town question. Their stories
+  still need to name your town or a nearby place. The desktop app and the GitHub
+  copy add your state to town searches, so Google keeps to the right town.
 
 ## Writing a good category
 

@@ -16,7 +16,10 @@
 - The GDELT index turns requests away when it is busy or when one connection
   asks too often (HTTP 503 and 429, seen on 2026-10-23; after a day of heavy
   testing it refused one home connection for hours). The town categories and
-  categories you type yourself depend on it.
+  categories you type yourself depend on it, unless you add a local news feed
+  on the town question. Many local sites do not let web pages read their feeds:
+  of 18 local news feeds tried in one region on 2026-10-24, one (a TV station's
+  news feed on the Arc publishing system) allowed it. The Check button tells.
   It asks one search at a time, waits six seconds between searches (twelve
   after a refusal), retries a refused search once, and after three refused
   searches in a row uses the feeds alone for the rest of the run. A live run

@@ -182,3 +182,19 @@ def test_weather_failure_never_stops_the_brief(monkeypatch):
         return feed_bytes("google_news.xml")
     brief, health = C.run_brief(cfg, "2026-10-23T12:00:00Z", "2026-10-23", None, fetcher, pause=0)
     assert "weather" not in brief and "down" in health["_weather"]["error"] and brief["total"] > 0
+
+
+def test_town_searches_add_the_state_and_failed_searches_are_marked_unchecked():
+    calls = []
+    cfg = {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"}, "categories": [
+        {"id": "town", "name": "Local ({location})", "queries": ['"{location}" council'], "require": [["{local_terms}"]], "needs_location": True},
+        {"id": "net", "name": "Net", "queries": ['"zero trust"'], "require": [["zero trust"]]}]}
+
+    def fetcher(url):
+        calls.append(url)
+        raise C.FetchError("HTTP 503")
+    brief, health = C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=fetcher, pause=0)
+    town_urls = [u for u in calls if "council" in u]
+    assert town_urls and all("%22Illinois%22" in u for u in town_urls), town_urls
+    assert all("Illinois" not in u for u in calls if "zero" in u), "only town searches add the state"
+    assert all(c.get("unchecked") is True for c in brief["categories"])

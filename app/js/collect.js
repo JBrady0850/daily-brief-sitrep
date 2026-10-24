@@ -253,6 +253,7 @@
     return (data && Array.isArray(data.results) ? data.results : []).filter(r => E.isNum(r.latitude) && E.isNum(r.longitude)).map(r => ({
       name: E.collapse(r.name), region: E.collapse(r.admin1), country: E.collapse(r.country), country_code: E.collapse(r.country_code),
       latitude: Math.round(r.latitude * 100) / 100, longitude: Math.round(r.longitude * 100) / 100,
+      county: E.collapse(r.admin2),
       label: [r.name, r.admin1, r.country_code === "US" ? "" : r.country].map(E.collapse).filter(Boolean).join(", ")
     }));
   }
@@ -373,6 +374,27 @@
     return { candidates: pools, health: health, nowIso: nowIso };
   }
 
+  /* An empty desk whose searches all failed was not checked, which is not the
+     same as "nothing new"; the page says so. */
+  function markUnchecked(brief, health) {
+    for (const bc of brief.categories || []) {
+      const h = health && health[bc.id];
+      if (!h || (bc.items && bc.items.length)) continue;
+      const tried = (h.queries || []).filter(q => !q.note);
+      if (tried.length && tried.every(q => q.error)) bc.unchecked = true;
+    }
+    return brief;
+  }
+
+  /* Reads one feed the way a brief would and says how many stories mention the
+     reader's town or nearby places. For the "Check" button on the town question. */
+  async function checkFeed(url, terms, opts) {
+    const items = parseFeed(await getText(url, opts));
+    const local = (terms || []).map(E.collapse).filter(Boolean);
+    const mention = items.filter(it => local.some(t => E.termHit(it.title + " " + (it.summary || ""), t))).length;
+    return { items: items.length, local: mention };
+  }
+
   function localDate(d) {
     return d.getFullYear() + "-" + E.pad2(d.getMonth() + 1) + "-" + E.pad2(d.getDate());
   }
@@ -385,6 +407,7 @@
     const got = await collect(cfg, ledger, Object.assign({}, opts, { now: now }));
     if (typeof opts.progress === "function") opts.progress("Your page", 1, 1, "layout");
     const brief = E.selectBrief(got.candidates, cfg, ledger, got.nowIso, opts.date || localDate(now), "web");
+    markUnchecked(brief, got.health);
     const wx = await wxPromise;
     if (wx.w) brief.weather = wx.w;
     const health = got.health;
@@ -393,5 +416,5 @@
   }
 
   return { GDELT, GAP_MS, BACKUP_URL, parseBackup, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
-    weather, geocode, collect, runBrief, localDate };
+    weather, geocode, collect, runBrief, localDate, markUnchecked, checkFeed };
 });

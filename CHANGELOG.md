@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.0 (2026-10-24)
+
+Town categories no longer depend on the news search alone.
+
+- The town question adds **State or region** and fills it, with the county, when
+  you pick your town for the forecast. The county joins the nearby places that
+  count as local.
+- **Your local news feed**: paste up to five feed links (a local TV station or
+  paper). Every town category reads them, and their stories still have to name
+  your town or a nearby place. A **Check** button reads each feed and says how
+  many stories name your area, or that the site does not let web pages read it.
+- The desktop app and the GitHub copy add your state to town searches on Google
+  News. A `{region}` placeholder is available to any category.
+- A desk whose searches all failed now says **Not checked today** (on the card,
+  in the summary and in the plain text) instead of "No new items".
+- Your choices shows your area with its state, the nearby places and your local
+  feeds.
+
 ## 0.4.0 (2026-10-24)
 
 A busy news index no longer empties a brief.

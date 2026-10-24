@@ -292,6 +292,9 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
     days1 = max(1, math.ceil(b["window_hours"] / 24))
     days2 = max(days1, math.ceil(b["backfill_max_hours"] / 24))
     cats = [E.resolve_category(c, n["reader"]) for c in n["categories"]]
+    region = E.collapse(n["reader"].get("region"))
+    # Google understands a place: town searches add the reader's state or region.
+    local_ids = {c["id"] for c in n["categories"] if E.is_local_category(c)} if region else set()
     def feeds_of(c: dict) -> list:
         """A category's feeds plus its on-topic feeds, each address once."""
         return list(c["feeds"]) + [u for u in c.get("topic_feeds") or [] if u not in c["feeds"]]
@@ -330,6 +333,8 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
             return added
 
         queries = [q for q in cat["queries"] if E.collapse(q)]
+        if cat["id"] in local_ids:
+            queries = [q + ' "' + region.replace('"', "") + '"' for q in queries]
         for q in queries:
             items, err = _fetch_parse(E.google_news_url(q, days1, n), fetcher, True)
             h["queries"].append({"query": q, "days": days1, "items": len(items), "added": add(items), "error": err})
@@ -404,11 +409,24 @@ def weather(cfg: dict, now_iso: str, fetcher: Optional[Fetcher] = None) -> Optio
     return weather_from(E.json_loads((fetcher or fetch)(forecast_url(w)).decode("utf-8")), w, now_iso)
 
 
+def mark_unchecked(brief: dict, health: dict) -> dict:
+    """An empty desk whose searches all failed was not checked (mirrors markUnchecked in collect.js)."""
+    for bc in brief.get("categories") or []:
+        h = (health or {}).get(bc.get("id"))
+        if not h or bc.get("items"):
+            continue
+        tried = [q for q in h.get("queries") or [] if not q.get("note")]
+        if tried and all(q.get("error") for q in tried):
+            bc["unchecked"] = True
+    return brief
+
+
 def run_brief(cfg: dict, now_iso: str, date_str: str, ledger: Optional[dict], fetcher: Optional[Fetcher] = None,
               progress: Optional[Callable[[str, int, int], None]] = None, pause: float = GOOGLE_PAUSE) -> tuple:
     """Collect and select in one step. Returns (brief, health)."""
     candidates, health = collect(cfg, now_iso, ledger, fetcher, progress, pause)
     brief = E.select_brief(candidates, cfg, ledger, now_iso, date_str, "desktop")
+    mark_unchecked(brief, health)
     try:
         wx = weather(cfg, now_iso, fetcher)
     except Exception as exc:  # the forecast never stops the brief

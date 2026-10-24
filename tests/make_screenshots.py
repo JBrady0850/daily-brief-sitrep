@@ -51,7 +51,7 @@ def main() -> int:
         page.fill(".wxpick input", "Springfield")
         page.click("text=Find my town")
         page.click(".wxpick .chip >> text=Springfield, Illinois")
-        page.locator(".wxpick").scroll_into_view_if_needed()
+        page.locator(".wxpick:not(.localfeeds)").scroll_into_view_if_needed()
         page.screenshot(path=str(OUT / "04-town-and-weather.png"))
         for _ in range(5):
             page.click("button:has-text('Next question')")

@@ -479,11 +479,51 @@
     const local = localCats();
     add(card, h("p", { text: local.length ? "Your local categories (" + local.map(c => c.name.replace("({location})", "").trim()).join(", ") + ") search for news about this place." :
       "None of your categories are local, so you can skip this question." }));
-    add(card, field("Town or city", h("input", { type: "text", value: r.location || "", placeholder: "Springfield",
-      oninput: e => { r.location = e.target.value; save(); } }), "The town name only. No street address."));
-    add(card, field("Nearby towns or the county that also count as local (commas)", h("input", { type: "text", value: (r.local_terms || []).join(", "),
-      placeholder: "Shelbyville, Sangamon County", oninput: e => { r.local_terms = commas(e.target.value); save(); } })));
+    add(card, h("div", { class: "row" },
+      field("Town or city", h("input", { type: "text", id: "town", value: r.location || "", placeholder: "Springfield",
+        oninput: e => { r.location = e.target.value; save(); } }), "The town name only. No street address."),
+      field("State or region", h("input", { type: "text", id: "region", value: r.region || "", placeholder: "Illinois",
+        oninput: e => { r.region = e.target.value; save(); } }), "Filled in when you pick your town for the forecast below.")));
+    add(card, field("Nearby towns or the county that also count as local (commas)", h("input", { type: "text", id: "nearby", value: (r.local_terms || []).join(", "),
+      placeholder: "Shelbyville, Sangamon County", oninput: e => { r.local_terms = commas(e.target.value); save(); } }),
+      "A story counts as local when it names your town or one of these."));
     add(card, weatherPicker());
+    add(card, localFeedBox());
+  }
+
+  /* Town news needs a source that names the town. A local TV station or paper
+     often has a feed; the Check button says whether this page can read it. */
+  function localFeedBox() {
+    const r = cfg().reader;
+    const box = h("div", { class: "wxpick localfeeds" });
+    const status = h("div", { class: "hint", "aria-live": "polite" });
+    const ta = h("textarea", { rows: 2, id: "localfeeds", value: (r.local_feeds || []).join("\n"),
+      placeholder: "https://www.example-tv.com/arc/outboundfeeds/rss/category/news/?outputType=xml",
+      oninput: e => { r.local_feeds = lines(e.target.value).slice(0, 5); save(); } });
+    async function check() {
+      const urls = lines(ta.value).slice(0, 5);
+      clear(status);
+      if (!urls.length) { status.textContent = "Paste a feed link first."; return; }
+      const terms = [r.location].concat(r.local_terms || []);
+      status.textContent = "Checking...";
+      const out = [];
+      for (const u of urls) {
+        if (!E.validUrl(u)) { out.push(h("li", { class: "badtext", text: u + ": not a web link." })); continue; }
+        try {
+          const got = await C.checkFeed(u, terms);
+          out.push(h("li", { class: got.items ? "ok" : "warn", text: E.hostOf(u) + ": readable, " + got.items + " stories, " + got.local + " name your town or a nearby place." }));
+        } catch (e) {
+          out.push(h("li", { class: "badtext", text: E.hostOf(u) + ": " + (e.message || e) + ". This site does not let web pages read its feed; the desktop app and a GitHub copy can still use it." }));
+        }
+      }
+      clear(status).append(h("ul", { class: "plain" }, out));
+    }
+    add(box, h("h3", null, ico("news", "hi"), "Your local news feed (optional)"));
+    add(box, h("p", { class: "hint", text: "Town news comes from the GDELT news search, which is sometimes busy. A feed from your local TV station or paper makes the town categories dependable. Paste up to five feed links, one per line, then press Check." }));
+    add(box, ta);
+    add(box, h("div", { class: "row" }, h("button", { class: "btn ghost", onclick: check }, "Check")));
+    add(box, status);
+    return box;
   }
 
   /* The forecast panel: find the town with Open-Meteo (free, no key), keep only
@@ -502,7 +542,14 @@
         status.textContent = found.length ? "Pick your town:" : "No town by that name. Try the nearest city.";
         found.forEach(f => results.append(h("button", { class: "chip", onclick: () => {
           Object.assign(w, { enabled: true, place: f.label, latitude: f.latitude, longitude: f.longitude });
-          if (!E.collapse(cfg().reader.location)) cfg().reader.location = f.name;
+          const rd = cfg().reader;
+          if (!E.collapse(rd.location)) rd.location = f.name;
+          // The state tells towns of the same name apart, and the county counts as local.
+          if (f.region && E.collapse(rd.location).toLowerCase() === E.collapse(f.name).toLowerCase()) {
+            rd.region = f.region;
+            const near = (rd.local_terms || []).map(t => E.collapse(t).toLowerCase());
+            if (f.county && near.indexOf(f.county.toLowerCase()) < 0) rd.local_terms = (rd.local_terms || []).concat([f.county]);
+          }
           // Only the United States and a few others measure in Fahrenheit.
           if (f.country_code && ["US", "LR", "PR", "GU", "BS", "KY", "PW", "FM", "MH"].indexOf(f.country_code) < 0) w.units = "celsius";
           save();
@@ -607,7 +654,9 @@
     const n = E.normalizeConfig(c);
     return [
       ["Categories", n.categories.map(x => E.resolveCategory(x, n.reader).name).join(", ") || "none", 1],
-      ["Your area", n.reader.location || "not set", 2],
+      ["Your area", [n.reader.location, n.reader.region].map(E.collapse).filter(Boolean).join(", ") || "not set", 2],
+      ["Also local", (n.reader.local_terms || []).join(", ") || "none", 2],
+      ["Local news feeds", (n.reader.local_feeds || []).map(E.hostOf).join(", ") || "none", 2],
       ["Weather", n.weather.enabled ? "forecast for " + n.weather.place + " (" + n.weather.units + ")" : "off", 2],
       ["Stories per category", String(n.brief.items_per_category), 3],
       ["Fresh window", n.brief.window_hours + " hours", 3],

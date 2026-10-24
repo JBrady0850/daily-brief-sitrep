@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -50,7 +50,7 @@ DEFAULTS: dict = {
         "language": "en",
         "region": "US",
     },
-    "reader": {"role": "", "location": "", "local_terms": [], "goals": [], "watch_list": []},
+    "reader": {"role": "", "location": "", "region": "", "local_terms": [], "local_feeds": [], "goals": [], "watch_list": []},
     "countdown": {"enabled": False, "label": "", "date": "", "start": "", "milestones": []},
     "delivery": {"time": "06:15", "timezone": "", "channels": ["issue"]},
     "weather": {"enabled": False, "place": "", "latitude": None, "longitude": None, "units": "fahrenheit"},
@@ -303,12 +303,19 @@ def count_hits(text: str, terms: list) -> int:
 
 
 # ------------------------------------------------------------------ config
+def is_local_category(cat: Any) -> bool:
+    """A town category: it names the reader's town, or says it needs one."""
+    t = json.dumps(cat if cat is not None else {})
+    return (is_obj(cat) and cat.get("needs_location") is True) or "{location}" in t or "{local_terms}" in t
+
+
 def resolve_category(cat: dict, reader: dict) -> dict:
     c = clone(cat)
     loc = collapse((reader or {}).get("location"))
+    region = collapse((reader or {}).get("region"))
 
     def sub(s: Any) -> str:
-        return str(s).replace("{location}", loc)
+        return str(s).replace("{location}", loc).replace("{region}", region)
 
     local: list = []
     for t in [loc] + list((reader or {}).get("local_terms") or []):
@@ -329,6 +336,15 @@ def resolve_category(cat: dict, reader: dict) -> dict:
         groups.append(out)
     c["require"] = groups
     c["exclude"] = [sub(x) for x in (c.get("exclude") or [])]
+    # The reader's own local news feeds count for every town category.
+    if is_local_category(cat):
+        feeds = list(c.get("feeds")) if isinstance(c.get("feeds"), list) else []
+        own = (reader or {}).get("local_feeds")
+        for u in own if isinstance(own, list) else []:
+            v = collapse(u)
+            if valid_url(v) and v not in feeds:
+                feeds.append(v)
+        c["feeds"] = feeds
     return c
 
 
@@ -386,8 +402,11 @@ def validate_config(cfg: Any) -> dict:
         if not isinstance(b[k], bool):
             errors.append("brief." + k + " must be true or false.")
     r = n["reader"]
-    if not is_str(r["role"]) or not is_str(r["location"]):
-        errors.append("reader.role and reader.location must be text.")
+    if not is_str(r["role"]) or not is_str(r["location"]) or not is_str(r["region"]):
+        errors.append("reader.role, reader.location and reader.region must be text.")
+    lf = r["local_feeds"]
+    if not str_list(lf) or len(lf) > 5 or not all(valid_url(collapse(u)) for u in lf):
+        errors.append("reader.local_feeds must be a list of up to 5 http or https links.")
     for k in ["local_terms", "goals", "watch_list"]:
         if not str_list(r[k]):
             errors.append("reader." + k + " must be a list of text.")
@@ -437,7 +456,7 @@ def validate_config(cfg: Any) -> dict:
         uses_local = False
         for t in texts:
             for p in placeholder_set(t):
-                if p not in ("location", "local_terms"):
+                if p not in ("location", "local_terms", "region"):
                     errors.append(label + ": unknown placeholder {" + p + "}.")
                 else:
                     uses_local = True

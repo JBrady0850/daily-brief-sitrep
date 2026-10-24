@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.4.0";
+  const VERSION = "0.5.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -46,7 +46,7 @@
       language: "en",
       region: "US"
     },
-    reader: { role: "", location: "", local_terms: [], goals: [], watch_list: [] },
+    reader: { role: "", location: "", region: "", local_terms: [], local_feeds: [], goals: [], watch_list: [] },
     countdown: { enabled: false, label: "", date: "", start: "", milestones: [] },
     delivery: { time: "06:15", timezone: "", channels: ["issue"] },
     weather: { enabled: false, place: "", latitude: null, longitude: null, units: "fahrenheit" },
@@ -181,10 +181,17 @@
   }
 
   // ------------------------------------------------------------------ config
+  /* A town category: it names the reader's town, or says it needs one. */
+  function isLocalCategory(cat) {
+    const t = JSON.stringify(cat || {});
+    return !!(cat && cat.needs_location === true) || t.indexOf("{location}") >= 0 || t.indexOf("{local_terms}") >= 0;
+  }
+
   function resolveCategory(cat, reader) {
     const c = clone(cat);
     const loc = collapse(reader && reader.location);
-    const sub = s => String(s).split("{location}").join(loc);
+    const region = collapse(reader && reader.region);
+    const sub = s => String(s).split("{location}").join(loc).split("{region}").join(region);
     const local = [];
     for (const t of [loc].concat((reader && reader.local_terms) || [])) {
       const v = collapse(t);
@@ -202,6 +209,15 @@
       return out;
     });
     c.exclude = (c.exclude || []).map(sub);
+    // The reader's own local news feeds count for every town category.
+    if (isLocalCategory(cat)) {
+      const feeds = Array.isArray(c.feeds) ? c.feeds.slice() : [];
+      for (const u of (reader && Array.isArray(reader.local_feeds) ? reader.local_feeds : [])) {
+        const v = collapse(u);
+        if (validUrl(v) && feeds.indexOf(v) < 0) feeds.push(v);
+      }
+      c.feeds = feeds;
+    }
     return c;
   }
 
@@ -260,7 +276,10 @@
       if (typeof b[k] !== "boolean") errors.push("brief." + k + " must be true or false.");
     }
     const r = n.reader;
-    if (!isStr(r.role) || !isStr(r.location)) errors.push("reader.role and reader.location must be text.");
+    if (!isStr(r.role) || !isStr(r.location) || !isStr(r.region)) errors.push("reader.role, reader.location and reader.region must be text.");
+    if (!strList(r.local_feeds) || r.local_feeds.length > 5 || !r.local_feeds.every(u => validUrl(collapse(u)))) {
+      errors.push("reader.local_feeds must be a list of up to 5 http or https links.");
+    }
     for (const k of ["local_terms", "goals", "watch_list"]) {
       if (!strList(r[k])) errors.push("reader." + k + " must be a list of text.");
     }
@@ -303,7 +322,7 @@
       let usesLocal = false;
       for (const t of texts) {
         for (const p of placeholderSet(t)) {
-          if (p !== "location" && p !== "local_terms") errors.push(label + ": unknown placeholder {" + p + "}.");
+          if (p !== "location" && p !== "local_terms" && p !== "region") errors.push(label + ": unknown placeholder {" + p + "}.");
           else usesLocal = true;
         }
       }
@@ -860,7 +879,7 @@
   return {
     VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_LEDGER, MAX_RECENT,
     clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, validImage, isNum, hostOf, round1, pad2,
-    isAcronym, termHit, countHits, resolveCategory, normalizeConfig, validateConfig,
+    isAcronym, termHit, countHits, isLocalCategory, resolveCategory, normalizeConfig, validateConfig,
     categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
     emptyLedger, cleanLedger, ledgerHas, ledgerAdd, ledgerSize, humanizeAge, classify, cutSummary,
     gateItem, cleanItem, selectBrief, filterSeen, checkBrief, buildPrompt, extractJson, googleNewsUrl, cronLines
