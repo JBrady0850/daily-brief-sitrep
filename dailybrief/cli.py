@@ -266,6 +266,24 @@ def cmd_build_cache(a: argparse.Namespace) -> int:
     return OK if sum(len(v) for v in cats.values()) else FAIL
 
 
+def cmd_build_local(a: argparse.Namespace) -> int:
+    """Local TV station news by state, for the town categories of the web page."""
+    from . import localnews
+    stations = localnews.load_stations(a.stations) if a.stations else localnews.load_stations()
+    previous = localnews.site_reader(a.site) if a.site else None
+    result = localnews.build(_now_iso(), stations, previous=previous, budget=a.budget, log=localnews.stderr_log)
+    out = Path(a.out)
+    localnews.write(result, out)
+    idx = result["index"]
+    total = sum(v["stories"] for v in idx["states"].values())
+    empty = sorted(k for k, v in idx["states"].items() if not v["stories"])
+    print(f"Wrote {len(result['states'])} state files to {out}: {total} stories from {len(stations)} stations "
+          f"({len(idx['not_answering'])} did not answer; {idx['carried']} stories kept from the last run).")
+    if empty:
+        print("No stories for: " + ", ".join(empty))
+    return OK if total else FAIL
+
+
 def cmd_scan(a: argparse.Namespace) -> int:
     terms = privacy.load_terms(a.terms) if a.terms else []
     findings = privacy.scan_tree(Path(a.path), terms)
@@ -362,6 +380,13 @@ def build_parser() -> argparse.ArgumentParser:
     s.add_argument("--budget", type=float, default=600, help="stop starting new categories after this many seconds")
     s.add_argument("--previous", help="the last published news-cache.json; its recent stories are kept")
     s.set_defaults(func=cmd_build_cache)
+
+    s = sub.add_parser("build-local", help="collect local TV station news by state for the web page (needs internet)")
+    s.add_argument("--out", default="app/data/local", help="the folder for the state files")
+    s.add_argument("--site", help="the published app's address; stations that do not answer keep their stories from it")
+    s.add_argument("--stations", help="a station list other than dailybrief/local_stations.json")
+    s.add_argument("--budget", type=float, default=600, help="seconds before unread stations count as not answering")
+    s.set_defaults(func=cmd_build_local)
 
     s = sub.add_parser("scan", help="look for personal data and secrets before you publish")
     s.add_argument("path", nargs="?", default=".")

@@ -267,7 +267,13 @@ window.DB_LIBRARY = {
      "wildfire"
     ]
    ],
-   "exclude": [],
+   "exclude": [
+    "arrested",
+    "arrest",
+    "charged",
+    "sentenced",
+    "homicide"
+   ],
    "feeds": [],
    "color": "#34495e",
    "needs_location": true,
@@ -2599,16 +2605,26 @@ window.DB_LIBRARY = {
      "council",
      "commission",
      "commissioners",
+     "commissioner",
      "budget",
      "ordinance",
      "election",
      "mayor",
-     "county",
-     "city",
+     "city hall",
+     "city manager",
+     "county administrator",
      "school board",
      "zoning",
      "permit",
-     "vote"
+     "vote",
+     "voters",
+     "millage",
+     "tax",
+     "public hearing",
+     "referendum",
+     "annexation",
+     "taxes",
+     "votes"
     ]
    ],
    "exclude": [
@@ -2616,7 +2632,18 @@ window.DB_LIBRARY = {
     "basketball",
     "baseball",
     "homicide",
-    "shooting"
+    "shooting",
+    "arrested",
+    "arrest",
+    "arrests",
+    "charged",
+    "sentenced",
+    "stabbing",
+    "trafficking",
+    "crash",
+    "killed",
+    "fatal",
+    "suspect"
    ],
    "feeds": [],
    "color": "#0b5e8f",
@@ -2658,7 +2685,26 @@ window.DB_LIBRARY = {
    ],
    "exclude": [
     "betting odds",
-    "sportsbook"
+    "sportsbook",
+    "arrested",
+    "arrest",
+    "arrests",
+    "charged",
+    "sentenced",
+    "deputies",
+    "shooting",
+    "homicide",
+    "stabbing",
+    "trafficking",
+    "crash",
+    "killed",
+    "fatal",
+    "suspect",
+    "police",
+    "inmate",
+    "jail",
+    "prison",
+    "threat"
    ],
    "feeds": [],
    "color": "#c62828",
@@ -2699,7 +2745,12 @@ window.DB_LIBRARY = {
    ],
    "exclude": [
     "obituary",
-    "sponsored content"
+    "sponsored content",
+    "arrested",
+    "arrest",
+    "charged",
+    "sentenced",
+    "homicide"
    ],
    "feeds": [],
    "color": "#008073",

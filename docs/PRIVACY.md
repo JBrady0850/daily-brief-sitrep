@@ -5,8 +5,12 @@
   this browser's local storage. **Settings, Erase everything** removes them.
 - When it collects a brief, the web page reads the publisher feeds your
   categories list and the backup collection, a file on this site's own address
-  that holds no information about you (reading it sends nothing). Only for
-  categories still short does it send their searches to the GDELT news index
+  that holds no information about you (reading it sends nothing). For the
+  categories about your town it reads one more file from this site: the local
+  TV station news for your state (for example `data/local/IL.json`). The page
+  picks the stories that name your town or a nearby place itself, so your town
+  is never sent anywhere; the site's host sees only which state's file was read.
+  Only for categories still short does it send their searches to the GDELT news index
   (api.gdeltproject.org). When the forecast is on, it sends your town's map position,
   rounded to about a kilometre, to Open-Meteo, and the town search sends the
   name you type. Requests carry no cookies and no referrer.

@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.6.0 (2026-10-24)
+
+Town news comes from GitHub alone.
+
+- **Local news by state.** The Pages workflow now reads the news feeds of
+  about 400 local TV stations every four hours (their sites do not let web
+  pages read them) and publishes one file per state beside the app, with the
+  newest 30 stories per station from the last four days. Every state and DC
+  has at least one station. A station that does not answer keeps its recent
+  stories from the file already on the site.
+- The page reads only the file for your state (from the State or region
+  answer) and keeps the stories that name your town or a nearby place. Your
+  town is never sent anywhere. GDELT is asked only for what is still short.
+- The station list, `dailybrief/local_stations.json`, comes from the station
+  groups' own published lists (Gray, Nexstar with TEGNA, Scripps, Hearst) plus
+  stations from other groups; `tools/stations_source.py` rebuilds it and keeps
+  only stations whose feed answers with recent stories.
+- A town desk whose local stations answered is "checked", even on a day the
+  news search refuses; only a desk with no answering source says "Not checked
+  today".
+- The town categories' topic words are stricter now that they see every local
+  story: Local Government no longer counts a story just for saying "county" or
+  "city", and crime stories stay out of Local Government, Local Sports, Things
+  to Do and Weather and Safety.
+- The news search stops starting searches after 90 seconds, so a slow news
+  index cannot hold a brief for minutes (a live test on 2026-10-24 waited six
+  and a half minutes on it before this change).
+- The desktop app and the GitHub copy read the same stations directly for town
+  categories. Both stay optional: the web page needs neither.
+
 ## 0.5.1 (2026-10-24)
 
 The backup collection survives a run that Google News turns away.

@@ -203,3 +203,7 @@ def test_pages_workflow_rebuilds_the_backup_collection_on_a_schedule():
     assert wf.index("id: site") < wf.index("Backup collection"), "the site address is known before the collection"
     assert '"$SITE/data/news-cache.json"' in step + wf[wf.index("build-cache"):] and "|| echo" in wf
     assert '--previous "$RUNNER_TEMP/previous-news-cache.json"' in wf
+    # Local news by state, built the same way, from the same site address.
+    local = wf[wf.index("Local news by state"):wf.index("upload-pages-artifact")]
+    assert "continue-on-error: true" in local and 'build-local --out app/data/local --site "$SITE"' in local
+    assert "app/data/local/" in (ROOT / ".gitignore").read_text()

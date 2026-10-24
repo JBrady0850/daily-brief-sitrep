@@ -5,7 +5,9 @@ name: Publish app to GitHub Pages
 # every library category from Google News and every library feed, which the web page
 # reads when the GDELT news index is busy. Recent stories from the file already on the
 # site are kept, so a run that Google News turns away cannot empty a category.
-# Free, no key, no secret.
+# It also rebuilds local news by state (app/data/local/<STATE>.json) from the news
+# feeds of local TV stations, which the page reads for the categories about your
+# town. Free, no key, no secret, and nothing runs anywhere but here.
 on:
   push:
     branches: [main]
@@ -64,6 +66,13 @@ jobs:
           curl -fsSL --max-time 30 -o "$RUNNER_TEMP/previous-news-cache.json" "$SITE/data/news-cache.json" \
             || echo "No backup collection on the site yet."
           python -m dailybrief build-cache --out app/data/news-cache.json --previous "$RUNNER_TEMP/previous-news-cache.json"
+      - name: Local news by state (local TV station feeds)
+        # Like the backup collection, a failed run never stops the app from publishing.
+        continue-on-error: true
+        timeout-minutes: 15
+        env:
+          SITE: ${{ steps.site.outputs.base_url }}
+        run: python -m dailybrief build-local --out app/data/local --site "$SITE"
       - uses: actions/upload-pages-artifact@v5
         with:
           path: app

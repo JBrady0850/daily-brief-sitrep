@@ -1,0 +1,3998 @@
+{
+ "schema": "daily-brief-local-stations/1",
+ "checked": "2026-10-24",
+ "sources": [
+  "https://gray.tv/companies",
+  "https://www.nexstar.tv/stations/",
+  "https://scripps.com/our-brands/local-media/",
+  "https://www.hearst.com/broadcasting"
+ ],
+ "stations": [
+  {
+   "id": "1011now-com",
+   "name": "KOLN",
+   "site": "https://www.1011now.com",
+   "feed": "https://www.1011now.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NE"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "10news-com",
+   "name": "10news.com",
+   "site": "https://www.10news.com",
+   "feed": "https://www.10news.com/news/local-news.rss",
+   "states": [
+    "CA"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "10tv-com",
+   "name": "WBNS",
+   "site": "https://10tv.com",
+   "feed": "https://10tv.com/feeds/syndication/rss/news/local",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "11alive-com",
+   "name": "WXIA",
+   "site": "https://11alive.com",
+   "feed": "https://11alive.com/feeds/syndication/rss/news/local",
+   "states": [
+    "GA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "12news-com",
+   "name": "KPNX",
+   "site": "https://12news.com",
+   "feed": "https://12news.com/feeds/syndication/rss/news/local",
+   "states": [
+    "AZ"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "12newsnow-com",
+   "name": "KBMT",
+   "site": "https://12newsnow.com",
+   "feed": "https://12newsnow.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "12onyourside-com",
+   "name": "WWBT",
+   "site": "https://www.12onyourside.com",
+   "feed": "https://www.12onyourside.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "VA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "13abc-com",
+   "name": "WTVG",
+   "site": "https://www.13abc.com",
+   "feed": "https://www.13abc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "OH"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "13newsnow-com",
+   "name": "WVEC",
+   "site": "https://13newsnow.com",
+   "feed": "https://13newsnow.com/feeds/syndication/rss/news/local",
+   "states": [
+    "VA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "13wmaz-com",
+   "name": "WMAZ",
+   "site": "https://13wmaz.com",
+   "feed": "https://13wmaz.com/feeds/syndication/rss/news/local",
+   "states": [
+    "GA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "14news-com",
+   "name": "14 News WFIE Evansville",
+   "site": "https://www.14news.com",
+   "feed": "https://www.14news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "2822news-com",
+   "name": "28/22 News",
+   "site": "https://2822news.com",
+   "feed": "https://2822news.com/feed/",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "29news-com",
+   "name": "29 News",
+   "site": "https://www.29news.com",
+   "feed": "https://www.29news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "VA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "3newsnow-com",
+   "name": "3newsnow.com",
+   "site": "https://www.3newsnow.com",
+   "feed": "https://www.3newsnow.com/news/local-news.rss",
+   "states": [
+    "NE"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "4029tv-com",
+   "name": "4029tv.com",
+   "site": "https://www.4029tv.com",
+   "feed": "https://www.4029tv.com/local-news-rss",
+   "states": [
+    "AR"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "5newsonline-com",
+   "name": "KFSM",
+   "site": "https://5newsonline.com",
+   "feed": "https://5newsonline.com/feeds/syndication/rss/news/local",
+   "states": [
+    "AR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "8newsnow-com",
+   "name": "KLAS",
+   "site": "https://8newsnow.com",
+   "feed": "https://8newsnow.com/feed/",
+   "states": [
+    "NV"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "9news-com",
+   "name": "KUSA",
+   "site": "https://9news.com",
+   "feed": "https://9news.com/feeds/syndication/rss/news/local",
+   "states": [
+    "CO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "abc-7-com",
+   "name": "abc-7.com",
+   "site": "https://www.abc-7.com",
+   "feed": "https://www.abc-7.com/local-news-rss",
+   "states": [
+    "FL"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "abc10-com",
+   "name": "KXTV",
+   "site": "https://abc10.com",
+   "feed": "https://abc10.com/feeds/syndication/rss/news/local",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "abc15-com",
+   "name": "abc15.com",
+   "site": "https://www.abc15.com",
+   "feed": "https://www.abc15.com/news/local-news.rss",
+   "states": [
+    "AZ"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "abc27-com",
+   "name": "ABC27",
+   "site": "https://abc27.com",
+   "feed": "https://abc27.com/feed/",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "abc4-com",
+   "name": "ABC4 Utah",
+   "site": "https://abc4.com",
+   "feed": "https://abc4.com/feed/",
+   "states": [
+    "UT"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "abcactionnews-com",
+   "name": "abcactionnews.com",
+   "site": "https://www.abcactionnews.com",
+   "feed": "https://www.abcactionnews.com/news/local-news.rss",
+   "states": [
+    "FL"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "actionnews5-com",
+   "name": "Action News 5",
+   "site": "https://www.actionnews5.com",
+   "feed": "https://www.actionnews5.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "actionnewsjax-com",
+   "name": "actionnewsjax.com",
+   "site": "https://www.actionnewsjax.com",
+   "feed": "https://www.actionnewsjax.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL",
+    "GA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "alabamas42-com",
+   "name": "Alabama's 42",
+   "site": "https://alabamas42.com",
+   "feed": "https://alabamas42.com/feed/",
+   "states": [
+    "AL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "alaskasnewssource-com",
+   "name": "KTUU",
+   "site": "https://www.alaskasnewssource.com",
+   "feed": "https://www.alaskasnewssource.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AK"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "arklatexhomepage-com",
+   "name": "KTALnews.com",
+   "site": "https://arklatexhomepage.com",
+   "feed": "https://arklatexhomepage.com/feed/",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "atlantanewsfirst-com",
+   "name": "Atlanta News First",
+   "site": "https://www.atlantanewsfirst.com",
+   "feed": "https://www.atlantanewsfirst.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "azfamily-com",
+   "name": "Arizona's Family",
+   "site": "https://www.azfamily.com",
+   "feed": "https://www.azfamily.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AZ"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "bigcountryhomepage-com",
+   "name": "KTAB - BigCountryHomepage.com",
+   "site": "https://bigcountryhomepage.com",
+   "feed": "https://bigcountryhomepage.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "binghamtonhomepage-com",
+   "name": "WIVT - News 34",
+   "site": "https://binghamtonhomepage.com",
+   "feed": "https://binghamtonhomepage.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "blackhillsfox-com",
+   "name": "KOTA",
+   "site": "https://www.blackhillsfox.com",
+   "feed": "https://www.blackhillsfox.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SD"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "boston25news-com",
+   "name": "boston25news.com",
+   "site": "https://www.boston25news.com",
+   "feed": "https://www.boston25news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MA",
+    "NH"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "cbs17-com",
+   "name": "CBS17.com",
+   "site": "https://cbs17.com",
+   "feed": "https://cbs17.com/feed/",
+   "states": [
+    "NC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cbs19-tv",
+   "name": "KYTX",
+   "site": "https://cbs19.tv",
+   "feed": "https://cbs19.tv/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cbs4indy-com",
+   "name": "Fox 59",
+   "site": "https://cbs4indy.com",
+   "feed": "https://cbs4indy.com/feed/",
+   "states": [
+    "IN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cbs7-com",
+   "name": "KOSA",
+   "site": "https://www.cbs7.com",
+   "feed": "https://www.cbs7.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "cbs8-com",
+   "name": "KFMB",
+   "site": "https://cbs8.com",
+   "feed": "https://cbs8.com/feeds/syndication/rss/news/local",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cenlanow-com",
+   "name": "WNTZ-TV FOX 48 | CenLANow.com",
+   "site": "https://cenlanow.com",
+   "feed": "https://cenlanow.com/feed/",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "centexproud-com",
+   "name": "KWKT - FOX 44",
+   "site": "https://centexproud.com",
+   "feed": "https://centexproud.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cleveland19-com",
+   "name": "Cleveland 19 News",
+   "site": "https://www.cleveland19.com",
+   "feed": "https://www.cleveland19.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "OH"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "click2houston-com",
+   "name": "KPRC Click2Houston",
+   "site": "https://www.click2houston.com",
+   "feed": "https://www.click2houston.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "clickondetroit-com",
+   "name": "WDIV ClickOnDetroit",
+   "site": "https://www.clickondetroit.com",
+   "feed": "https://www.clickondetroit.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MI"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "clickorlando-com",
+   "name": "WKMG News 6 & ClickOrlando",
+   "site": "https://www.clickorlando.com",
+   "feed": "https://www.clickorlando.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "cnyhomepage-com",
+   "name": "WUTR/WFXV - CNYhomepage.com",
+   "site": "https://cnyhomepage.com",
+   "feed": "https://cnyhomepage.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "conchovalleyhomepage-com",
+   "name": "ConchoValleyHomepage.com",
+   "site": "https://conchovalleyhomepage.com",
+   "feed": "https://conchovalleyhomepage.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "counton2-com",
+   "name": "WCBD News 2",
+   "site": "https://counton2.com",
+   "feed": "https://counton2.com/feed/",
+   "states": [
+    "SC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cw33-com",
+   "name": "CW33 Dallas / Ft. Worth",
+   "site": "https://cw33.com",
+   "feed": "https://cw33.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cw39-com",
+   "name": "CW39 Houston",
+   "site": "https://cw39.com",
+   "feed": "https://cw39.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "cw7az-com",
+   "name": "CW7 Arizona",
+   "site": "https://cw7az.com",
+   "feed": "https://cw7az.com/feed/",
+   "states": [
+    "AZ"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "dakotanewsnow-com",
+   "name": "Dakota News Now",
+   "site": "https://www.dakotanewsnow.com",
+   "feed": "https://www.dakotanewsnow.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SD"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "dcnewsnow-com",
+   "name": "DC News Now | DC, Virginia, Maryland News, Weather, Traffic,",
+   "site": "https://dcnewsnow.com",
+   "feed": "https://dcnewsnow.com/feed/",
+   "states": [
+    "DC",
+    "MD"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "denver7-com",
+   "name": "denver7.com",
+   "site": "https://www.denver7.com",
+   "feed": "https://www.denver7.com/news/local-news.rss",
+   "states": [
+    "CO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "easttexasmatters-com",
+   "name": "KETK.com | FOX51.com",
+   "site": "https://easttexasmatters.com",
+   "feed": "https://easttexasmatters.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "everythinglubbock-com",
+   "name": "KLBK | KAMC | EverythingLubbock.com",
+   "site": "https://everythinglubbock.com",
+   "feed": "https://everythinglubbock.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "firstalert4-com",
+   "name": "KMOV4",
+   "site": "https://www.firstalert4.com",
+   "feed": "https://www.firstalert4.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MO"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "firstcoastnews-com",
+   "name": "WTLV",
+   "site": "https://firstcoastnews.com",
+   "feed": "https://firstcoastnews.com/feeds/syndication/rss/news/local",
+   "states": [
+    "FL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fourstateshomepage-com",
+   "name": "KSNF/KODE | FourStatesHomepage.com",
+   "site": "https://fourstateshomepage.com",
+   "feed": "https://fourstateshomepage.com/feed/",
+   "states": [
+    "MO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox10tv-com",
+   "name": "Fox 10 News",
+   "site": "https://www.fox10tv.com",
+   "feed": "https://www.fox10tv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "fox13now-com",
+   "name": "fox13now.com",
+   "site": "https://fox13now.com",
+   "feed": "https://fox13now.com/news/local-news.rss",
+   "states": [
+    "UT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "fox16-com",
+   "name": "KLRT - FOX16.com",
+   "site": "https://fox16.com",
+   "feed": "https://fox16.com/feed/",
+   "states": [
+    "AR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox17online-com",
+   "name": "fox17online.com",
+   "site": "https://fox17online.com",
+   "feed": "https://fox17online.com/news/local-news.rss",
+   "states": [
+    "MI"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "fox19-com",
+   "name": "FOX19",
+   "site": "https://www.fox19.com",
+   "feed": "https://www.fox19.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "OH"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "fox21news-com",
+   "name": "FOX21 News Colorado",
+   "site": "https://fox21news.com",
+   "feed": "https://fox21news.com/feed/",
+   "states": [
+    "CO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox2now-com",
+   "name": "FOX 2",
+   "site": "https://fox2now.com",
+   "feed": "https://fox2now.com/feed/",
+   "states": [
+    "MO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox40-com",
+   "name": "FOX40 News",
+   "site": "https://fox40.com",
+   "feed": "https://fox40.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox43-com",
+   "name": "WPMT",
+   "site": "https://fox43.com",
+   "feed": "https://fox43.com/feeds/syndication/rss/news/local",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox44news-com",
+   "name": "KWKT - FOX 44",
+   "site": "https://fox44news.com",
+   "feed": "https://fox44news.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox47news-com",
+   "name": "WILX",
+   "site": "https://www.fox47news.com",
+   "feed": "https://www.fox47news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "fox4kc-com",
+   "name": "FOX 4 Kansas City WDAF-TV | News, Weather, Sports",
+   "site": "https://fox4kc.com",
+   "feed": "https://fox4kc.com/feed/",
+   "states": [
+    "MO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox56news-com",
+   "name": "FOX 56 News",
+   "site": "https://fox56news.com",
+   "feed": "https://fox56news.com/feed/",
+   "states": [
+    "KY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox59-com",
+   "name": "Fox 59",
+   "site": "https://fox59.com",
+   "feed": "https://fox59.com/feed/",
+   "states": [
+    "IN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox5sandiego-com",
+   "name": "FOX 5 San Diego & KUSI News",
+   "site": "https://fox5sandiego.com",
+   "feed": "https://fox5sandiego.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox5vegas-com",
+   "name": "Fox 5 Las Vegas",
+   "site": "https://www.fox5vegas.com",
+   "feed": "https://www.fox5vegas.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NV"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "fox8-com",
+   "name": "Fox 8 Cleveland WJW",
+   "site": "https://fox8.com",
+   "feed": "https://fox8.com/feed/",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "fox8live-com",
+   "name": "FOX 8 Local First",
+   "site": "https://www.fox8live.com",
+   "feed": "https://www.fox8live.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "foxcarolina-com",
+   "name": "Fox Carolina",
+   "site": "https://www.foxcarolina.com",
+   "feed": "https://www.foxcarolina.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "hawaiinewsnow-com",
+   "name": "Hawaii News Now",
+   "site": "https://www.hawaiinewsnow.com",
+   "feed": "https://www.hawaiinewsnow.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "HI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "informnny-com",
+   "name": "WWTI - InformNNY.com",
+   "site": "https://informnny.com",
+   "feed": "https://informnny.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "investigatetv-com",
+   "name": "InvestigateTV",
+   "site": "https://www.investigatetv.com",
+   "feed": "https://www.investigatetv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kagstv-com",
+   "name": "KAGS",
+   "site": "https://kagstv.com",
+   "feed": "https://kagstv.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kait8-com",
+   "name": "KAIT",
+   "site": "https://www.kait8.com",
+   "feed": "https://www.kait8.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AR"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kalb-com",
+   "name": "KALB",
+   "site": "https://www.kalb.com",
+   "feed": "https://www.kalb.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kare11-com",
+   "name": "KARE",
+   "site": "https://kare11.com",
+   "feed": "https://kare11.com/feeds/syndication/rss/news/local",
+   "states": [
+    "MN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kark-com",
+   "name": "KARK",
+   "site": "https://kark.com",
+   "feed": "https://kark.com/feed/",
+   "states": [
+    "AR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "katc-com",
+   "name": "KATC - Acadiana News First",
+   "site": "https://katc.com",
+   "feed": "https://katc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "katv-com",
+   "name": "katv.com",
+   "site": "https://katv.com",
+   "feed": "https://katv.com/news/local.rss",
+   "states": [
+    "AR"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kbtx-com",
+   "name": "KBTX",
+   "site": "https://www.kbtx.com",
+   "feed": "https://www.kbtx.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kcbd-com",
+   "name": "KCBD",
+   "site": "https://www.kcbd.com",
+   "feed": "https://www.kcbd.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kcci-com",
+   "name": "kcci.com",
+   "site": "https://www.kcci.com",
+   "feed": "https://www.kcci.com/local-news-rss",
+   "states": [
+    "IA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "kcentv-com",
+   "name": "KCEN",
+   "site": "https://kcentv.com",
+   "feed": "https://kcentv.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kcra-com",
+   "name": "kcra.com",
+   "site": "https://www.kcra.com",
+   "feed": "https://www.kcra.com/local-news-rss",
+   "states": [
+    "CA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "kcrg-com",
+   "name": "KCRG",
+   "site": "https://www.kcrg.com",
+   "feed": "https://www.kcrg.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kctv5-com",
+   "name": "KCTV 5",
+   "site": "https://www.kctv5.com",
+   "feed": "https://www.kctv5.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kdvr-com",
+   "name": "FOX31 Denver",
+   "site": "https://kdvr.com",
+   "feed": "https://kdvr.com/feed/",
+   "states": [
+    "CO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "keloland-com",
+   "name": "KELOLAND.com",
+   "site": "https://keloland.com",
+   "feed": "https://keloland.com/feed/",
+   "states": [
+    "SD"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kens5-com",
+   "name": "KENS",
+   "site": "https://kens5.com",
+   "feed": "https://kens5.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ketk-com",
+   "name": "KETK.com | FOX51.com",
+   "site": "https://ketk.com",
+   "feed": "https://ketk.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ketv-com",
+   "name": "ketv.com",
+   "site": "https://www.ketv.com",
+   "feed": "https://www.ketv.com/local-news-rss",
+   "states": [
+    "NE"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "keyc-com",
+   "name": "KEYC",
+   "site": "https://www.keyc.com",
+   "feed": "https://www.keyc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kfor-com",
+   "name": "KFOR.com Oklahoma City",
+   "site": "https://kfor.com",
+   "feed": "https://kfor.com/feed/",
+   "states": [
+    "OK"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kfvs12-com",
+   "name": "KFVS",
+   "site": "https://www.kfvs12.com",
+   "feed": "https://www.kfvs12.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MO"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kfyrtv-com",
+   "name": "KFYR",
+   "site": "https://www.kfyrtv.com",
+   "feed": "https://www.kfyrtv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "ND"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kget-com",
+   "name": "KGET 17 News",
+   "site": "https://kget.com",
+   "feed": "https://kget.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kgns-tv",
+   "name": "KGNS",
+   "site": "https://www.kgns.tv",
+   "feed": "https://www.kgns.tv/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kgun9-com",
+   "name": "kgun9.com",
+   "site": "https://www.kgun9.com",
+   "feed": "https://www.kgun9.com/news/local-news.rss",
+   "states": [
+    "AZ"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kgw-com",
+   "name": "KGW",
+   "site": "https://kgw.com",
+   "feed": "https://kgw.com/feeds/syndication/rss/news/local",
+   "states": [
+    "OR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "khon2-com",
+   "name": "KHON2",
+   "site": "https://khon2.com",
+   "feed": "https://khon2.com/feed/",
+   "states": [
+    "HI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "khou-com",
+   "name": "KHOU",
+   "site": "https://khou.com",
+   "feed": "https://khou.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kiiitv-com",
+   "name": "KIII",
+   "site": "https://kiiitv.com",
+   "feed": "https://kiiitv.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "king5-com",
+   "name": "KING",
+   "site": "https://king5.com",
+   "feed": "https://king5.com/feeds/syndication/rss/news/local",
+   "states": [
+    "WA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kiro7-com",
+   "name": "kiro7.com",
+   "site": "https://www.kiro7.com",
+   "feed": "https://www.kiro7.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kivitv-com",
+   "name": "kivitv.com",
+   "site": "https://www.kivitv.com",
+   "feed": "https://www.kivitv.com/news/local-news.rss",
+   "states": [
+    "ID"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kjct8-com",
+   "name": "KJCT",
+   "site": "https://www.kjct8.com",
+   "feed": "https://www.kjct8.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "CO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kjrh-com",
+   "name": "kjrh.com",
+   "site": "https://www.kjrh.com",
+   "feed": "https://www.kjrh.com/news/local-news.rss",
+   "states": [
+    "OK"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kkco11news-com",
+   "name": "KKCO",
+   "site": "https://www.kkco11news.com",
+   "feed": "https://www.kkco11news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "CO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kktv-com",
+   "name": "KKTV",
+   "site": "https://www.kktv.com",
+   "feed": "https://www.kktv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "CO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "klfy-com",
+   "name": "KLFY.com",
+   "site": "https://klfy.com",
+   "feed": "https://klfy.com/feed/",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kmbc-com",
+   "name": "kmbc.com",
+   "site": "https://www.kmbc.com",
+   "feed": "https://www.kmbc.com/local-news-rss",
+   "states": [
+    "MO"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "kmph-com",
+   "name": "kmph.com",
+   "site": "https://kmph.com",
+   "feed": "https://kmph.com/news/local.rss",
+   "states": [
+    "CA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kmvt-com",
+   "name": "KMVT",
+   "site": "https://www.kmvt.com",
+   "feed": "https://www.kmvt.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "ID"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "knoe-com",
+   "name": "KNOE",
+   "site": "https://www.knoe.com",
+   "feed": "https://www.knoe.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "knopnews2-com",
+   "name": "KNOP",
+   "site": "https://www.knopnews2.com",
+   "feed": "https://www.knopnews2.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NE"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "koaa-com",
+   "name": "Covering Colorado",
+   "site": "https://koaa.com",
+   "feed": "https://koaa.com/news/local-news.rss",
+   "states": [
+    "CO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "koat-com",
+   "name": "koat.com",
+   "site": "https://www.koat.com",
+   "feed": "https://www.koat.com/local-news-rss",
+   "states": [
+    "NM"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "koco-com",
+   "name": "koco.com",
+   "site": "https://www.koco.com",
+   "feed": "https://www.koco.com/local-news-rss",
+   "states": [
+    "OK"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "koin-com",
+   "name": "KOIN.com",
+   "site": "https://koin.com",
+   "feed": "https://koin.com/feed/",
+   "states": [
+    "OR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kold-com",
+   "name": "KOLD",
+   "site": "https://kold.com",
+   "feed": "https://kold.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AZ"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kolotv-com",
+   "name": "KOLO",
+   "site": "https://www.kolotv.com",
+   "feed": "https://www.kolotv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "CA",
+    "NV"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "komonews-com",
+   "name": "komonews.com",
+   "site": "https://komonews.com",
+   "feed": "https://komonews.com/news/local.rss",
+   "states": [
+    "WA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kotatv-com",
+   "name": "KOTA",
+   "site": "https://www.kotatv.com",
+   "feed": "https://www.kotatv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SD",
+    "WY"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kpax-com",
+   "name": "kpax.com",
+   "site": "https://kpax.com",
+   "feed": "https://kpax.com/news/local-news.rss",
+   "states": [
+    "MT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kplctv-com",
+   "name": "KPLC",
+   "site": "https://www.kplctv.com",
+   "feed": "https://www.kplctv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kptv-com",
+   "name": "Fox 12 Oregon",
+   "site": "https://www.kptv.com",
+   "feed": "https://www.kptv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "OR"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "krem-com",
+   "name": "KREM",
+   "site": "https://krem.com",
+   "feed": "https://krem.com/feeds/syndication/rss/news/local",
+   "states": [
+    "WA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kristv-com",
+   "name": "kristv.com",
+   "site": "https://kristv.com",
+   "feed": "https://kristv.com/news/local-news.rss",
+   "states": [
+    "TX"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kron4-com",
+   "name": "KRON4",
+   "site": "https://kron4.com",
+   "feed": "https://kron4.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "krqe-com",
+   "name": "KRQE NEWS 13 - Breaking News, Albuquerque News, New Mexico N",
+   "site": "https://krqe.com",
+   "feed": "https://krqe.com/feed/",
+   "states": [
+    "NM"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "krtv-com",
+   "name": "Great Falls News",
+   "site": "https://krtv.com",
+   "feed": "https://krtv.com/news/local-news.rss",
+   "states": [
+    "MT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "ksat-com",
+   "name": "KSAT San Antonio",
+   "site": "https://www.ksat.com",
+   "feed": "https://www.ksat.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "ksbw-com",
+   "name": "ksbw.com",
+   "site": "https://www.ksbw.com",
+   "feed": "https://www.ksbw.com/local-news-rss",
+   "states": [
+    "CA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "ksby-com",
+   "name": "ksby.com",
+   "site": "https://ksby.com",
+   "feed": "https://ksby.com/news/local-news.rss",
+   "states": [
+    "CA"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "ksdk-com",
+   "name": "KSDK",
+   "site": "https://ksdk.com",
+   "feed": "https://ksdk.com/feeds/syndication/rss/news/local",
+   "states": [
+    "MO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ksfy-com",
+   "name": "Dakota News Now",
+   "site": "https://www.ksfy.com",
+   "feed": "https://www.ksfy.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SD"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kshb-com",
+   "name": "kshb.com",
+   "site": "https://www.kshb.com",
+   "feed": "https://www.kshb.com/news/local-news.rss",
+   "states": [
+    "KS",
+    "MO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "ksla-com",
+   "name": "KSLA",
+   "site": "https://www.ksla.com",
+   "feed": "https://www.ksla.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "ksn-com",
+   "name": "KSN-TV",
+   "site": "https://ksn.com",
+   "feed": "https://ksn.com/feed/",
+   "states": [
+    "KS"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ksnblocal4-com",
+   "name": "KSNB",
+   "site": "https://www.ksnblocal4.com",
+   "feed": "https://www.ksnblocal4.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NE"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "ksnt-com",
+   "name": "KSNT 27 News",
+   "site": "https://ksnt.com",
+   "feed": "https://ksnt.com/feed/",
+   "states": [
+    "KS"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kswo-com",
+   "name": "KSWO",
+   "site": "https://www.kswo.com",
+   "feed": "https://www.kswo.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "OK",
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "ktalnews-com",
+   "name": "KTALnews.com",
+   "site": "https://ktalnews.com",
+   "feed": "https://ktalnews.com/feed/",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ktiv-com",
+   "name": "KTIV Siouxland's News Channel",
+   "site": "https://www.ktiv.com",
+   "feed": "https://www.ktiv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IA",
+    "NE",
+    "SD"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "ktla-com",
+   "name": "KTLA",
+   "site": "https://ktla.com",
+   "feed": "https://ktla.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ktnv-com",
+   "name": "ktnv.com",
+   "site": "https://www.ktnv.com",
+   "feed": "https://www.ktnv.com/news/local-news.rss",
+   "states": [
+    "NV"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "ktsm-com",
+   "name": "KTSM 9 News",
+   "site": "https://ktsm.com",
+   "feed": "https://ktsm.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kttc-com",
+   "name": "KTTC",
+   "site": "https://www.kttc.com",
+   "feed": "https://www.kttc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "ktvb-com",
+   "name": "KTVB",
+   "site": "https://ktvb.com",
+   "feed": "https://ktvb.com/feeds/syndication/rss/news/local",
+   "states": [
+    "ID",
+    "OR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ktvh-com",
+   "name": "Helena News",
+   "site": "https://ktvh.com",
+   "feed": "https://ktvh.com/news/local-news.rss",
+   "states": [
+    "MT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "ktvq-com",
+   "name": "ktvq.com",
+   "site": "https://ktvq.com",
+   "feed": "https://ktvq.com/news/local-news.rss",
+   "states": [
+    "MT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kusi-com",
+   "name": "FOX 5 San Diego & KUSI News",
+   "site": "https://kusi.com",
+   "feed": "https://kusi.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kutv-com",
+   "name": "kutv.com",
+   "site": "https://kutv.com",
+   "feed": "https://kutv.com/news/local.rss",
+   "states": [
+    "UT"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "kvue-com",
+   "name": "KVUE",
+   "site": "https://kvue.com",
+   "feed": "https://kvue.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kwch-com",
+   "name": "KWCH",
+   "site": "https://www.kwch.com",
+   "feed": "https://www.kwch.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kwqc-com",
+   "name": "KWQC",
+   "site": "https://www.kwqc.com",
+   "feed": "https://www.kwqc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kwtx-com",
+   "name": "KWTX",
+   "site": "https://www.kwtx.com",
+   "feed": "https://www.kwtx.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kxan-com",
+   "name": "KXAN Austin",
+   "site": "https://kxan.com",
+   "feed": "https://kxan.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kxii-com",
+   "name": "KXII",
+   "site": "https://www.kxii.com",
+   "feed": "https://www.kxii.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kxlf-com",
+   "name": "kxlf.com",
+   "site": "https://kxlf.com",
+   "feed": "https://kxlf.com/news/local-news.rss",
+   "states": [
+    "MT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kxlh-com",
+   "name": "kxlh.com",
+   "site": "https://kxlh.com",
+   "feed": "https://kxlh.com/news/local-news.rss",
+   "states": [
+    "MT"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "kxnet-com",
+   "name": "KX NEWS",
+   "site": "https://kxnet.com",
+   "feed": "https://kxnet.com/feed/",
+   "states": [
+    "ND"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "kxxv-com",
+   "name": "kxxv.com",
+   "site": "https://www.kxxv.com",
+   "feed": "https://www.kxxv.com/news/local-news.rss",
+   "states": [
+    "TX"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "ky3-com",
+   "name": "KY3",
+   "site": "https://www.ky3.com",
+   "feed": "https://www.ky3.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MO"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "kyoutv-com",
+   "name": "KYOU",
+   "site": "https://www.kyoutv.com",
+   "feed": "https://www.kyoutv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "lex18-com",
+   "name": "Covering Kentucky",
+   "site": "https://lex18.com",
+   "feed": "https://lex18.com/news/local-news.rss",
+   "states": [
+    "KY"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "live5news-com",
+   "name": "Live 5 News WCSC",
+   "site": "https://www.live5news.com",
+   "feed": "https://www.live5news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "localdvm-com",
+   "name": "DC News Now | DC, Virginia, Maryland News, Weather, Traffic,",
+   "site": "https://localdvm.com",
+   "feed": "https://localdvm.com/feed/",
+   "states": [
+    "DC",
+    "MD"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "localmemphis-com",
+   "name": "WATN",
+   "site": "https://localmemphis.com",
+   "feed": "https://localmemphis.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "localnewslive-com",
+   "name": "Local News Live",
+   "site": "https://www.localnewslive.com",
+   "feed": "https://www.localnewslive.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "DC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "localsyr-com",
+   "name": "WSYR",
+   "site": "https://localsyr.com",
+   "feed": "https://localsyr.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "louisianafirstnews-com",
+   "name": "Louisiana First News",
+   "site": "https://louisianafirstnews.com",
+   "feed": "https://louisianafirstnews.com/feed/",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "mor-tv-com",
+   "name": "mor-tv.com",
+   "site": "https://www.mor-tv.com",
+   "feed": "https://www.mor-tv.com/topstories-rss",
+   "states": [
+    "FL"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "myarklamiss-com",
+   "name": "KTVE - myarklamiss.com",
+   "site": "https://myarklamiss.com",
+   "feed": "https://myarklamiss.com/feed/",
+   "states": [
+    "AR",
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "mychamplainvalley-com",
+   "name": "ABC22 & FOX44",
+   "site": "https://mychamplainvalley.com",
+   "feed": "https://mychamplainvalley.com/feed/",
+   "states": [
+    "VT"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "myfox8-com",
+   "name": "FOX8 WGHP",
+   "site": "https://myfox8.com",
+   "feed": "https://myfox8.com/feed/",
+   "states": [
+    "NC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "myfoxzone-com",
+   "name": "KIDY",
+   "site": "https://myfoxzone.com",
+   "feed": "https://myfoxzone.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "myhighplains-com",
+   "name": "KAMR - MyHighPlains.com",
+   "site": "https://myhighplains.com",
+   "feed": "https://myhighplains.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "mynbc5-com",
+   "name": "mynbc5.com",
+   "site": "https://www.mynbc5.com",
+   "feed": "https://www.mynbc5.com/local-news-rss",
+   "states": [
+    "NY",
+    "VT"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "mypanhandle-com",
+   "name": "mypanhandle.com",
+   "site": "https://mypanhandle.com",
+   "feed": "https://mypanhandle.com/feed/",
+   "states": [
+    "FL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "mystateline-com",
+   "name": "MyStateline | WTVO WQRF News, Weather and Sports",
+   "site": "https://mystateline.com",
+   "feed": "https://mystateline.com/feed/",
+   "states": [
+    "IL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "mysuncoast-com",
+   "name": "WWSB",
+   "site": "https://www.mysuncoast.com",
+   "feed": "https://www.mysuncoast.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "mytwintiers-com",
+   "name": "WETM - MyTwinTiers.com",
+   "site": "https://mytwintiers.com",
+   "feed": "https://mytwintiers.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "mywabashvalley-com",
+   "name": "MyWabashValley.com",
+   "site": "https://mywabashvalley.com",
+   "feed": "https://mywabashvalley.com/feed/",
+   "states": [
+    "IN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "nbc-2-com",
+   "name": "nbc-2.com",
+   "site": "https://nbc-2.com",
+   "feed": "https://nbc-2.com/local-news-rss",
+   "states": [
+    "FL"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "nbc26-com",
+   "name": "nbc26.com",
+   "site": "https://www.nbc26.com",
+   "feed": "https://www.nbc26.com/news/local-news.rss",
+   "states": [
+    "WI"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "nbc4i-com",
+   "name": "NBC4 WCMH-TV",
+   "site": "https://nbc4i.com",
+   "feed": "https://nbc4i.com/feed/",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "nbcbayarea-com",
+   "name": "NBC Bay Area",
+   "site": "https://www.nbcbayarea.com",
+   "feed": "https://www.nbcbayarea.com/?rss=y",
+   "states": [
+    "CA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcboston-com",
+   "name": "NBC Boston",
+   "site": "https://www.nbcboston.com",
+   "feed": "https://www.nbcboston.com/?rss=y",
+   "states": [
+    "MA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcchicago-com",
+   "name": "NBC Chicago",
+   "site": "https://www.nbcchicago.com",
+   "feed": "https://www.nbcchicago.com/?rss=y",
+   "states": [
+    "IL"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcconnecticut-com",
+   "name": "NBC Connecticut",
+   "site": "https://www.nbcconnecticut.com",
+   "feed": "https://www.nbcconnecticut.com/?rss=y",
+   "states": [
+    "CT"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcdfw-com",
+   "name": "NBC 5 Dallas-Fort Worth",
+   "site": "https://www.nbcdfw.com",
+   "feed": "https://www.nbcdfw.com/?rss=y",
+   "states": [
+    "TX"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbclosangeles-com",
+   "name": "NBC Los Angeles",
+   "site": "https://www.nbclosangeles.com",
+   "feed": "https://www.nbclosangeles.com/?rss=y",
+   "states": [
+    "CA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcmiami-com",
+   "name": "NBC 6 South Florida",
+   "site": "https://www.nbcmiami.com",
+   "feed": "https://www.nbcmiami.com/?rss=y",
+   "states": [
+    "FL"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcnewyork-com",
+   "name": "NBC New York",
+   "site": "https://www.nbcnewyork.com",
+   "feed": "https://www.nbcnewyork.com/?rss=y",
+   "states": [
+    "CT",
+    "NJ",
+    "NY"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcphiladelphia-com",
+   "name": "NBC10 Philadelphia",
+   "site": "https://www.nbcphiladelphia.com",
+   "feed": "https://www.nbcphiladelphia.com/?rss=y",
+   "states": [
+    "DE",
+    "NJ",
+    "PA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcsandiego-com",
+   "name": "NBC 7 San Diego",
+   "site": "https://www.nbcsandiego.com",
+   "feed": "https://www.nbcsandiego.com/?rss=y",
+   "states": [
+    "CA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "nbcwashington-com",
+   "name": "NBC4 Washington",
+   "site": "https://www.nbcwashington.com",
+   "feed": "https://www.nbcwashington.com/?rss=y",
+   "states": [
+    "DC",
+    "MD",
+    "VA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "news10-com",
+   "name": "NEWS10 ABC",
+   "site": "https://news10.com",
+   "feed": "https://news10.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "news4jax-com",
+   "name": "WJXT News4JAX",
+   "site": "https://www.news4jax.com",
+   "feed": "https://www.news4jax.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL",
+    "GA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "news5cleveland-com",
+   "name": "news5cleveland.com",
+   "site": "https://www.news5cleveland.com",
+   "feed": "https://www.news5cleveland.com/news/local-news.rss",
+   "states": [
+    "OH"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "newscentermaine-com",
+   "name": "WCSH",
+   "site": "https://newscentermaine.com",
+   "feed": "https://newscentermaine.com/feeds/syndication/rss/news/local",
+   "states": [
+    "ME"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "newschannel10-com",
+   "name": "KFDA",
+   "site": "https://www.newschannel10.com",
+   "feed": "https://www.newschannel10.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TX"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "newschannel5-com",
+   "name": "newschannel5.com",
+   "site": "https://www.newschannel5.com",
+   "feed": "https://www.newschannel5.com/news/local-news.rss",
+   "states": [
+    "TN"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "newswest9-com",
+   "name": "KWES",
+   "site": "https://newswest9.com",
+   "feed": "https://newswest9.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "northernnewsnow-com",
+   "name": "Northern News Now",
+   "site": "https://www.northernnewsnow.com",
+   "feed": "https://www.northernnewsnow.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "nwahomepage-com",
+   "name": "KNWA FOX24",
+   "site": "https://nwahomepage.com",
+   "feed": "https://nwahomepage.com/feed/",
+   "states": [
+    "AR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ourquadcities-com",
+   "name": "WHBF - OurQuadCities.com",
+   "site": "https://ourquadcities.com",
+   "feed": "https://ourquadcities.com/feed/",
+   "states": [
+    "IA",
+    "IL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "ozarksfirst-com",
+   "name": "KOLR - OzarksFirst.com",
+   "site": "https://ozarksfirst.com",
+   "feed": "https://ozarksfirst.com/feed/",
+   "states": [
+    "MO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "pahomepage-com",
+   "name": "28/22 News",
+   "site": "https://pahomepage.com",
+   "feed": "https://pahomepage.com/feed/",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "phl17-com",
+   "name": "PHL17.com",
+   "site": "https://phl17.com",
+   "feed": "https://phl17.com/feed/",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "pix11-com",
+   "name": "PIX11",
+   "site": "https://pix11.com",
+   "feed": "https://pix11.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "qcnews-com",
+   "name": "Queen City News",
+   "site": "https://qcnews.com",
+   "feed": "https://qcnews.com/feed/",
+   "states": [
+    "NC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "rochesterfirst-com",
+   "name": "RochesterFirst",
+   "site": "https://rochesterfirst.com",
+   "feed": "https://rochesterfirst.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "rocketcitynow-com",
+   "name": "WZDX",
+   "site": "https://rocketcitynow.com",
+   "feed": "https://rocketcitynow.com/feeds/syndication/rss/news/local",
+   "states": [
+    "AL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "siouxlandproud-com",
+   "name": "KCAU 9 News | Sioux City, IA | News, Weather, and Sports",
+   "site": "https://siouxlandproud.com",
+   "feed": "https://siouxlandproud.com/feed/",
+   "states": [
+    "IA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "snntv-com",
+   "name": "SNN News",
+   "site": "https://snntv.com",
+   "feed": "https://snntv.com/feed/",
+   "states": [
+    "FL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "texomashomepage-com",
+   "name": "Texomashomepage.com",
+   "site": "https://texomashomepage.com",
+   "feed": "https://texomashomepage.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "thedenverchannel-com",
+   "name": "thedenverchannel.com",
+   "site": "https://www.thedenverchannel.com",
+   "feed": "https://www.thedenverchannel.com/news/local-news.rss",
+   "states": [
+    "CO"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "thv11-com",
+   "name": "KTHV",
+   "site": "https://thv11.com",
+   "feed": "https://thv11.com/feeds/syndication/rss/news/local",
+   "states": [
+    "AR"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "tmj4-com",
+   "name": "tmj4.com",
+   "site": "https://www.tmj4.com",
+   "feed": "https://www.tmj4.com/news/local-news.rss",
+   "states": [
+    "WI"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "tristatehomepage-com",
+   "name": "Eyewitness News (WEHT/WTVW)",
+   "site": "https://tristatehomepage.com",
+   "feed": "https://tristatehomepage.com/feed/",
+   "states": [
+    "IN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "turnto10-com",
+   "name": "turnto10.com",
+   "site": "https://turnto10.com",
+   "feed": "https://turnto10.com/news/local.rss",
+   "states": [
+    "MA",
+    "RI"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "turnto23-com",
+   "name": "turnto23.com",
+   "site": "https://www.turnto23.com",
+   "feed": "https://www.turnto23.com/news/local-news.rss",
+   "states": [
+    "CA"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "uppermichiganssource-com",
+   "name": "WLUC",
+   "site": "https://www.uppermichiganssource.com",
+   "feed": "https://www.uppermichiganssource.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "valleycentral-com",
+   "name": "KVEO-TV",
+   "site": "https://valleycentral.com",
+   "feed": "https://valleycentral.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "valleynewslive-com",
+   "name": "KVLY",
+   "site": "https://www.valleynewslive.com",
+   "feed": "https://www.valleynewslive.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "ND"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wabi-tv",
+   "name": "WABI",
+   "site": "https://www.wabi.tv",
+   "feed": "https://www.wabi.tv/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "ME"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wafb-com",
+   "name": "WAFB",
+   "site": "https://www.wafb.com",
+   "feed": "https://www.wafb.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "LA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "waff-com",
+   "name": "WAFF",
+   "site": "https://www.waff.com",
+   "feed": "https://www.waff.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wagmtv-com",
+   "name": "WAGM",
+   "site": "https://www.wagmtv.com",
+   "feed": "https://www.wagmtv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "ME"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "walb-com",
+   "name": "WALB",
+   "site": "https://www.walb.com",
+   "feed": "https://www.walb.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wane-com",
+   "name": "WANE 15",
+   "site": "https://wane.com",
+   "feed": "https://wane.com/feed/",
+   "states": [
+    "IN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wapt-com",
+   "name": "wapt.com",
+   "site": "https://www.wapt.com",
+   "feed": "https://www.wapt.com/local-news-rss",
+   "states": [
+    "MS"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wate-com",
+   "name": "WATE 6 On Your Side",
+   "site": "https://wate.com",
+   "feed": "https://wate.com/feed/",
+   "states": [
+    "TN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wave3-com",
+   "name": "WAVE 3",
+   "site": "https://www.wave3.com",
+   "feed": "https://www.wave3.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KY"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wavy-com",
+   "name": "WAVY.com",
+   "site": "https://wavy.com",
+   "feed": "https://wavy.com/feed/",
+   "states": [
+    "VA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wbal-com",
+   "name": "WBAL Baltimore News",
+   "site": "https://www.wbal.com",
+   "feed": "https://www.wbal.com/feed/",
+   "states": [
+    "MD"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wbaltv-com",
+   "name": "wbaltv.com",
+   "site": "https://www.wbaltv.com",
+   "feed": "https://www.wbaltv.com/local-news-rss",
+   "states": [
+    "MD"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wbay-com",
+   "name": "WBAY",
+   "site": "https://www.wbay.com",
+   "feed": "https://www.wbay.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wbbjtv-com",
+   "name": "WBBJ-TV",
+   "site": "https://www.wbbjtv.com",
+   "feed": "https://www.wbbjtv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wbir-com",
+   "name": "WBIR",
+   "site": "https://wbir.com",
+   "feed": "https://wbir.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wbko-com",
+   "name": "WBKO",
+   "site": "https://www.wbko.com",
+   "feed": "https://www.wbko.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KY"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wbng-com",
+   "name": "WBNG",
+   "site": "https://www.wbng.com",
+   "feed": "https://www.wbng.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NY"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wboy-com",
+   "name": "WBOY.com",
+   "site": "https://wboy.com",
+   "feed": "https://wboy.com/feed/",
+   "states": [
+    "WV"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wbrc-com",
+   "name": "WBRC",
+   "site": "https://www.wbrc.com",
+   "feed": "https://www.wbrc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wbtv-com",
+   "name": "WBTV",
+   "site": "https://www.wbtv.com",
+   "feed": "https://www.wbtv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wbtw-com",
+   "name": "WBTW",
+   "site": "https://wbtw.com",
+   "feed": "https://wbtw.com/feed/",
+   "states": [
+    "SC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wcax-com",
+   "name": "WCAX",
+   "site": "https://www.wcax.com",
+   "feed": "https://www.wcax.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NH",
+    "NY",
+    "VT"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wcia-com",
+   "name": "WCIA.com",
+   "site": "https://wcia.com",
+   "feed": "https://wcia.com/feed/",
+   "states": [
+    "IL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wcjb-com",
+   "name": "WCJB",
+   "site": "https://www.wcjb.com",
+   "feed": "https://www.wcjb.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wcnc-com",
+   "name": "WCNC",
+   "site": "https://wcnc.com",
+   "feed": "https://wcnc.com/feeds/syndication/rss/news/local",
+   "states": [
+    "NC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wcpo-com",
+   "name": "wcpo.com",
+   "site": "https://www.wcpo.com",
+   "feed": "https://www.wcpo.com/news/local-news.rss",
+   "states": [
+    "OH"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wctv-tv",
+   "name": "WCTV",
+   "site": "https://www.wctv.tv",
+   "feed": "https://www.wctv.tv/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wcvb-com",
+   "name": "wcvb.com",
+   "site": "https://www.wcvb.com",
+   "feed": "https://www.wcvb.com/local-news-rss",
+   "states": [
+    "MA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wdam-com",
+   "name": "WDAM",
+   "site": "https://www.wdam.com",
+   "feed": "https://www.wdam.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wdbj7-com",
+   "name": "WDBJ",
+   "site": "https://www.wdbj7.com",
+   "feed": "https://www.wdbj7.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "VA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wdhn-com",
+   "name": "WDHN - wdhn.com",
+   "site": "https://wdhn.com",
+   "feed": "https://wdhn.com/feed/",
+   "states": [
+    "AL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wdsu-com",
+   "name": "wdsu.com",
+   "site": "https://www.wdsu.com",
+   "feed": "https://www.wdsu.com/local-news-rss",
+   "states": [
+    "LA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wdtn-com",
+   "name": "WDTN.com",
+   "site": "https://wdtn.com",
+   "feed": "https://wdtn.com/feed/",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wdtv-com",
+   "name": "WDTV",
+   "site": "https://www.wdtv.com",
+   "feed": "https://www.wdtv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WV"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wearegreenbay-com",
+   "name": "WFRV Local 5 - Green Bay, Appleton",
+   "site": "https://wearegreenbay.com",
+   "feed": "https://wearegreenbay.com/feed/",
+   "states": [
+    "WI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "weareiowa-com",
+   "name": "WOI",
+   "site": "https://weareiowa.com",
+   "feed": "https://weareiowa.com/feeds/syndication/rss/news/local",
+   "states": [
+    "IA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "weartv-com",
+   "name": "weartv.com",
+   "site": "https://weartv.com",
+   "feed": "https://weartv.com/news/local.rss",
+   "states": [
+    "AL",
+    "FL"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "weau-com",
+   "name": "WEAU",
+   "site": "https://www.weau.com",
+   "feed": "https://www.weau.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "webcenterfairbanks-com",
+   "name": "Webcenter Fairbanks",
+   "site": "https://www.webcenterfairbanks.com",
+   "feed": "https://www.webcenterfairbanks.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AK"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wect-com",
+   "name": "WECT",
+   "site": "https://www.wect.com",
+   "feed": "https://www.wect.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "week-com",
+   "name": "25 News Now",
+   "site": "https://www.week.com",
+   "feed": "https://www.week.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wesh-com",
+   "name": "wesh.com",
+   "site": "https://www.wesh.com",
+   "feed": "https://www.wesh.com/local-news-rss",
+   "states": [
+    "FL"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "westernmassnews-com",
+   "name": "Western Massachusetts News",
+   "site": "https://www.westernmassnews.com",
+   "feed": "https://www.westernmassnews.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "westernslopenow-com",
+   "name": "WesternSlopeNow.com",
+   "site": "https://westernslopenow.com",
+   "feed": "https://westernslopenow.com/feed/",
+   "states": [
+    "CO"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wfaa-com",
+   "name": "WFAA",
+   "site": "https://wfaa.com",
+   "feed": "https://wfaa.com/feeds/syndication/rss/news/local",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wfla-com",
+   "name": "WFLA",
+   "site": "https://wfla.com",
+   "feed": "https://wfla.com/feed/",
+   "states": [
+    "FL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wflx-com",
+   "name": "WFLX Fox 29",
+   "site": "https://www.wflx.com",
+   "feed": "https://www.wflx.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wfmynews2-com",
+   "name": "WFMY",
+   "site": "https://wfmynews2.com",
+   "feed": "https://wfmynews2.com/feeds/syndication/rss/news/local",
+   "states": [
+    "NC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wfsb-com",
+   "name": "Eyewitness News 3",
+   "site": "https://www.wfsb.com",
+   "feed": "https://www.wfsb.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "CT"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wftv-com",
+   "name": "wftv.com",
+   "site": "https://www.wftv.com",
+   "feed": "https://www.wftv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wfxrtv-com",
+   "name": "WFXRtv",
+   "site": "https://wfxrtv.com",
+   "feed": "https://wfxrtv.com/feed/",
+   "states": [
+    "VA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wgal-com",
+   "name": "wgal.com",
+   "site": "https://www.wgal.com",
+   "feed": "https://www.wgal.com/local-news-rss",
+   "states": [
+    "PA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wgem-com",
+   "name": "WGEM",
+   "site": "https://www.wgem.com",
+   "feed": "https://www.wgem.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wgno-com",
+   "name": "WGNO",
+   "site": "https://wgno.com",
+   "feed": "https://wgno.com/feed/",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wgntv-com",
+   "name": "WGN-TV",
+   "site": "https://wgntv.com",
+   "feed": "https://wgntv.com/feed/",
+   "states": [
+    "IL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wgrz-com",
+   "name": "WGRZ",
+   "site": "https://wgrz.com",
+   "feed": "https://wgrz.com/feeds/syndication/rss/news/local",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "whas11-com",
+   "name": "WHAS",
+   "site": "https://whas11.com",
+   "feed": "https://whas11.com/feeds/syndication/rss/news/local",
+   "states": [
+    "KY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "whio-com",
+   "name": "whio.com",
+   "site": "https://www.whio.com",
+   "feed": "https://www.whio.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "OH"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "whnt-com",
+   "name": "WHNT.com",
+   "site": "https://whnt.com",
+   "feed": "https://whnt.com/feed/",
+   "states": [
+    "AL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "who13-com",
+   "name": "who13.com",
+   "site": "https://who13.com",
+   "feed": "https://who13.com/feed/",
+   "states": [
+    "IA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "whsv-com",
+   "name": "WHSV",
+   "site": "https://www.whsv.com",
+   "feed": "https://www.whsv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "VA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wibw-com",
+   "name": "WIBW",
+   "site": "https://www.wibw.com",
+   "feed": "https://www.wibw.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wifr-com",
+   "name": "WIFR",
+   "site": "https://www.wifr.com",
+   "feed": "https://www.wifr.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wilx-com",
+   "name": "WILX",
+   "site": "https://www.wilx.com",
+   "feed": "https://www.wilx.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wiproud-com",
+   "name": "FOX2548 & WIProud",
+   "site": "https://wiproud.com",
+   "feed": "https://wiproud.com/feed/",
+   "states": [
+    "WI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wisn-com",
+   "name": "wisn.com",
+   "site": "https://www.wisn.com",
+   "feed": "https://www.wisn.com/local-news-rss",
+   "states": [
+    "WI"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wistv-com",
+   "name": "WIS News 10",
+   "site": "https://www.wistv.com",
+   "feed": "https://www.wistv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "witn-com",
+   "name": "WITN",
+   "site": "https://www.witn.com",
+   "feed": "https://www.witn.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wivb-com",
+   "name": "News 4 Buffalo",
+   "site": "https://wivb.com",
+   "feed": "https://wivb.com/feed/",
+   "states": [
+    "NY"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wjbf-com",
+   "name": "WJBF",
+   "site": "https://wjbf.com",
+   "feed": "https://wjbf.com/feed/",
+   "states": [
+    "GA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wjcl-com",
+   "name": "wjcl.com",
+   "site": "https://wjcl.com",
+   "feed": "https://wjcl.com/local-news-rss",
+   "states": [
+    "GA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wjhg-com",
+   "name": "WJHG",
+   "site": "https://www.wjhg.com",
+   "feed": "https://www.wjhg.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "FL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wjhl-com",
+   "name": "WJHL | Tri-Cities News & Weather",
+   "site": "https://wjhl.com",
+   "feed": "https://wjhl.com/feed/",
+   "states": [
+    "TN",
+    "VA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wjla-com",
+   "name": "wjla.com",
+   "site": "https://wjla.com",
+   "feed": "https://wjla.com/news/local.rss",
+   "states": [
+    "DC",
+    "MD",
+    "VA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wjtv-com",
+   "name": "WJTV",
+   "site": "https://wjtv.com",
+   "feed": "https://wjtv.com/feed/",
+   "states": [
+    "MS"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wkbn-com",
+   "name": "WKBN.com",
+   "site": "https://wkbn.com",
+   "feed": "https://wkbn.com/feed/",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wkbw-com",
+   "name": "wkbw.com",
+   "site": "https://www.wkbw.com",
+   "feed": "https://www.wkbw.com/news/local-news.rss",
+   "states": [
+    "NY"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wkrg-com",
+   "name": "WKRG News 5",
+   "site": "https://wkrg.com",
+   "feed": "https://wkrg.com/feed/",
+   "states": [
+    "AL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wkrn-com",
+   "name": "WKRN News 2",
+   "site": "https://wkrn.com",
+   "feed": "https://wkrn.com/feed/",
+   "states": [
+    "TN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wkyc-com",
+   "name": "WKYC",
+   "site": "https://wkyc.com",
+   "feed": "https://wkyc.com/feeds/syndication/rss/news/local",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wkyt-com",
+   "name": "WKYT",
+   "site": "https://www.wkyt.com",
+   "feed": "https://www.wkyt.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KY"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wlbt-com",
+   "name": "WLBT",
+   "site": "https://www.wlbt.com",
+   "feed": "https://www.wlbt.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wlfi-com",
+   "name": "WLFI",
+   "site": "https://www.wlfi.com",
+   "feed": "https://www.wlfi.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wlky-com",
+   "name": "wlky.com",
+   "site": "https://www.wlky.com",
+   "feed": "https://www.wlky.com/local-news-rss",
+   "states": [
+    "KY"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wlns-com",
+   "name": "WLNS 6 News",
+   "site": "https://wlns.com",
+   "feed": "https://wlns.com/feed/",
+   "states": [
+    "MI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wlos-com",
+   "name": "wlos.com",
+   "site": "https://wlos.com",
+   "feed": "https://wlos.com/news/local.rss",
+   "states": [
+    "NC",
+    "SC"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wlox-com",
+   "name": "WLOX",
+   "site": "https://www.wlox.com",
+   "feed": "https://www.wlox.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wltx-com",
+   "name": "WLTX",
+   "site": "https://wltx.com",
+   "feed": "https://wltx.com/feeds/syndication/rss/news/local",
+   "states": [
+    "SC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wlwt-com",
+   "name": "wlwt.com",
+   "site": "https://www.wlwt.com",
+   "feed": "https://www.wlwt.com/local-news-rss",
+   "states": [
+    "OH"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wmar2news-com",
+   "name": "wmar2news.com",
+   "site": "https://www.wmar2news.com",
+   "feed": "https://www.wmar2news.com/news/local-news.rss",
+   "states": [
+    "MD"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wmbfnews-com",
+   "name": "WMBF",
+   "site": "https://www.wmbfnews.com",
+   "feed": "https://www.wmbfnews.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "SC"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wmtv15news-com",
+   "name": "WMTV15 News",
+   "site": "https://www.wmtv15news.com",
+   "feed": "https://www.wmtv15news.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wmtw-com",
+   "name": "wmtw.com",
+   "site": "https://www.wmtw.com",
+   "feed": "https://www.wmtw.com/local-news-rss",
+   "states": [
+    "ME",
+    "NH"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wmur-com",
+   "name": "wmur.com",
+   "site": "https://www.wmur.com",
+   "feed": "https://www.wmur.com/local-news-rss",
+   "states": [
+    "NH"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wnct-com",
+   "name": "WNCT",
+   "site": "https://wnct.com",
+   "feed": "https://wnct.com/feed/",
+   "states": [
+    "NC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wndu-com",
+   "name": "WNDU",
+   "site": "https://www.wndu.com",
+   "feed": "https://www.wndu.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wnem-com",
+   "name": "WNEM",
+   "site": "https://www.wnem.com",
+   "feed": "https://www.wnem.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wnep-com",
+   "name": "WNEP",
+   "site": "https://wnep.com",
+   "feed": "https://wnep.com/feeds/syndication/rss/news/local",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "woodtv-com",
+   "name": "WOODTV.com",
+   "site": "https://woodtv.com",
+   "feed": "https://woodtv.com/feed/",
+   "states": [
+    "MI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wowktv-com",
+   "name": "WOWK 13 News",
+   "site": "https://wowktv.com",
+   "feed": "https://wowktv.com/feed/",
+   "states": [
+    "WV"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wowt-com",
+   "name": "WOWT",
+   "site": "https://www.wowt.com",
+   "feed": "https://www.wowt.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NE"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wpbf-com",
+   "name": "wpbf.com",
+   "site": "https://www.wpbf.com",
+   "feed": "https://www.wpbf.com/local-news-rss",
+   "states": [
+    "FL"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wpde-com",
+   "name": "wpde.com",
+   "site": "https://wpde.com",
+   "feed": "https://wpde.com/news/local.rss",
+   "states": [
+    "NC",
+    "SC"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wpganews-com",
+   "name": "WPGA",
+   "site": "https://www.wpganews.com",
+   "feed": "https://www.wpganews.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wpri-com",
+   "name": "WPRI.com",
+   "site": "https://wpri.com",
+   "feed": "https://wpri.com/feed/",
+   "states": [
+    "MA",
+    "RI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wpta21-com",
+   "name": "21 Alive News",
+   "site": "https://www.wpta21.com",
+   "feed": "https://www.wpta21.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wptv-com",
+   "name": "wptv.com",
+   "site": "https://www.wptv.com",
+   "feed": "https://www.wptv.com/news/local-news.rss",
+   "states": [
+    "FL"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wpxi-com",
+   "name": "wpxi.com",
+   "site": "https://www.wpxi.com",
+   "feed": "https://www.wpxi.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "PA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wqad-com",
+   "name": "WQAD",
+   "site": "https://wqad.com",
+   "feed": "https://wqad.com/feeds/syndication/rss/news/local",
+   "states": [
+    "IA",
+    "IL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wrbl-com",
+   "name": "WRBL",
+   "site": "https://wrbl.com",
+   "feed": "https://wrbl.com/feed/",
+   "states": [
+    "GA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wrdw-com",
+   "name": "WRDW",
+   "site": "https://www.wrdw.com",
+   "feed": "https://www.wrdw.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wreg-com",
+   "name": "WREG.com",
+   "site": "https://wreg.com",
+   "feed": "https://wreg.com/feed/",
+   "states": [
+    "TN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wric-com",
+   "name": "WRIC ABC 8News",
+   "site": "https://wric.com",
+   "feed": "https://wric.com/feed/",
+   "states": [
+    "VA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wsav-com",
+   "name": "WSAV-TV",
+   "site": "https://wsav.com",
+   "feed": "https://wsav.com/feed/",
+   "states": [
+    "GA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wsaw-com",
+   "name": "WSAW",
+   "site": "https://www.wsaw.com",
+   "feed": "https://www.wsaw.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WI"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wsaz-com",
+   "name": "WSAZ",
+   "site": "https://www.wsaz.com",
+   "feed": "https://www.wsaz.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WV"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wsbtv-com",
+   "name": "wsbtv.com",
+   "site": "https://www.wsbtv.com",
+   "feed": "https://www.wsbtv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wset-com",
+   "name": "wset.com",
+   "site": "https://wset.com",
+   "feed": "https://wset.com/news/local.rss",
+   "states": [
+    "VA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wsfa-com",
+   "name": "WSFA",
+   "site": "https://www.wsfa.com",
+   "feed": "https://www.wsfa.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wsls-com",
+   "name": "WSLS 10",
+   "site": "https://www.wsls.com",
+   "feed": "https://www.wsls.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "VA"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wsmv-com",
+   "name": "WSMV 4",
+   "site": "https://www.wsmv.com",
+   "feed": "https://www.wsmv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wsoctv-com",
+   "name": "wsoctv.com",
+   "site": "https://www.wsoctv.com",
+   "feed": "https://www.wsoctv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NC",
+    "SC"
+   ],
+   "group": "extra"
+  },
+  {
+   "id": "wspa-com",
+   "name": "WSPA 7NEWS",
+   "site": "https://wspa.com",
+   "feed": "https://wspa.com/feed/",
+   "states": [
+    "SC"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtae-com",
+   "name": "wtae.com",
+   "site": "https://www.wtae.com",
+   "feed": "https://www.wtae.com/local-news-rss",
+   "states": [
+    "PA"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wtaj-com",
+   "name": "WTAJ | Your News Leader",
+   "site": "https://wtaj.com",
+   "feed": "https://wtaj.com/feed/",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtap-com",
+   "name": "WTAP",
+   "site": "https://www.wtap.com",
+   "feed": "https://www.wtap.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WV"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wthitv-com",
+   "name": "WTHI",
+   "site": "https://www.wthitv.com",
+   "feed": "https://www.wthitv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "IN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wthr-com",
+   "name": "WTHR",
+   "site": "https://wthr.com",
+   "feed": "https://wthr.com/feeds/syndication/rss/news/local",
+   "states": [
+    "IN"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtkr-com",
+   "name": "wtkr.com",
+   "site": "https://wtkr.com",
+   "feed": "https://wtkr.com/news/local-news.rss",
+   "states": [
+    "VA"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wtnh-com",
+   "name": "WTNH.com",
+   "site": "https://wtnh.com",
+   "feed": "https://wtnh.com/feed/",
+   "states": [
+    "CT"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtoc-com",
+   "name": "WTOC",
+   "site": "https://www.wtoc.com",
+   "feed": "https://www.wtoc.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wtok-com",
+   "name": "WTOK",
+   "site": "https://www.wtok.com",
+   "feed": "https://www.wtok.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wtol-com",
+   "name": "WTOL",
+   "site": "https://wtol.com",
+   "feed": "https://wtol.com/feeds/syndication/rss/news/local",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtrf-com",
+   "name": "WTRF",
+   "site": "https://wtrf.com",
+   "feed": "https://wtrf.com/feed/",
+   "states": [
+    "OH",
+    "WV"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtsp-com",
+   "name": "WTSP",
+   "site": "https://wtsp.com",
+   "feed": "https://wtsp.com/feeds/syndication/rss/news/local",
+   "states": [
+    "FL"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wtva-com",
+   "name": "WTVA",
+   "site": "https://www.wtva.com",
+   "feed": "https://www.wtva.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "MS"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wtvm-com",
+   "name": "WTVM",
+   "site": "https://www.wtvm.com",
+   "feed": "https://www.wtvm.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "GA"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wtvr-com",
+   "name": "wtvr.com",
+   "site": "https://wtvr.com",
+   "feed": "https://wtvr.com/news/local-news.rss",
+   "states": [
+    "VA"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wtvy-com",
+   "name": "WTVY",
+   "site": "https://www.wtvy.com",
+   "feed": "https://www.wtvy.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "AL"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wtxl-com",
+   "name": "wtxl.com",
+   "site": "https://www.wtxl.com",
+   "feed": "https://www.wtxl.com/news/local-news.rss",
+   "states": [
+    "FL"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wusa9-com",
+   "name": "WUSA",
+   "site": "https://wusa9.com",
+   "feed": "https://wusa9.com/feeds/syndication/rss/news/local",
+   "states": [
+    "DC",
+    "MD"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wvlt-tv",
+   "name": "WVLT",
+   "site": "https://www.wvlt.tv",
+   "feed": "https://www.wvlt.tv/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "TN"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wvnstv-com",
+   "name": "WVNS",
+   "site": "https://wvnstv.com",
+   "feed": "https://wvnstv.com/feed/",
+   "states": [
+    "WV"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wvtm13-com",
+   "name": "wvtm13.com",
+   "site": "https://www.wvtm13.com",
+   "feed": "https://www.wvtm13.com/local-news-rss",
+   "states": [
+    "AL"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wvva-com",
+   "name": "WVVA",
+   "site": "https://www.wvva.com",
+   "feed": "https://www.wvva.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "WV"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wwlp-com",
+   "name": "WWLP",
+   "site": "https://wwlp.com",
+   "feed": "https://wwlp.com/feed/",
+   "states": [
+    "MA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wwltv-com",
+   "name": "WWL",
+   "site": "https://wwltv.com",
+   "feed": "https://wwltv.com/feeds/syndication/rss/news/local",
+   "states": [
+    "LA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wwnytv-com",
+   "name": "WWNY",
+   "site": "https://www.wwnytv.com",
+   "feed": "https://www.wwnytv.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "NY"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wxii12-com",
+   "name": "wxii12.com",
+   "site": "https://www.wxii12.com",
+   "feed": "https://www.wxii12.com/local-news-rss",
+   "states": [
+    "NC"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wxyz-com",
+   "name": "Metro Detroit News",
+   "site": "https://www.wxyz.com",
+   "feed": "https://www.wxyz.com/news/local-news.rss",
+   "states": [
+    "MI"
+   ],
+   "group": "scripps"
+  },
+  {
+   "id": "wyff4-com",
+   "name": "wyff4.com",
+   "site": "https://www.wyff4.com",
+   "feed": "https://www.wyff4.com/local-news-rss",
+   "states": [
+    "SC"
+   ],
+   "group": "hearst"
+  },
+  {
+   "id": "wymt-com",
+   "name": "WYMT",
+   "site": "https://www.wymt.com",
+   "feed": "https://www.wymt.com/arc/outboundfeeds/rss/?outputType=xml",
+   "states": [
+    "KY"
+   ],
+   "group": "gray"
+  },
+  {
+   "id": "wytv-com",
+   "name": "WYTV",
+   "site": "https://wytv.com",
+   "feed": "https://wytv.com/feed/",
+   "states": [
+    "OH"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "wzzm13-com",
+   "name": "WZZM",
+   "site": "https://wzzm13.com",
+   "feed": "https://wzzm13.com/feeds/syndication/rss/news/local",
+   "states": [
+    "MI"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "yourbasin-com",
+   "name": "Yourbasin",
+   "site": "https://yourbasin.com",
+   "feed": "https://yourbasin.com/feed/",
+   "states": [
+    "TX"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "yourbigsky-com",
+   "name": "YourBigSky.com",
+   "site": "https://yourbigsky.com",
+   "feed": "https://yourbigsky.com/feed/",
+   "states": [
+    "MT"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "yourcentralvalley-com",
+   "name": "YourCentralValley.com | CBS47 and KSEE24",
+   "site": "https://yourcentralvalley.com",
+   "feed": "https://yourcentralvalley.com/feed/",
+   "states": [
+    "CA"
+   ],
+   "group": "nexstar"
+  },
+  {
+   "id": "yourerie-com",
+   "name": "WJET/WFXP/YourErie.com",
+   "site": "https://yourerie.com",
+   "feed": "https://yourerie.com/feed/",
+   "states": [
+    "PA"
+   ],
+   "group": "nexstar"
+  }
+ ]
+}

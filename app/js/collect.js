@@ -25,12 +25,27 @@
   // Pause between GDELT requests. Tests set window.DB_COLLECT_GAP before this file loads.
   const GAP_MS = root && typeof root.DB_COLLECT_GAP === "number" ? root.DB_COLLECT_GAP : 6000;
   const TIMEOUT_MS = 25000;
+  // The news search phase stops starting searches after this long, so a slow news
+  // index cannot hold a brief for minutes. Tests set window.DB_COLLECT_SEARCH_BUDGET.
+  const SEARCH_BUDGET_MS = root && typeof root.DB_COLLECT_SEARCH_BUDGET === "number" ? root.DB_COLLECT_SEARCH_BUDGET : 90000;
   // The backup collection, published beside the app by GitHub every four hours (dailybrief/newscache.py).
   const BACKUP_URL = "data/news-cache.json";
   const BACKUP_SCHEMA = "daily-brief-news-cache/1";
+  // Local TV station news by state, published beside the app by GitHub every four hours (dailybrief/localnews.py).
+  const LOCAL_DIR = "data/local/";
+  const LOCAL_SCHEMA = "daily-brief-local-news/1";
   const LANGS = { en: "english", es: "spanish", fr: "french", de: "german", it: "italian", pt: "portuguese", nl: "dutch" };
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* A state's local news file: {schema, generated_at, state, stations, stories: [story]}. */
+  function parseLocal(text) {
+    let d;
+    try { d = JSON.parse(text); } catch (e) { throw new Error("the local news file is damaged"); }
+    if (!d || d.schema !== LOCAL_SCHEMA || !Array.isArray(d.stories)) throw new Error("not a local news file");
+    return { generated_at: typeof d.generated_at === "string" ? d.generated_at : "", state: typeof d.state === "string" ? d.state : "",
+      stories: d.stories.filter(it => it && typeof it === "object" && !Array.isArray(it)) };
+  }
 
   /* The backup collection file: {schema, generated_at, categories: {id: [story]}}.
      Every story still goes through the same checks as any other. */
@@ -335,14 +350,37 @@
         health[c.id].backup = { items: items.length, added: add(c.id, items), error: backup ? "" : err, collected_at: backup ? backup.generated_at : "" };
       }
     }
+    // Local news: stories from the local TV stations in the reader's state, gathered on
+    // GitHub every four hours and published beside this page. One read, only for town
+    // categories still short. Only stories that name the town or a nearby place join a
+    // category; the town itself is never sent anywhere.
+    const code = E.stateCode(n.reader.region);
+    const townShort = cats.filter((c, i) => E.isLocalCategory(n.categories[i]) && freshShort(c));
+    if (townShort.length && code && opts.local !== false) {
+      phase = "local";
+      progress("Local stations", done, total, phase);
+      let file = null, err = "";
+      try { file = parseLocal(await getText((opts.localDir || LOCAL_DIR) + code + ".json", opts)); } catch (e) { err = String(e.message || e); }
+      const area = [n.reader.location].concat(Array.isArray(n.reader.local_terms) ? n.reader.local_terms : []).map(E.collapse).filter(Boolean);
+      const near = file ? file.stories.filter(it => area.some(t => E.termHit(String(it.title || "") + " " + String(it.summary || ""), t))) : [];
+      for (const c of townShort) {
+        health[c.id].local = { state: code, items: near.length, added: add(c.id, near), error: file ? "" : err, collected_at: file ? file.generated_at : "" };
+      }
+    }
     phase = "search";
     progress("News search", done, total, phase);
     let first = true;
     let failures = 0;  // searches in a row that failed even after the retry
+    const deadline = Date.now() + (typeof opts.searchBudget === "number" ? opts.searchBudget : SEARCH_BUDGET_MS);
     async function search(c, q, hours) {
       if (opts.cancelled && opts.cancelled()) throw new Error("cancelled");
       if (failures >= 3) {
         health[c.id].queries.push({ query: q, hours: hours, items: 0, added: 0, error: "skipped: the news index was busy, so this brief uses the feeds" });
+        tick(c.name);
+        return;
+      }
+      if (Date.now() >= deadline) {
+        health[c.id].queries.push({ query: q, hours: hours, items: 0, added: 0, error: "skipped: the news index was slow, so this brief uses what it has" });
         tick(c.name);
         return;
       }
@@ -375,13 +413,15 @@
   }
 
   /* An empty desk whose searches all failed was not checked, which is not the
-     same as "nothing new"; the page says so. */
+     same as "nothing new"; the page says so. A town desk whose local station
+     file was read was checked, even when the searches failed. */
   function markUnchecked(brief, health) {
     for (const bc of brief.categories || []) {
       const h = health && health[bc.id];
       if (!h || (bc.items && bc.items.length)) continue;
       const tried = (h.queries || []).filter(q => !q.note);
-      if (tried.length && tried.every(q => q.error)) bc.unchecked = true;
+      const stations = (h.local && !h.local.error) || (h.feeds || []).some(f => f.station && !f.error);
+      if (tried.length && tried.every(q => q.error) && !stations) bc.unchecked = true;
     }
     return brief;
   }
@@ -415,6 +455,6 @@
     return { brief: brief, health: health };
   }
 
-  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
+  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
     weather, geocode, collect, runBrief, localDate, markUnchecked, checkFeed };
 });

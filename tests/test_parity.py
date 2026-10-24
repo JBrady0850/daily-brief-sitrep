@@ -397,3 +397,15 @@ def test_town_searches_name_the_nearby_places_the_same_way():
     assert got["queries"] == ['("Springfield" OR "Sangamon County") council'] and got["name"] == "Local (Springfield)"
     assert E.resolve_category(town, {"location": "", "local_terms": ["Sangamon County"]})["queries"] == ['"" council'], \
         "no town, no area search (as before)"
+
+
+def test_state_codes_agree():
+    inputs = ["Florida", "FL", "fl", " new  york ", "Washington", "Washington, D.C.", "DC", "District of Columbia", "West Virginia",
+              "Fla.", "Ontario", "", None, 5, "TX ", "texas", "Puerto Rico"]
+    reqs = [{"fn": "stateCode", "args": [x]} for x in inputs]
+    got = js_calls(reqs)
+    for x, j in zip(inputs, got):
+        assert same(E.state_code(x), j), (x, j)
+    assert [E.state_code(x) for x in inputs[:10]] == ["FL", "FL", "FL", "NY", "WA", "DC", "DC", "DC", "WV", ""]
+    js_table = js_calls([{"fn": "stateCode", "args": [name]} for name in E.US_STATES])
+    assert js_table == list(E.US_STATES.values()) and len(E.US_STATES) == 51

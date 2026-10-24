@@ -14,7 +14,7 @@ words your own category. Each category has:
 | Must mention | One line per group, terms separated by commas. A story must mention at least one term from every line | Line 1: `zero trust, CISA, firewall, VPN` |
 | Leave out | Stories that mention any of these are dropped | `webinar, sponsored content` |
 | On-topic feeds | Feeds about this topic and nothing else. Their stories count as on topic without a "must mention" term; the "leave out" terms and every other filter still apply | `https://rss.nytimes.com/services/xml/rss/nyt/Tennis.xml` |
-| Publisher feeds | RSS or Atom links also read for this desk. The web page can read only feeds that allow web pages (see docs/LIMITS.md); the desktop app and the GitHub copy read them all | `https://www.espn.com/espn/rss/nfl/news` |
+| Publisher feeds | RSS or Atom links also read for this desk. The web page can read only feeds that allow web pages (see docs/LIMITS.md) | `https://www.espn.com/espn/rss/nfl/news` |
 | Icon | The picture on the desk's heading, from `app/data/icons.js` | `football` |
 | Stories | How many stories this desk shows (default: the setting for all) | 3 |
 | Skip list articles | Drops "top 10" and "best of" pieces | on |
@@ -34,9 +34,10 @@ words your own category. Each category has:
   than three letters are left out of searches (the news index refuses them).
   Inside a group it stays your town, because groups cannot nest.
 - Town categories (those with `{location}`, `{local_terms}` or `needs_location`)
-  also read the local news feeds you add on the town question. Their stories
-  still need to name your town or a nearby place. The desktop app and the GitHub
-  copy add your state to town searches, so Google keeps to the right town.
+  also read the news of the local TV stations in your state (gathered on GitHub
+  every four hours; see `dailybrief/local_stations.json`) and the local news
+  feeds you add on the town question. Their stories still need to name your
+  town or a nearby place, and the desk's topic words still apply.
 
 ## Writing a good category
 

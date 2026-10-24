@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.5.1";
+  const VERSION = "0.6.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -182,6 +182,20 @@
 
   // ------------------------------------------------------------------ config
   /* A town category: it names the reader's town, or says it needs one. */
+  // US states and the District of Columbia, "name CODE" pairs (mirrors US_STATES in engine.py).
+  const US_STATES = {};
+  "alabama AL|alaska AK|arizona AZ|arkansas AR|california CA|colorado CO|connecticut CT|delaware DE|district of columbia DC|florida FL|georgia GA|hawaii HI|idaho ID|illinois IL|indiana IN|iowa IA|kansas KS|kentucky KY|louisiana LA|maine ME|maryland MD|massachusetts MA|michigan MI|minnesota MN|mississippi MS|missouri MO|montana MT|nebraska NE|nevada NV|new hampshire NH|new jersey NJ|new mexico NM|new york NY|north carolina NC|north dakota ND|ohio OH|oklahoma OK|oregon OR|pennsylvania PA|rhode island RI|south carolina SC|south dakota SD|tennessee TN|texas TX|utah UT|vermont VT|virginia VA|washington WA|west virginia WV|wisconsin WI|wyoming WY".split("|").forEach(p => { const k = p.lastIndexOf(" "); US_STATES[p.slice(0, k)] = p.slice(k + 1); });
+  const US_CODES = Object.keys(US_STATES).map(k => US_STATES[k]);
+
+  /* The two-letter code of the US state named in the reader's region ("Florida", "FL",
+     "Washington, D.C."), or "" for anything else (mirrors state_code in engine.py). */
+  function stateCode(region) {
+    const s = collapse(String(isStr(region) ? region : "").replace(/[.,]/g, " ")).toLowerCase();
+    if (["dc", "d c", "washington dc", "washington d c"].indexOf(s) >= 0) return "DC";
+    if (s.length === 2 && US_CODES.indexOf(s.toUpperCase()) >= 0) return s.toUpperCase();
+    return Object.prototype.hasOwnProperty.call(US_STATES, s) ? US_STATES[s] : "";
+  }
+
   function isLocalCategory(cat) {
     const t = JSON.stringify(cat || {});
     return !!(cat && cat.needs_location === true) || t.indexOf("{location}") >= 0 || t.indexOf("{local_terms}") >= 0;
@@ -908,7 +922,7 @@
   return {
     VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_LEDGER, MAX_RECENT,
     clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, validImage, isNum, hostOf, round1, pad2,
-    isAcronym, termHit, countHits, isLocalCategory, areaTerms, areaQuery, resolveCategory, normalizeConfig, validateConfig,
+    isAcronym, termHit, countHits, US_STATES, stateCode, isLocalCategory, areaTerms, areaQuery, resolveCategory, normalizeConfig, validateConfig,
     categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
     emptyLedger, cleanLedger, ledgerHas, ledgerAdd, ledgerSize, humanizeAge, classify, cutSummary,
     gateItem, cleanItem, selectBrief, filterSeen, checkBrief, buildPrompt, extractJson, googleNewsUrl, cronLines

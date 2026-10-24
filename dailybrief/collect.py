@@ -9,7 +9,9 @@ with whatever the other sources returned.
 """
 from __future__ import annotations
 
+import functools
 import html
+import json
 import math
 import re
 import time
@@ -19,6 +21,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from html.parser import HTMLParser
+from pathlib import Path
 from typing import Callable, Optional
 
 from . import engine as E
@@ -284,6 +287,20 @@ def _fresh_count(items: list, now_ms: int, window: int) -> int:
     return n
 
 
+@functools.lru_cache(maxsize=1)
+def _stations() -> tuple:
+    try:
+        data = json.loads(Path(__file__).with_name("local_stations.json").read_text(encoding="utf-8"))
+        return tuple(s for s in data.get("stations") or [] if isinstance(s, dict) and s.get("feed") and isinstance(s.get("states"), list))
+    except (OSError, ValueError, AttributeError):
+        return ()
+
+
+def local_station_feeds(code: str) -> list:
+    """The news feeds of the local TV stations listed for a US state (dailybrief/local_stations.json)."""
+    return [s["feed"] for s in _stations() if code and code in s["states"]]
+
+
 def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Optional[Fetcher] = None,
             progress: Optional[Callable[[str, int, int], None]] = None, pause: float = GOOGLE_PAUSE,
             searches: Optional[dict] = None) -> tuple:
@@ -313,10 +330,18 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
     cats = [E.resolve_category(c, n["reader"]) for c in n["categories"]]
     region = E.collapse(n["reader"].get("region"))
     # Google understands a place: town searches add the reader's state or region.
-    local_ids = {c["id"] for c in n["categories"] if E.is_local_category(c)} if region else set()
+    town_ids = {c["id"] for c in n["categories"] if E.is_local_category(c)}
+    local_ids = town_ids if region else set()
+    # Town categories also read the local TV stations in the reader's state.
+    stations = local_station_feeds(E.state_code(region)) if town_ids else []
+
     def feeds_of(c: dict) -> list:
-        """A category's feeds plus its on-topic feeds, each address once."""
-        return list(c["feeds"]) + [u for u in c.get("topic_feeds") or [] if u not in c["feeds"]]
+        """A category's feeds plus its on-topic feeds (and, for a town category, the
+        state's local stations), each address once."""
+        out = list(c["feeds"]) + [u for u in c.get("topic_feeds") or [] if u not in c["feeds"]]
+        if c["id"] in town_ids:
+            out += [u for u in stations if u not in out]
+        return out
 
     total_steps = sum(len([q for q in c["queries"] if E.collapse(q)]) + len(feeds_of(c)) for c in cats)
     step = 0
@@ -361,8 +386,11 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
         for url in feeds_of(cat):
             items, err = read_feed(url)
             on_topic = url in (cat.get("topic_feeds") or [])
-            h["feeds"].append({"url": url, "items": len(items), "fresh": _fresh_count(items, now_ms, b["window_hours"]),
-                               "added": add(items, on_topic), "error": err, "on_topic": on_topic})
+            entry = {"url": url, "items": len(items), "fresh": _fresh_count(items, now_ms, b["window_hours"]),
+                     "added": add(items, on_topic), "error": err, "on_topic": on_topic}
+            if cat["id"] in town_ids and url in stations:
+                entry["station"] = True  # a local TV station in the reader's state
+            h["feeds"].append(entry)
             tick(cat["name"])
         # Second pass: a category short of fresh, on-topic news may use labelled older items.
         if days2 > days1:
@@ -425,13 +453,17 @@ def weather(cfg: dict, now_iso: str, fetcher: Optional[Fetcher] = None) -> Optio
 
 
 def mark_unchecked(brief: dict, health: dict) -> dict:
-    """An empty desk whose searches all failed was not checked (mirrors markUnchecked in collect.js)."""
+    """An empty desk whose searches all failed was not checked; a town desk whose local
+    stations answered was (mirrors markUnchecked in collect.js)."""
     for bc in brief.get("categories") or []:
         h = (health or {}).get(bc.get("id"))
         if not h or bc.get("items"):
             continue
         tried = [q for q in h.get("queries") or [] if not q.get("note")]
-        if tried and all(q.get("error") for q in tried):
+        local = h.get("local")
+        stations = (isinstance(local, dict) and not local.get("error")) or \
+            any(f.get("station") and not f.get("error") for f in h.get("feeds") or [])
+        if tried and all(q.get("error") for q in tried) and not stations:
             bc["unchecked"] = True
     return brief
 

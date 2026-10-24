@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.5.1"
+VERSION = "0.6.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -303,6 +303,21 @@ def count_hits(text: str, terms: list) -> int:
 
 
 # ------------------------------------------------------------------ config
+# US states and the District of Columbia, "name CODE" pairs (mirrors US_STATES in engine.js).
+US_STATES = dict((p.rsplit(" ", 1)[0], p.rsplit(" ", 1)[1]) for p in ("alabama AL|alaska AK|arizona AZ|arkansas AR|california CA|colorado CO|connecticut CT|delaware DE|district of columbia DC|florida FL|georgia GA|hawaii HI|idaho ID|illinois IL|indiana IN|iowa IA|kansas KS|kentucky KY|louisiana LA|maine ME|maryland MD|massachusetts MA|michigan MI|minnesota MN|mississippi MS|missouri MO|montana MT|nebraska NE|nevada NV|new hampshire NH|new jersey NJ|new mexico NM|new york NY|north carolina NC|north dakota ND|ohio OH|oklahoma OK|oregon OR|pennsylvania PA|rhode island RI|south carolina SC|south dakota SD|tennessee TN|texas TX|utah UT|vermont VT|virginia VA|washington WA|west virginia WV|wisconsin WI|wyoming WY").split("|"))
+
+
+def state_code(region: Any) -> str:
+    """The two-letter code of the US state named in the reader's region ("Florida", "FL",
+    "Washington, D.C."), or "" for anything else (mirrors stateCode in engine.js)."""
+    s = collapse(re.sub(r"[.,]", " ", region if is_str(region) else "")).lower()
+    if s in ("dc", "d c", "washington dc", "washington d c"):
+        return "DC"
+    if len(s) == 2 and s.upper() in US_STATES.values():
+        return s.upper()
+    return US_STATES.get(s, "")
+
+
 def is_local_category(cat: Any) -> bool:
     """A town category: it names the reader's town, or says it needs one."""
     t = json.dumps(cat if cat is not None else {})

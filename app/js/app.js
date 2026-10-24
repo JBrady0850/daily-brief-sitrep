@@ -483,7 +483,7 @@
       field("Town or city", h("input", { type: "text", id: "town", value: r.location || "", placeholder: "Springfield",
         oninput: e => { r.location = e.target.value; save(); } }), "The town name only. No street address."),
       field("State or region", h("input", { type: "text", id: "region", value: r.region || "", placeholder: "Illinois",
-        oninput: e => { r.region = e.target.value; save(); } }), "Filled in when you pick your town for the forecast below.")));
+        oninput: e => { r.region = e.target.value; save(); } }), "Filled in when you pick your town for the forecast below. In the US, your state also picks the local TV stations whose news this site gathers for you.")));
     add(card, field("Nearby towns or the county that also count as local (commas)", h("input", { type: "text", id: "nearby", value: (r.local_terms || []).join(", "),
       placeholder: "Shelbyville, Sangamon County", oninput: e => { r.local_terms = commas(e.target.value); save(); } }),
       "A story counts as local when it names your town or one of these."));
@@ -513,13 +513,13 @@
           const got = await C.checkFeed(u, terms);
           out.push(h("li", { class: got.items ? "ok" : "warn", text: E.hostOf(u) + ": readable, " + got.items + " stories, " + got.local + " name your town or a nearby place." }));
         } catch (e) {
-          out.push(h("li", { class: "badtext", text: E.hostOf(u) + ": " + (e.message || e) + ". This site does not let web pages read its feed; the desktop app and a GitHub copy can still use it." }));
+          out.push(h("li", { class: "badtext", text: E.hostOf(u) + ": " + (e.message || e) + ". This site does not let web pages read its feed. Your state's local TV stations are still read for you." }));
         }
       }
       clear(status).append(h("ul", { class: "plain" }, out));
     }
     add(box, h("h3", null, ico("news", "hi"), "Your local news feed (optional)"));
-    add(box, h("p", { class: "hint", text: "Town news comes from the GDELT news search, which is sometimes busy. A feed from your local TV station or paper helps, if the site lets web pages read it; many do not. Paste up to five feed links, one per line, then press Check." }));
+    add(box, h("p", { class: "hint", text: "Town news comes from the local TV stations in your state, whose feeds this site gathers on GitHub every four hours, and then from the GDELT news search. To add another source, such as your town's paper, paste up to five feed links, one per line, then press Check; the site has to let web pages read its feed, and many do not." }));
     add(box, ta);
     add(box, h("div", { class: "row" }, h("button", { class: "btn ghost", onclick: check }, "Check")));
     add(box, status);
@@ -807,7 +807,7 @@
         "Short all-capital terms such as AI or CVE match only in capitals."),
       field("Leave out stories that mention (commas)", h("input", { type: "text", value: (cat.exclude || []).join(", "), oninput: e => { cat.exclude = commas(e.target.value); changed(); } })),
       field("Publisher feeds, one link per line", h("textarea", { rows: 2, value: (cat.feeds || []).join("\n"), oninput: e => { cat.feeds = lines(e.target.value); changed(); } }),
-        "Their stories still need a must-mention term. This web page can read only feeds that allow it; the desktop app reads them all."),
+        "Their stories still need a must-mention term. This web page can read only feeds that allow it."),
       field("On-topic feeds, one link per line", h("textarea", { rows: 2, value: (cat.topic_feeds || []).join("\n"), oninput: e => { cat.topic_feeds = lines(e.target.value); changed(); } }),
         "Feeds about this topic and nothing else, such as a tennis feed for a tennis category. Their stories count as on topic without a must-mention term."),
       field("Stories in this category", select([["", "Use the default"]].concat([1, 2, 3, 4, 5, 6, 7, 8, 10].map(n => [n, String(n)])), cat.items || "",
@@ -905,6 +905,7 @@
     ["choices", "Your choices", "Saved in this browser"],
     ["feeds", "Publisher feeds", "Reading the news sites' own feeds"],
     ["backup", "Backup collection", "Stories this site gathers on GitHub every four hours"],
+    ["local", "Local stations", "Your state's local TV news, gathered on GitHub every four hours"],
     ["search", "News search", "Searching the news index for whatever is still short"],
     ["layout", "Your page", "Picking the freshest stories and laying out the page"]
   ];
@@ -1106,9 +1107,11 @@
       const errs = hh.queries.concat(hh.feeds).filter(x => x.error);
       // A missing backup file matters only on the published site; a downloaded copy never has one.
       if (hh.backup && hh.backup.error && location.protocol === "https:") errs.push({ url: "backup collection", error: hh.backup.error });
+      if (hh.local && hh.local.error && location.protocol === "https:") errs.push({ url: "local stations (" + hh.local.state + ")", error: hh.local.error });
       const rej = Object.keys(cat.rejected || {}).map(k => k + " " + cat.rejected[k]).join(", ");
       const found = hh.queries.reduce((a, x) => a + x.items, 0) + " search results, " + hh.feeds.reduce((a, x) => a + x.items, 0) + " feed items" +
-        (hh.backup && hh.backup.items ? ", " + hh.backup.items + " from the backup collection" : "");
+        (hh.backup && hh.backup.items ? ", " + hh.backup.items + " from the backup collection" : "") +
+        (hh.local && hh.local.items ? ", " + hh.local.items + " from local stations naming your area" : "");
       rows.push(h("tr", null, h("th", { text: cat.name }), h("td", { text: found }),
         h("td", { text: rej || "none" }), h("td", { class: errs.length ? "badtext" : "", text: errs.length ? errs.map(x => (x.query || x.url) + ": " + x.error).join("; ") : "none" })));
     }
@@ -1359,7 +1362,7 @@
       proj ? h("p", null, "Project page and download: ", h("a", { href: proj, target: "_blank", rel: "noopener", text: proj.replace("https://", "") }), " | ",
         h("a", { href: proj + "/issues/new", target: "_blank", rel: "noopener", text: "report a problem or suggest an idea" })) : null,
       h("h2", { text: "Where the news comes from" }),
-      h("p", { text: "Browsers only let a page read another site when that site allows it. This page reads, in order: the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired); the backup collection, a file this site's GitHub project rebuilds every four hours from Google News and every library feed; and, only for what is still short, the GDELT news index, which watches news sites worldwide. The forecast comes from Open-Meteo. The desktop app and the GitHub copy read Google News directly." }),
+      h("p", { text: "Browsers only let a page read another site when that site allows it. This page reads, in order: the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired); the backup collection, a file this site's GitHub project rebuilds every four hours from Google News and every library feed; for the categories about your town, the news of the local TV stations in your state, which the same GitHub project gathers every four hours into one file per state; and, only for what is still short, the GDELT news index, which watches news sites worldwide. The forecast comes from Open-Meteo. Everything is collected by this site and GitHub; nothing needs to run on your computer." }),
       h("h2", { text: "How stories are picked" }),
       h("ol", null,
         h("li", { text: "Search each category, then keep a story only if it mentions a term from every must-mention line and none of the leave-out terms." }),
@@ -1370,11 +1373,11 @@
       h("h2", { text: "Reading the pills" }),
       h("p", { text: "Green, teal and amber pills give a story's age inside the window. OLDER is beyond the window, stamped with its true age. REFERENCE is an undated authoritative page, never presented as an event." }),
       h("h2", { text: "Privacy" }),
-      h("p", { text: "No account and no tracking. Settings and the history stay in this browser, or in your data folder when you use the desktop app. This page sends your search words to the GDELT news index, fetches the feeds you list, and, if the forecast is on, sends your town's rounded map position to Open-Meteo. Story photos load from the publishers' own sites. The desktop app and the GitHub copy send your search words to Google News instead." }),
+      h("p", { text: "No account and no tracking. Settings and the history stay in this browser, or in your data folder when you use the desktop app. This page sends your search words to the GDELT news index, fetches the feeds you list, reads your state's local news file from this site (your town stays in the browser), and, if the forecast is on, sends your town's rounded map position to Open-Meteo. Story photos load from the publishers' own sites. The desktop app and the GitHub copy send your search words to Google News instead." }),
       h("h2", { text: "Limits" }),
       h("ul", null,
         h("li", { text: "Stories from the GDELT index and Google News come with a headline only; publisher feeds add a short summary and often a photo." }),
-        h("li", { text: "The GDELT index turns requests away when it is busy (too many requests). The page reads the backup collection first, so most categories fill without it; the categories about your town and categories you typed yourself still depend on it." }),
+        h("li", { text: "The GDELT index turns requests away when it is busy (too many requests). The page reads the backup collection and your state's local stations first, so most categories fill without it; categories you typed yourself still depend on it, and a small town can have quiet days on its local stations." }),
         h("li", { text: "Google News links open through a Google redirect page." }),
         h("li", { text: "AI assistants can still make mistakes. The prompt requires links from a live search; check a link before you act on a story." })),
       h("p", { class: "hint", text: "Daily Brief " + E.VERSION + ". Free and open source under the MIT licence." })));

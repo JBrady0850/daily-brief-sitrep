@@ -171,6 +171,7 @@ Storms, flooding, closures, outages and emergency notices in your area.
 - Queries: `"{location}" (storm OR hurricane OR flooding OR tornado OR wildfire)` / `"{location}" ("boil water" OR closure OR outage OR evacuation)`
 - Must mention one of (group 1): {local_terms}
 - Must mention one of (group 2): storm, storms, hurricane, tornado, flood, flooding, weather, evacuation, boil water, closure, closures, outage, outages, wildfire
+- Leave out: arrested, arrest, charged, sentenced, homicide
 
 ### Severe Weather Across the Country (`severe-weather`)
 
@@ -633,8 +634,8 @@ City and county councils, budgets, ordinances, zoning and elections in your area
 
 - Queries: `"{location}" (council OR commission OR budget OR ordinance OR election)` / `"{location}" (mayor OR commissioners OR zoning OR "school board")`
 - Must mention one of (group 1): {local_terms}
-- Must mention one of (group 2): council, commission, commissioners, budget, ordinance, election, mayor, county, city, school board, zoning, permit, vote
-- Leave out: football, basketball, baseball, homicide, shooting
+- Must mention one of (group 2): council, commission, commissioners, commissioner, budget, ordinance, election, mayor, city hall, city manager, county administrator, school board, zoning, permit, vote, voters, millage, tax, public hearing, referendum, annexation, taxes, votes
+- Leave out: football, basketball, baseball, homicide, shooting, arrested, arrest, arrests, charged, sentenced, stabbing, trafficking, crash, killed, fatal, suspect
 
 ### Local Sports ({location}) (`local-sports`)
 
@@ -643,7 +644,7 @@ High school, college and hometown teams near you.
 - Queries: `"{location}" ("high school" OR prep OR varsity) (football OR basketball OR baseball OR soccer)` / `"{location}" (team OR coach OR championship OR playoff)`
 - Must mention one of (group 1): {local_terms}
 - Must mention one of (group 2): high school, prep, varsity, team, coach, football, basketball, baseball, softball, soccer, volleyball, championship, playoff, playoffs, game, wins
-- Leave out: betting odds, sportsbook
+- Leave out: betting odds, sportsbook, arrested, arrest, arrests, charged, sentenced, deputies, shooting, homicide, stabbing, trafficking, crash, killed, fatal, suspect, police, inmate, jail, prison, threat
 
 ### Things to Do ({location}) (`local-events`)
 
@@ -652,7 +653,7 @@ Festivals, concerts, markets, openings and weekend events near you.
 - Queries: `"{location}" (festival OR concert OR fair OR parade OR market)` / `"{location}" (opens OR "grand opening" OR weekend OR events OR celebration)`
 - Must mention one of (group 1): {local_terms}
 - Must mention one of (group 2): festival, concert, fair, parade, market, opens, opening, grand opening, weekend, event, events, celebration, show, museum, exhibit
-- Leave out: obituary, sponsored content
+- Leave out: obituary, sponsored content, arrested, arrest, charged, sentenced, homicide
 
 ### Defense Enterprise AI (`defense-ai`)
 

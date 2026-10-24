@@ -14,3 +14,4 @@ __pycache__/
 .pytest_cache/
 # the backup collection is rebuilt by GitHub on every publish
 app/data/news-cache.json
+app/data/local/

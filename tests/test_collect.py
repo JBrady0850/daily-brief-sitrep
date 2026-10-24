@@ -237,3 +237,44 @@ def test_a_search_that_works_resets_the_count_and_the_count_can_be_shared():
     assert shared["failures"] == 1
     _, h = C.collect(one, NOW, None, fetcher, None, 0, shared)
     assert [q["error"] for q in h["a"]["queries"]] == ["x", "x", C.SKIPPED, C.SKIPPED], "the shared count carries over"
+
+
+
+def station_feed(titles):
+    items = "".join("<item><title>%s</title><link>https://station.example.com/%d</link><pubDate>Fri, 23 Oct 2026 %02d:00:00 GMT</pubDate>"
+                    "<description>Summary. Second sentence.</description></item>" % (t, k, 10 - k) for k, t in enumerate(titles))
+    return ('<?xml version="1.0"?><rss version="2.0"><channel><title>WONE</title><link>https://station.example.com/</link>'
+            + items + "</channel></rss>").encode()
+
+
+def test_town_categories_read_the_local_stations_of_the_readers_state(monkeypatch):
+    station = "https://station.example.com/feed/"
+    monkeypatch.setattr(C, "local_station_feeds", lambda code: [station] if code == "IL" else [])
+    calls = []
+
+    def fetcher(url):
+        calls.append(url)
+        if url == station:
+            return station_feed(["Springfield council approves budget", "Chicago transit adds trains", "Sangamon County fair opens"])
+        raise C.FetchError("Service Unavailable")
+    cfg = {"version": 1, "reader": {"location": "Springfield", "region": "Illinois", "local_terms": ["Sangamon County"]}, "categories": [
+        {"id": "town", "name": "Local ({location})", "queries": ['"{location}" council'], "require": [["{local_terms}"]], "needs_location": True},
+        {"id": "net", "name": "Net", "queries": ['"zero trust"'], "require": [["zero trust"]]}]}
+    brief, health = C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=fetcher, pause=0)
+    town, net = brief["categories"]
+    assert [i["title"] for i in town["items"]] == ["Springfield council approves budget", "Sangamon County fair opens"]
+    assert health["town"]["feeds"] and health["town"]["feeds"][0]["station"] is True
+    assert health["net"]["feeds"] == [], "only town categories read the stations"
+    assert calls.count(station) == 1
+    # Searches all failed, but the stations answered: an empty town desk was still checked.
+    def quiet(url):
+        if url == station:
+            return station_feed(["Chicago transit adds trains"])
+        raise C.FetchError("Service Unavailable")
+    brief, health = C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=quiet, pause=0)
+    assert brief["categories"][0]["items"] == [] and not brief["categories"][0].get("unchecked")
+    assert brief["categories"][1].get("unchecked") is True
+    cfg["reader"]["region"] = "Ontario"
+    calls.clear()
+    C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=fetcher, pause=0)
+    assert station not in calls, "outside the US there are no stations to read"

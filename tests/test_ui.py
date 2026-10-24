@@ -615,6 +615,7 @@ def test_town_categories_use_your_local_feed_and_say_when_they_could_not_be_chec
              "config": {"version": 1, "reader": reader, "categories": [pick["local-news"], pick["local-events"]]}}
     ctx, page, errors = open_page(browser, http_app, calls=calls, gdelt_status=429, state=state)
     page.route("**/local-news.xml", lambda r: r.fulfill(status=200, body=local_feed(), headers=dict(CORS, **{"content-type": "application/rss+xml"})))
+    page.route("**/data/local/*.json", lambda r: r.fulfill(status=404, body="not found"))  # no state file on this site
     page.click("button:has-text(\"Get today's brief\")")
     page.wait_for_selector("iframe.page", timeout=60000)
     by = {c["id"]: c for c in page.evaluate("DB_APP.state().brief.categories")}
@@ -626,6 +627,7 @@ def test_town_categories_use_your_local_feed_and_say_when_they_could_not_be_chec
     reader2 = dict(reader, local_feeds=[])
     state2 = dict(state, config={"version": 1, "reader": reader2, "categories": [pick["local-news"]]})
     ctx, page, errors2 = open_page(browser, http_app, calls=[], gdelt_status=429, state=state2)
+    page.route("**/data/local/*.json", lambda r: r.fulfill(status=404, body="not found"))
     page.click("button:has-text(\"Get today's brief\")")
     page.wait_for_selector("iframe.page", timeout=60000)
     assert page.evaluate("DB_APP.state().brief.categories[0].unchecked") is True
@@ -634,3 +636,79 @@ def test_town_categories_use_your_local_feed_and_say_when_they_could_not_be_chec
     assert errors == [] and errors2 == []
     ctx.close()
 
+
+
+def local_state_file(code="IL"):
+    now = datetime.now(timezone.utc)
+    rows = [("Springfield council approves budget for new park", "WONE"), ("Sangamon County fair opens Friday", "WTWO"),
+            ("Chicago transit adds late trains", "WONE"), ("Springfield man arrested after chase", "WTWO")]
+    stories = [{"title": t, "url": "https://station.example.com/%d" % k, "source": src, "source_url": "https://station.example.com",
+                "published": (now - timedelta(hours=k + 1)).strftime("%Y-%m-%dT%H:%M:%SZ"), "summary": "", "image": "", "station": src.lower()}
+               for k, (t, src) in enumerate(rows)]
+    return {"schema": "daily-brief-local-news/1", "generated_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "state": code,
+            "stations": [{"id": "wone", "name": "WONE", "site": "https://station.example.com", "answered": True}], "stories": stories}
+
+
+def test_town_categories_read_the_local_stations_of_your_state(browser, http_app):
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    reader = {"location": "Springfield", "region": "Illinois", "local_terms": ["Sangamon County"]}
+    state = {"version": 1, "tab": "brief", "setup_done": True,
+             "config": {"version": 1, "reader": reader, "categories": [pick["local-government"], pick["local-news"]]}}
+    ctx, page, errors = open_page(browser, http_app, calls=[], gdelt_status=429, state=state)
+    asked = []
+    page.route("**/data/local/*.json", lambda r: (asked.append(r.request.url.rsplit("/", 1)[1]),
+                                                  r.fulfill(status=200, body=json.dumps(local_state_file()), headers={"content-type": "application/json"})))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    by = {c["id"]: c for c in page.evaluate("DB_APP.state().brief.categories")}
+    assert asked == ["IL.json"], "one read, of the reader's own state"
+    assert [i["title"] for i in by["local-government"]["items"]] == ["Springfield council approves budget for new park"]
+    assert [i["title"] for i in by["local-news"]["items"]] == ["Sangamon County fair opens Friday"]
+    every = [i["title"] for c in by.values() for i in c["items"]]
+    assert not any("Chicago" in t for t in every), "stories that do not name the area stay out"
+    assert not any("arrested" in t for t in every), "crime stays out of the town desks"
+    health = page.evaluate("DB_APP.state().health")
+    assert health["local-news"]["local"]["state"] == "IL" and health["local-news"]["local"]["items"] == 3
+    assert not any(c.get("unchecked") for c in by.values()), "the local stations answered, so the desks were checked"
+    page.click("#briefview summary:has-text('Sources and filters')")
+    assert "3 from local stations naming your area" in page.inner_text("#briefview")
+    assert errors == []
+    ctx.close()
+    # Outside the US there is no state file to read.
+    state2 = dict(state, config=dict(state["config"], reader=dict(reader, region="Ontario")))
+    ctx, page, errors = open_page(browser, http_app, calls=[], gdelt_status=429, state=state2)
+    asked.clear()
+    page.route("**/data/local/*.json", lambda r: (asked.append(1), r.fulfill(status=404, body="")))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    assert asked == [] and errors == []
+    ctx.close()
+
+
+def test_a_slow_news_index_cannot_hold_the_brief(browser, http_app):
+    """Past the search budget, the remaining searches are skipped and the brief goes out."""
+    calls = []
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    state = {"version": 1, "tab": "brief", "setup_done": True,
+             "config": {"version": 1, "categories": [dict(pick["defense-ai"], feeds=[], topic_feeds=[])]}}
+    p, b = browser
+    ctx = b.new_context(viewport={"width": 1100, "height": 900})
+    ctx.add_init_script("window.DB_COLLECT_GAP = 0; window.DB_COLLECT_SEARCH_BUDGET = 0;")
+    ctx.add_init_script("if (window.top === window && !localStorage.getItem('db.state.v1')) localStorage.setItem('db.state.v1', %s);"
+                        % json.dumps(json.dumps(state)))
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    route_world(page, calls)
+    page.route("**/data/news-cache.json", lambda r: r.fulfill(status=404, body=""))
+    page.goto(http_app)
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    qs = page.evaluate("DB_APP.state().health['defense-ai'].queries")
+    assert qs and all(q["error"].startswith("skipped: the news index was slow") for q in qs), qs
+    assert not [c for c in calls if c not in ("feed", "forecast")], "no search was sent"
+    assert page.evaluate("DB_APP.state().brief.categories[0].unchecked") is True
+    assert errors == []
+    ctx.close()

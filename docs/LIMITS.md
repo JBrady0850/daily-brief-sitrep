@@ -1,12 +1,14 @@
-# Limits (v0.5.1)
+# Limits (v0.6.0)
 
 - The web page reads only the sources that allow web pages to read them: the
   GDELT news index, and publisher feeds such as ESPN, CBS Sports, NASA, The New
   York Times, Fox News, CNBC and Wired. Google News and most other feeds do not
-  allow it; the desktop app and the GitHub copy read those instead. A feed that
-  refuses shows as "not readable from a web page" under Sources and filters.
+  allow it, so this project's GitHub workflow reads them instead and publishes
+  what it finds beside the app (below). A feed that refuses shows as "not
+  readable from a web page" under Sources and filters.
 - The page reads, in order: the publisher feeds, then the backup collection,
-  then the GDELT news index, and only for what is still short. The backup
+  then (for town categories) your state's local station news, then the GDELT
+  news index, and only for what is still short. The backup
   collection is a file this project's GitHub workflow rebuilds every four hours
   (at 23 minutes past the hour, in UTC) from Google News and every library
   feed, including feeds web pages cannot read. It covers the 62 library
@@ -23,16 +25,27 @@
 - The GDELT index turns requests away when it is busy or when one connection
   asks too often (HTTP 503 and 429, seen on 2026-10-23; after a day of heavy
   testing it refused one home connection for hours, and at 02:20 UTC on
-  2026-10-24 it refused the first request from two unrelated networks). The town categories and
-  categories you type yourself depend on it, unless you add a local news feed
-  on the town question that allows web pages to read it. Many local sites do
-  not: of 18 local news feeds tried in one region on 2026-10-24, none did
-  dependably (one answered once, then refused; its server sends no permission
-  for other sites). The Check button tells. The desktop app and the GitHub copy
-  read any feed, and add your state to Google News town searches.
+  2026-10-24 it refused the first request from two unrelated networks). Categories
+  you type yourself depend on it.
+- Town news comes from local TV stations. Their sites do not let web pages read
+  their feeds (of 18 local feeds tried in one region on 2026-10-24, none did
+  dependably), so the GitHub workflow reads them every four hours and writes one
+  file per state (`app/data/local/<STATE>.json`, newest 30 stories per station
+  from the last four days). The station list (`dailybrief/local_stations.json`)
+  comes from the station groups' own lists (Gray, Nexstar with TEGNA, Scripps,
+  Hearst) plus about 40 stations from other groups: 395 stations on
+  2026-10-24, at least one in every state and DC, but only one or two in
+  Delaware, Wyoming, Alaska, Hawaii, New Jersey, New Mexico and Rhode Island. A
+  test run read all 395 feeds in 36 seconds (394 answered) and kept 9,092
+  stories. The state comes from the State or region answer,
+  so it must name a US state; outside the US town news uses the GDELT index
+  alone. Stations cover cities and counties more than small towns: list your
+  county under "nearby" so its stories count. A quiet week can still leave a
+  town desk empty.
   It asks one search at a time, waits six seconds between searches (twelve
-  after a refusal), retries a refused search once, and after three refused
-  searches in a row uses the feeds alone for the rest of the run. A live run
+  after a refusal), retries a refused search once, after three refused
+  searches in a row uses the feeds alone for the rest of the run, and starts no
+  new search after 90 seconds. A live run
   of seven categories on 2026-10-23 took about three minutes and kept 28
   stories, 17 with photos; one category came back empty.
 - GDELT and Google News give a headline only, so those stories show no summary.
