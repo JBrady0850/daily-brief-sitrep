@@ -9,7 +9,7 @@ search tool, so it cannot invent news from memory.
 | `daily-brief-prompt.md` | The full prompt, for project instructions or a first message |
 | `daily-brief-prompt-compact.md` | Under 5,100 characters, for instruction boxes with a limit |
 | `category-library.md` | Upload next to the prompt so the assistant can offer the library |
-| `daily-brief-settings.json` | Your settings, from step 5 or Settings in the app |
+| `daily-brief-settings.json` | Your settings, from the AI assistants tab or Settings in the app |
 
 Commands: START, RUN, UPDATE, JSON, SHOW SETTINGS, HELP.
 

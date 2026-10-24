@@ -259,9 +259,10 @@
     const pools = {}, seen = {}, health = {};
     const progress = typeof opts.progress === "function" ? opts.progress : () => {};
     let done = 0;
+    let phase = "feeds";  // reported with every step, so the page can show which stage is running
     const feedCount = cats.reduce((a, c) => a + (c.feeds || []).length, 0);
     let total = feedCount + cats.filter(c => (c.queries || []).some(q => E.collapse(q))).length;
-    const tick = label => { done += 1; progress(label, done, total); };
+    const tick = label => { done += 1; progress(label, done, total, phase); };
     for (const c of cats) { pools[c.id] = []; seen[c.id] = {}; health[c.id] = { queries: [], feeds: [] }; }
     const add = (cid, items) => {
       let added = 0;
@@ -272,7 +273,7 @@
       return added;
     };
     if (opts.cancelled && opts.cancelled()) throw new Error("cancelled");
-    progress("Publisher feeds", 0, total);
+    progress("Publisher feeds", 0, total, phase);
     // Feeds: each address once, a few at a time, then shared by every category that lists it.
     const urls = [];
     for (const c of cats) for (const url of c.feeds || []) if (urls.indexOf(url) < 0) urls.push(url);
@@ -300,6 +301,8 @@
       const want = c.items || b.items_per_category;
       return trial.categories[0].items.filter(i => i.recency === "news").length < want;
     };
+    phase = "search";
+    progress("News search", done, total, phase);
     let first = true;
     let failures = 0;  // searches in a row that failed even after the retry
     async function search(c, q, hours) {
@@ -347,6 +350,7 @@
     const now = opts.now || new Date();
     const wxPromise = weather(cfg, E.isoZ(now.getTime()), opts).then(w => ({ w: w, err: "" }), e => ({ w: null, err: String(e.message || e) }));
     const got = await collect(cfg, ledger, Object.assign({}, opts, { now: now }));
+    if (typeof opts.progress === "function") opts.progress("Your page", 1, 1, "layout");
     const brief = E.selectBrief(got.candidates, cfg, ledger, got.nowIso, opts.date || localDate(now), "web");
     const wx = await wxPromise;
     if (wx.w) brief.weather = wx.w;

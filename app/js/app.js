@@ -12,8 +12,15 @@
   const ICONS = window.DB_ICONS || { icons: {}, art: {} };
 
   const TABS = ["setup", "categories", "brief", "daily", "ai", "settings", "help"];
-  const STEPS = ["setup", "categories", "brief", "daily", "ai"];
-  const STEP_LABELS = { setup: "Setup", categories: "Categories", brief: "Today", daily: "Every day", ai: "AI assistants" };
+  /* Two modes. Before setup is saved, the app shows the interview and the pages
+     that need no setup. Once it is saved, the app opens on the brief and the
+     interview becomes "Your choices". Categories is a page under Your choices. */
+  const NAV = {
+    setup: ["setup", "ai", "gap", "settings", "help"],
+    ready: ["brief", "setup", "daily", "ai", "gap", "settings", "help"]
+  };
+  const TAB_NAMES = { setup: { setup: "Setup", ready: "Your choices" }, brief: "Today's brief", categories: "Categories",
+    daily: "Every day", ai: "AI assistants", settings: "Settings", help: "Help" };
 
   const freshBrowser = !S.readStore(S.STORE_KEY, null);  // before anything is saved
   let state = loadState();
@@ -25,7 +32,8 @@
 
   // ------------------------------------------------------------ state
   function defaultState() {
-    return { version: 1, tab: "setup", step: 0, config: null, brief: null, health: null, setup_done: false, auto_run: false };
+    return { version: 1, tab: "setup", step: 0, config: null, brief: null, health: null, setup_done: false, auto_run: false,
+      editing: false, draft: null, setup_saved: "", welcome: "", brief_sig: "" };
   }
 
   function loadState() {
@@ -44,6 +52,14 @@
     }
     st.config = E.merge(E.DEFAULTS, st.config);
     if (!st.config.delivery.timezone) st.config.delivery.timezone = browserZone();
+    // Unsaved changes to saved choices survive a reload; anything else is dropped.
+    if (st.setup_done && st.editing && st.draft && typeof st.draft === "object") {
+      st.draft = E.merge(E.DEFAULTS, st.draft);
+      delete st.draft.email;
+    } else {
+      st.editing = false;
+      st.draft = null;
+    }
     return st;
   }
 
@@ -61,7 +77,11 @@
 
   function saveHistory() { S.writeStore(S.LEDGER_KEY, history); }
 
-  function cfg() { return state.config; }
+  /* While saved choices are being changed, the interview works on a draft. Every
+     other page, and every collection, keeps the saved choices until Save changes. */
+  function cfg() { return state.editing && state.draft && state.tab === "setup" ? state.draft : state.config; }
+  function saved() { return state.config; }
+  function ready() { return !!state.setup_done; }
 
   // ------------------------------------------------------------ DOM helpers
   function h(tag, attrs) {
@@ -148,14 +168,6 @@
       v.warnings.length ? h("div", { class: "warn" }, h("b", { text: "Worth a look:" }), h("ul", null, v.warnings.map(w => h("li", { text: w })))) : null);
   }
 
-  function stepBar(tab) {
-    const i = STEPS.indexOf(tab);
-    if (i < 0) return null;
-    const back = i > 0 ? h("button", { class: "btn ghost", onclick: () => show(STEPS[i - 1]) }, "Back: " + STEP_LABELS[STEPS[i - 1]]) : h("span");
-    const next = i < STEPS.length - 1 ? h("button", { class: "btn", onclick: () => show(STEPS[i + 1]) }, "Next: " + STEP_LABELS[STEPS[i + 1]]) : null;
-    return h("div", { class: "stepbar" }, back, next);
-  }
-
   function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 28) || "category"; }
 
   function uniqueId(base) {
@@ -174,34 +186,84 @@
   }
 
   // ------------------------------------------------------------ tabs
-  function show(tab) {
+  function show(tab, inPlace) {
     if (TABS.indexOf(tab) < 0) tab = "setup";
+    // The brief and its pages appear only once setup is saved.
+    if (!ready() && ["brief", "daily", "categories"].indexOf(tab) >= 0) tab = "setup";
     state.tab = tab;
     save();
+    applyMode();
+    const navTab = tab === "categories" ? "setup" : tab;
     for (const t of TABS) {
-      const sec = document.getElementById("tab-" + t);
-      sec.hidden = t !== tab;
+      document.getElementById("tab-" + t).hidden = t !== tab;
       const btn = document.querySelector('#tabs button[data-tab="' + t + '"]');
-      btn.setAttribute("aria-selected", t === tab ? "true" : "false");
-      btn.classList.toggle("active", t === tab);
+      btn.setAttribute("aria-selected", t === navTab ? "true" : "false");
+      btn.classList.toggle("active", t === navTab);
     }
     const sec = clear(document.getElementById("tab-" + tab));
     RENDER[tab](sec);
-    if (tab !== "setup" || state.step === INTERVIEW.length - 1) add(sec, stepBar(tab));
-    window.scrollTo(0, 0);
+    modebar();
+    if (!inPlace) window.scrollTo(0, 0);
   }
 
+  /* Moving to another page or question starts at the top. */
   function rerender() { show(state.tab); }
+
+  /* A change on the page itself redraws it in place: the scroll position, the
+     open sections and the focused control stay where they were. */
+  function refresh() {
+    const y = window.scrollY;
+    const sec = document.getElementById("tab-" + state.tab);
+    const open = {};
+    sec.querySelectorAll("details[data-key]").forEach(d => { open[d.getAttribute("data-key")] = d.open; });
+    const a = document.activeElement;
+    const focusId = a && a.id && sec.contains(a) ? a.id : "";
+    show(state.tab, true);
+    const now = document.getElementById("tab-" + state.tab);
+    now.querySelectorAll("details[data-key]").forEach(d => { const k = d.getAttribute("data-key"); if (k in open) d.open = open[k]; });
+    window.scrollTo(0, y);
+    const f = focusId ? document.getElementById(focusId) : null;
+    if (f) { try { f.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
+  }
+
+  function applyMode() {
+    const mode = ready() ? "ready" : "setup";
+    document.body.classList.toggle("mode-ready", mode === "ready");
+    document.body.classList.toggle("mode-setup", mode === "setup");
+    const order = NAV[mode];
+    document.querySelectorAll("#tabs button").forEach(b => {
+      const t = b.getAttribute("data-tab");
+      const k = order.indexOf(t);
+      b.hidden = k < 0;
+      b.style.order = String(k);
+      const name = TAB_NAMES[t];
+      b.querySelector(".tl").textContent = typeof name === "string" ? name : name[mode];
+    });
+    const gap = document.querySelector("#tabs .tab-gap");
+    if (gap) gap.style.order = String(order.indexOf("gap"));
+  }
 
   function modebar() {
     const bar = clear(document.getElementById("modebar"));
-    if (desktop) {
+    bar.hidden = false;
+    const link = (text, onclick) => h("button", { class: "link", onclick: onclick }, text);
+    if (state.editing && state.draft && state.tab !== "setup") {
+      bar.className = "modebar edit";
+      add(bar, [ico("pencil", "mi"), h("span", null, h("b", { text: "You have unsaved changes to your choices. " }),
+        "Your saved choices stay in use until you save. ", link("Continue changing", () => show("setup")), " ", link("Discard the changes", discardChanges))]);
+    } else if (desktop) {
       bar.className = "modebar on";
       add(bar, [h("b", { text: "Desktop app. " }), "Live news and the no-repeat history are on."]);
+    } else if (ready() && state.tab === "brief" && state.welcome === today()) {
+      bar.hidden = true;  // the Setup complete message says the same, just below
+    } else if (ready()) {
+      bar.className = "modebar ready";
+      add(bar, [ico("check", "mi"), h("span", null, h("b", { text: "Your brief is set up. " }), "Your choices are saved in this browser. ",
+        state.tab !== "setup" ? link("See or change them", () => show("setup")) : null)]);
     } else {
       bar.className = "modebar";
-      add(bar, [h("b", { text: "Your choices stay in this browser. " }), "The news is collected right here from free sources, with no account. ",
-        h("a", { href: "#", onclick: e => { e.preventDefault(); show("help"); } }, "How it works")]);
+      add(bar, [h("span", null, h("b", { text: "Setting up. " }), "Your answers stay in this browser, and nothing is collected until you save on the last question. ",
+        link("How it works", () => show("help")))]);
     }
   }
 
@@ -218,17 +280,27 @@
   ];
 
   function renderSetup(sec) {
+    if (ready() && !state.editing) { renderChoices(sec); return; }
+    const editing = ready();
     const i = Math.min(Math.max(state.step || 0, 0), INTERVIEW.length - 1);
     const st = INTERVIEW[i];
-    if (i === 0) {
+    if (editing) {
+      add(sec, h("div", { class: "intro edithead" },
+        h("div", null, h("p", { class: "kicker", text: "Your choices" }), h("h1", { text: "Change your choices" }),
+          h("p", { text: "Your saved choices stay in use until you press Save changes on the last question." })),
+        h("button", { class: "btn ghost", onclick: discardChanges }, "Cancel changes")));
+    } else if (i === 0) {
       add(sec, h("div", { class: "hero" },
         h("div", { class: "herotext" }, h("p", { class: "kicker", text: "Free, private, no account" }), h("h1", { text: "Your news, every morning, on one page" }),
           h("p", { text: "Answer eight short questions. The Daily Brief remembers your choices in this browser, collects fresh stories from free sources each day, leaves out anything you have already seen, and lays it all out as one clean page with photos and your local forecast." }),
           h("ul", { class: "heroticks" }, h("li", null, ico("news"), "Pick from " + LIB.categories.length + " ready-made categories or type your own"),
-            h("li", null, ico("sun"), "A forecast for your town"), h("li", null, ico("shield"), "No sign-up, no tracking, no keys"))),
+            h("li", null, ico("sun"), "A forecast for your town"), h("li", null, ico("shield"), "No sign-up, no tracking, no keys")),
+          h("div", { class: "heroactions" }, h("button", { class: "btn onnavy", onclick: showSample }, "See a sample brief"),
+            h("span", { class: "herohint", text: "The first question is just below." }))),
         art("hero", "heroart")));
     } else {
-      add(sec, h("div", { class: "intro" }, h("h1", { text: "Set up your morning brief" })));
+      add(sec, h("div", { class: "intro" }, h("h1", { text: "Set up your morning brief" }),
+        h("p", { text: "Your answers are kept in this browser as you go. Nothing is collected until you press Save and build my brief on the last question." })));
     }
     const dots = h("ol", { class: "stepper", "aria-label": "Interview progress" });
     INTERVIEW.forEach((s, k) => dots.append(h("li", { class: k === i ? "now" : k < i ? "done" : "" },
@@ -280,25 +352,34 @@
           " categories are kept" + (pick.length > room ? ", so only " + room + " of the pack's " + pick.length + " categories fit." : "."))) return;
         c.categories = pick.slice(0, room).concat(custom);
         save();
-        rerender();
+        refresh();
       } }, h("span", { class: "packicons" }, p.categories.slice(0, 4).map(id => { const lc = E.categoryFromLibrary(LIB, id); return ico(lc ? catIcon(lc) : "news"); })),
         h("b", { text: p.name }), h("span", { text: p.description })));
     }
     add(card, [h("h3", { text: "Starter packs" }), packs]);
-    add(card, quickAdd(() => rerender()));
-    add(card, h("h3", { text: "Categories (" + c.categories.length + " of " + E.MAX_CATEGORIES + " chosen)" }));
+    add(card, quickAdd(() => refresh()));
+    const total = h("h3", { text: "Categories (" + c.categories.length + " of " + E.MAX_CATEGORIES + " chosen)" });
+    add(card, total);
+    const counts = [];
+    const recount = () => {
+      total.textContent = "Categories (" + cfg().categories.length + " of " + E.MAX_CATEGORIES + " chosen)";
+      counts.forEach(x => { const n = x.list.filter(y => hasCat(y.id)).length; x.el.textContent = n ? n + " of " + x.list.length + " chosen" : x.list.length + " to choose from"; });
+    };
     for (const g of LIB.groups) {
       const list = LIB.categories.filter(x => x.group === g.id);
       const chosen = list.filter(x => hasCat(x.id)).length;
-      const box = h("details", { class: "group", open: chosen > 0 || g.id === "news" || g.id === "weather" || g.id === "sports" },
-        h("summary", null, ico(catIcon(list[0] || {}), "gi"), h("span", { text: g.name }), h("span", { class: "gcount", text: chosen ? chosen + " of " + list.length + " chosen" : list.length + " to choose from" })));
+      const gcount = h("span", { class: "gcount", text: chosen ? chosen + " of " + list.length + " chosen" : list.length + " to choose from" });
+      counts.push({ list: list, el: gcount });
+      const box = h("details", { class: "group", "data-key": "group-" + g.id, open: chosen > 0 || g.id === "news" || g.id === "weather" || g.id === "sports" },
+        h("summary", null, ico(catIcon(list[0] || {}), "gi"), h("span", { text: g.name }), gcount));
       const grid = h("div", { class: "tiles" });
       for (const lc of list) {
         const id = "lib-" + lc.id;
         const on = hasCat(lc.id);
         const cb = h("input", { type: "checkbox", id: id, class: "sr", checked: on, onchange: e => {
           if (!toggleLibraryCat(lc.id, e.target.checked)) e.target.checked = false;
-          rerender();
+          e.target.parentNode.classList.toggle("on", e.target.checked);
+          recount();
         } });
         grid.append(h("div", { class: "ctile" + (on ? " on" : ""), style: "--c:" + lc.color }, cb,
           h("label", { for: id }, ico(catIcon(lc), "ci"), h("span", { class: "ct" }, h("b", { text: lc.name.replace("({location})", "(your town)") }),
@@ -311,9 +392,9 @@
     if (custom.length) {
       add(card, h("h3", { text: "Your own categories" }));
       add(card, h("ul", { class: "plain" }, custom.map(x => h("li", null, h("b", { text: x.name }), " ",
-        h("button", { class: "link", onclick: () => { c.categories = c.categories.filter(y => y !== x); save(); rerender(); } }, "Remove")))));
+        h("button", { class: "link", onclick: () => { c.categories = c.categories.filter(y => y !== x); save(); refresh(); } }, "Remove")))));
     }
-    add(card, builder(() => rerender()));
+    add(card, builder(() => refresh()));
   }
 
   const QUICK_STOP = ["the", "and", "for", "with", "about", "from", "that", "this", "what", "want", "more", "news", "any", "all"];
@@ -325,7 +406,7 @@
   /* Type a topic in plain words. Matching ready-made categories appear as you
      type; Add turns the words themselves into your own category. */
   function quickAdd(done) {
-    const input = h("input", { type: "text", placeholder: "For example: electric cars, EVs, charging stations", "aria-label": "A topic to follow" });
+    const input = h("input", { type: "text", id: "topic", placeholder: "For example: electric cars, EVs, charging stations", "aria-label": "A topic to follow" });
     const hits = h("div", { class: "chips", "aria-live": "polite" });
     function suggest() {
       clear(hits);
@@ -354,7 +435,7 @@
       cfg().categories.push({ id: uniqueId(slug(nm)), name: nm, description: "Your own category: " + phrases.join(", ") + ".",
         queries: ["(" + phrases.slice(0, 8).map(q).join(" OR ") + ")"], require: [phrases], exclude: [], feeds: [], items: null });
       save();
-      toast("Added " + nm + ". Fine-tune its searches on step 2, Categories.");
+      toast("Added " + nm + ". You can fine-tune its searches later, under Your choices.");
       done();
     }
     input.addEventListener("input", suggest);
@@ -425,7 +506,7 @@
           // Only the United States and a few others measure in Fahrenheit.
           if (f.country_code && ["US", "LR", "PR", "GU", "BS", "KY", "PW", "FM", "MH"].indexOf(f.country_code) < 0) w.units = "celsius";
           save();
-          rerender();
+          refresh();
         } }, f.label)));
       } catch (e) { status.textContent = "The town search is not answering right now (" + e.message + "). Try again later."; }
     }
@@ -435,7 +516,7 @@
       add(box, h("p", { class: "ok", text: "The brief shows the forecast for " + w.place + "." }));
       add(box, h("div", { class: "row" },
         field("Units", select([["fahrenheit", "Fahrenheit"], ["celsius", "Celsius"]], w.units, v => { w.units = v; save(); })),
-        h("div", { class: "field" }, h("button", { class: "btn ghost", onclick: () => { w.enabled = false; save(); rerender(); } }, "Turn the forecast off"))));
+        h("div", { class: "field" }, h("button", { class: "btn ghost", onclick: () => { w.enabled = false; save(); refresh(); } }, "Turn the forecast off"))));
       add(box, h("p", { class: "hint", text: "To change town, search again." }));
     } else {
       add(box, h("p", { class: "hint", text: "Optional: a four-day forecast at the top of each brief, from Open-Meteo. Only the town name and its rounded map position are kept, in this browser." }));
@@ -453,7 +534,7 @@
       b.window_hours = +v;
       if (b.backfill_max_hours < b.window_hours) b.backfill_max_hours = b.window_hours;
       save();
-      rerender();
+      refresh();
     }), "24 hours keeps the brief new every morning."));
     add(card, field("When a category is short, allow older stories (labelled OLDER) up to",
       select([[b.window_hours, "No older stories"]].concat(nums([48, 72, 96, 120, 168], " hours").filter(x => x[0] > b.window_hours)), b.backfill_max_hours,
@@ -477,7 +558,7 @@
 
   function stepCountdown(card) {
     const cd = cfg().countdown;
-    const on = h("input", { type: "checkbox", id: "cdon", checked: cd.enabled, onchange: e => { cd.enabled = e.target.checked; save(); rerender(); } });
+    const on = h("input", { type: "checkbox", id: "cdon", checked: cd.enabled, onchange: e => { cd.enabled = e.target.checked; save(); refresh(); } });
     add(card, h("p", { text: "A countdown card at the top of the newsletter, with milestones on the way. Good for a move, a launch, a trip or a retirement date." }));
     add(card, h("div", { class: "check" }, on, h("label", { for: "cdon" }, "Show a countdown")));
     if (!cd.enabled) return;
@@ -491,9 +572,9 @@
         h("input", { type: "date", value: m.date, "aria-label": "Milestone date", oninput: e => { m.date = e.target.value; save(); } }),
         h("input", { type: "text", value: m.label, placeholder: "What happens", "aria-label": "Milestone", oninput: e => { m.label = e.target.value; save(); } }),
         h("input", { type: "text", value: m.note || "", placeholder: "Note (optional)", "aria-label": "Milestone note", oninput: e => { m.note = e.target.value; save(); } }),
-        h("button", { class: "link", onclick: () => { cd.milestones.splice(i, 1); save(); rerender(); } }, "Remove")));
+        h("button", { class: "link", onclick: () => { cd.milestones.splice(i, 1); save(); refresh(); } }, "Remove")));
     });
-    add(card, [list, h("button", { class: "btn ghost", onclick: () => { cd.milestones = cd.milestones || []; cd.milestones.push({ date: "", label: "", note: "" }); save(); rerender(); } }, "Add a milestone")]);
+    add(card, [list, h("button", { class: "btn ghost", onclick: () => { cd.milestones = cd.milestones || []; cd.milestones.push({ date: "", label: "", note: "" }); save(); refresh(); } }, "Add a milestone")]);
   }
 
   function stepTitle(card) {
@@ -513,16 +594,39 @@
         field("Time zone", h("input", { type: "text", list: "zones", value: dv.timezone, placeholder: "America/New_York",
           oninput: e => { dv.timezone = E.collapse(e.target.value); save(); } }), "Your browser says " + (browserZone() || "nothing") + ".")),
       h("datalist", { id: "zones" }, ZONES.map(z => h("option", { value: z }))),
-      h("p", { class: "hint", text: "This page needs no schedule: open it and press Get today's brief. A GitHub copy is optional; it posts the brief as an issue each morning (step 4)." })));
+      h("p", { class: "hint", text: "This page needs no schedule: open it and press Get today's brief. A GitHub copy is optional; it posts the brief as an issue each morning (the Every day tab explains it)." })));
   }
 
   function localCats() {
     return cfg().categories.filter(c => c.needs_location || JSON.stringify(c).indexOf("{location}") >= 0 || JSON.stringify(c).indexOf("{local_terms}") >= 0);
   }
 
+  /* One summary for the last question and for the Your choices page: label,
+     value, and the question that changes it. */
+  function summaryRows(c) {
+    const n = E.normalizeConfig(c);
+    return [
+      ["Categories", n.categories.map(x => E.resolveCategory(x, n.reader).name).join(", ") || "none", 1],
+      ["Your area", n.reader.location || "not set", 2],
+      ["Weather", n.weather.enabled ? "forecast for " + n.weather.place + " (" + n.weather.units + ")" : "off", 2],
+      ["Stories per category", String(n.brief.items_per_category), 3],
+      ["Fresh window", n.brief.window_hours + " hours", 3],
+      ["Older stories", n.brief.backfill_max_hours > n.brief.window_hours ? "up to " + n.brief.backfill_max_hours + " hours, labelled OLDER" : "off", 3],
+      ["Reference pages", n.brief.allow_reference ? "allowed, labelled REFERENCE" : "off", 3],
+      ["Watch list", (n.reader.watch_list || []).join(", ") || "empty", 4],
+      ["Countdown", n.countdown.enabled ? n.countdown.label + " on " + n.countdown.date : "off", 5],
+      ["Brief name", E.collapse(n.brief.title) || "Daily Brief", 6],
+      ["What it is for", (n.reader.goals || []).join("; ") || "not set", 0]
+    ];
+  }
+
+  function summaryTable(c, onChange) {
+    return h("table", { class: "summary choices" }, h("tbody", null, summaryRows(c).map(r => h("tr", null, h("th", { text: r[0] }), h("td", { text: r[1] }),
+      h("td", { class: "chg" }, h("button", { class: "link", "aria-label": "Change: " + r[0], onclick: () => onChange(r[2]) }, "Change"))))));
+  }
+
   function stepReview(card) {
     const v = E.validateConfig(cfg());
-    const n = E.normalizeConfig(cfg());
     add(card, msgList(v));
     if (localCats().length && !E.collapse(cfg().reader.location)) {
       add(card, h("div", { class: "actions" },
@@ -531,37 +635,94 @@
           const drop = localCats();
           cfg().categories = cfg().categories.filter(c => drop.indexOf(c) < 0);
           save();
-          rerender();
+          refresh();
         } }, "Remove the local categories")));
     }
-    const rows = [
-      ["Categories", n.categories.map(c => E.resolveCategory(c, n.reader).name).join(", ") || "none"],
-      ["Stories per category", String(n.brief.items_per_category)],
-      ["Fresh window", n.brief.window_hours + " hours"],
-      ["Older stories", n.brief.backfill_max_hours > n.brief.window_hours ? "up to " + n.brief.backfill_max_hours + " hours, labelled OLDER" : "off"],
-      ["Reference pages", n.brief.allow_reference ? "allowed, labelled REFERENCE" : "off"],
-      ["Your area", n.reader.location || "not set"],
-      ["Weather", n.weather.enabled ? "forecast for " + n.weather.place + " (" + n.weather.units + ")" : "off"],
-      ["Watch list", (n.reader.watch_list || []).join(", ") || "empty"],
-      ["Countdown", n.countdown.enabled ? n.countdown.label + " on " + n.countdown.date : "off"]
-    ];
-    add(card, h("table", { class: "summary" }, h("tbody", null, rows.map(r => h("tr", null, h("th", { text: r[0] }), h("td", { text: r[1] }))))));
-    add(card, h("div", { class: "actions" },
-      h("button", { class: "btn", disabled: v.errors.length > 0, onclick: () => {
-        const first = !state.setup_done;
-        state.setup_done = true;
-        save();
-        show("brief");
-        if (first && !state.brief) getToday();
-      } }, "Save and get my brief"),
-      h("button", { class: "btn ghost", onclick: downloadSettings }, "Download settings file")));
+    add(card, summaryTable(cfg(), k => { state.step = k; save(); rerender(); }));
+    if (ready()) {
+      add(card, h("div", { class: "finish" },
+        h("p", null, h("b", { text: "Save to use these choices. " }), "They replace your saved choices, and your next brief uses them."),
+        h("div", { class: "actions" },
+          h("button", { class: "btn big", disabled: v.errors.length > 0, onclick: saveChanges }, "Save changes"),
+          h("button", { class: "btn ghost", onclick: discardChanges }, "Cancel changes"))));
+    } else {
+      add(card, h("div", { class: "finish" },
+        h("p", null, h("b", { text: "This finishes setup. " }), "Your choices are saved in this browser, today's brief is built straight away, and from then on the app opens on your brief."),
+        h("div", { class: "actions" },
+          h("button", { class: "btn big", disabled: v.errors.length > 0, onclick: finishSetup }, "Save and build my brief"),
+          h("button", { class: "btn ghost", onclick: downloadSettings }, "Download settings file"))));
+    }
+  }
+
+  function finishSetup() {
+    if (E.validateConfig(saved()).errors.length) return;
+    state.setup_done = true;
+    state.setup_saved = today();
+    state.welcome = today();
+    state.step = 0;
+    save();
+    show("brief");
+    getToday(true);
+  }
+
+  function startEditing(step) {
+    state.editing = true;
+    state.draft = E.clone(state.config);
+    state.step = step || 0;
+    save();
+    show("setup");
+  }
+
+  function saveChanges() {
+    if (!state.draft) { state.editing = false; show("setup"); return; }
+    if (E.validateConfig(state.draft).errors.length) { toast("Fix the problems listed first."); return; }
+    const changed = JSON.stringify(state.draft) !== JSON.stringify(state.config);
+    state.config = state.draft;
+    state.draft = null;
+    state.editing = false;
+    state.step = 0;
+    save();
+    show("brief");
+    toast(changed ? "Changes saved. Your next brief uses them." : "Saved. Nothing had changed.");
+  }
+
+  function discardChanges() {
+    state.draft = null;
+    state.editing = false;
+    state.step = 0;
+    save();
+    show("setup");
+    toast("Changes discarded. Your saved choices are as they were.");
+  }
+
+  function showSample() {
+    S.openPage(N.render(E.clone(SAMPLE.brief), SAMPLE.settings).html);
+  }
+
+  // ------------------------------------------------------------ Your choices (after setup)
+  function renderChoices(sec) {
+    const c = saved();
+    const v = E.validateConfig(c);
+    add(sec, h("div", { class: "intro choicehead" },
+      h("div", null, h("p", { class: "kicker", text: state.setup_saved ? "Set up on " + N.prettyDate(state.setup_saved) : "Set up" }),
+        h("h1", { text: "Your choices" }),
+        h("p", { text: "Saved in this browser. Every brief uses them until you change them." })),
+      h("span", { class: "pill good" }, ico("check"), "Saved")));
+    if (v.errors.length) add(sec, h("div", { class: "card" }, msgList(v)));
+    add(sec, h("div", { class: "card" },
+      summaryTable(c, k => startEditing(k)),
+      h("div", { class: "actions" },
+        h("button", { class: "btn", onclick: () => startEditing(0) }, ico("pencil"), " Change my answers"),
+        h("button", { class: "btn ghost", onclick: () => show("categories") }, "Fine-tune categories"),
+        h("button", { class: "btn ghost", onclick: () => show("brief") }, "Go to today's brief"))));
   }
 
   // ------------------------------------------------------------ 2 Categories
   function renderCategories(sec) {
     const c = cfg();
-    add(sec, h("div", { class: "intro" }, h("h1", { text: "Your categories" }),
-      h("p", { text: "Each category is a desk in the newsletter. Open one to change its searches and filters. A story must mention at least one term from every \"must mention\" line, and none of the \"leave out\" terms." })));
+    add(sec, h("div", { class: "intro" }, h("button", { class: "link back", onclick: () => show("setup") }, "Back to your choices"),
+      h("h1", { text: "Fine-tune your categories" }),
+      h("p", { text: "Each category is a desk in the newsletter. Open one to change its searches and filters. A story must mention at least one term from every \"must mention\" line, and none of the \"leave out\" terms. Changes here are saved as you make them and apply to your next brief." })));
     const msgs = h("div", { id: "catmsgs" });
     const refresh = () => { clear(msgs).append(msgList(E.validateConfig(c))); };
     add(sec, msgs);
@@ -574,16 +735,16 @@
       if (og.children.length) pick.append(og);
     }
     add(sec, h("div", { class: "card" }, h("h2", { text: "Add a category" }),
-      quickAdd(() => rerender()),
+      quickAdd(() => refresh()),
       h("h3", { text: "Or choose from the library" }),
-      h("div", { class: "row" }, pick, h("button", { class: "btn", onclick: () => { if (pick.value && toggleLibraryCat(pick.value, true)) rerender(); } }, "Add")),
-      builder(() => rerender())));
+      h("div", { class: "row" }, pick, h("button", { class: "btn", onclick: () => { if (pick.value && toggleLibraryCat(pick.value, true)) refresh(); } }, "Add")),
+      builder(() => refresh())));
   }
 
   function categoryCard(cat, i, refresh) {
     const c = cfg();
     const changed = () => { save(); refresh(); };
-    const move = d => { const j = i + d; if (j < 0 || j >= c.categories.length) return; c.categories.splice(i, 1); c.categories.splice(j, 0, cat); save(); rerender(); };
+    const move = d => { const j = i + d; if (j < 0 || j >= c.categories.length) return; c.categories.splice(i, 1); c.categories.splice(j, 0, cat); save(); refresh(); };
     const color = h("input", { type: "color", value: /^#[0-9a-f]{6}$/i.test(cat.color || "") ? cat.color : E.PALETTE[i % E.PALETTE.length], "aria-label": "Colour",
       oninput: e => { cat.color = e.target.value; changed(); } });
     const name = h("input", { type: "text", class: "catname", value: cat.name, "aria-label": "Category name", oninput: e => { cat.name = e.target.value; changed(); } });
@@ -605,42 +766,110 @@
       h("div", { class: "cathead" }, h("span", { class: "tag", style: "background:" + color.value, text: "T" + (i + 1) }), color, name,
         h("button", { class: "icon", "aria-label": "Move up", disabled: i === 0, onclick: () => move(-1) }, "\u2191"),
         h("button", { class: "icon", "aria-label": "Move down", disabled: i === c.categories.length - 1, onclick: () => move(1) }, "\u2193"),
-        h("button", { class: "link", onclick: () => { if (confirm("Remove " + cat.name + "?")) { c.categories.splice(i, 1); save(); rerender(); } } }, "Remove")),
-      h("details", null, h("summary", { text: "Searches and filters" }), body));
+        h("button", { class: "link", onclick: () => { if (confirm("Remove " + cat.name + "?")) { c.categories.splice(i, 1); save(); refresh(); } } }, "Remove")),
+      h("details", { "data-key": "cat-" + cat.id }, h("summary", { text: "Searches and filters" }), body));
   }
 
   // ------------------------------------------------------------ 3 Today
   function renderBrief(sec) {
-    const v = E.validateConfig(cfg());
-    const fresh = state.brief && state.brief.date === today() && state.brief.source !== "sample";
-    add(sec, h("div", { class: "intro todayhead" }, h("div", null, h("p", { class: "kicker", text: N.prettyDate(today()) }),
-      h("h1", { text: "Today's brief" })), ico("sunrise", "bigico")));
-    if (v.errors.length) {
-      add(sec, h("div", { class: "card" }, h("p", { text: "Your settings need a fix before a brief can be built." }), msgList(v),
-        h("button", { class: "btn", onclick: () => { state.step = 7; show("setup"); } }, "Go to Review")));
-    }
+    const v = E.validateConfig(saved());
     const running = !!job || !!webRun;
-    const useHist = h("input", { type: "checkbox", id: "usehist", checked: true });
-    const go = h("button", { class: "btn big", disabled: v.errors.length > 0 || running, onclick: () => getToday(useHist.checked) },
-      running ? "Collecting..." : fresh ? "Check for newer stories" : "Get today's brief");
-    const auto = h("input", { type: "checkbox", id: "autorun", checked: !!state.auto_run, onchange: e => { state.auto_run = e.target.checked; save(); } });
-    add(sec, h("div", { class: "card runcard" },
-      h("p", { text: desktop ? "Searches Google News and the publisher feeds for every category, keeps fresh, on-topic stories, and leaves out anything you have already seen. About a minute."
-        : "Collects fresh stories for your " + cfg().categories.length + " categories from free news sources, right in this browser, and leaves out anything you have already seen. About a minute; the page stays usable." }),
-      h("div", { class: "row" }, go,
-        h("div", { class: "check" }, useHist, h("label", { for: "usehist" }, "Leave out stories I have already seen"))),
-      h("div", { class: "check" }, auto, h("label", { for: "autorun" }, h("b", { text: "Collect automatically when I open this page" }),
-        h("span", { class: "hint", text: "Once a day. Your choices are saved in this browser, so bookmarking this page is all a daily routine needs." }))),
-      h("div", { id: "progress" })));
+    const fresh = isFresh();
+    if (state.welcome === today()) add(sec, welcomeCard());
+    add(sec, h("div", { class: "intro todayhead" },
+      h("div", null, h("p", { class: "kicker", text: N.prettyDate(today()) }), h("h1", { text: "Today's brief" }), statusLine(running, fresh)),
+      ico("sunrise", "bigico")));
+    if (v.errors.length) {
+      add(sec, h("div", { class: "card" }, h("p", { text: "Your choices need a fix before a brief can be built." }), msgList(v),
+        h("button", { class: "btn", onclick: () => startEditing(INTERVIEW.length - 1) }, "Fix my choices")));
+    }
+    if (!running && staleChoices()) {
+      add(sec, h("div", { class: "card notice" }, ico("pencil", "ni"),
+        h("div", { class: "grow" }, h("b", { text: "Your choices changed after this brief was built." }),
+          h("p", { class: "hint", text: "Build a new brief to use them. Stories you have already seen stay out." })),
+        h("button", { class: "btn", onclick: () => getToday(true) }, "Rebuild with my new choices")));
+    }
+    add(sec, running ? buildCard() : runCard(fresh, v));
     if (running) paintProgress();
     if (state.brief) add(sec, briefView());
     if (!desktop) {
-      const ta = h("textarea", { rows: 5, placeholder: "Paste the whole reply from your AI assistant here. The app finds the brief JSON in it." });
       add(sec, h("details", { class: "card more" }, h("summary", { text: "Other ways to fill the page: an AI assistant, or the sample" }),
-        h("p", { text: "An AI assistant (Claude, ChatGPT, Gemini or Grok) can write the brief with a Lead Analysis from a web search: set it up on step 5, type JSON after the brief, and paste the reply here." }),
-        ta, h("div", { class: "actions" }, h("button", { class: "btn", onclick: () => pasteBrief(ta.value) }, "Show the pasted brief"),
-          h("button", { class: "btn ghost", onclick: () => setBrief(E.clone(SAMPLE.brief), null) }, "Show the sample brief"))));
+        h("p", { text: "An AI assistant (Claude, ChatGPT, Gemini or Grok) can write the brief with a Lead Analysis from a web search: get the prompt on the AI assistants tab, type JSON after the brief, and paste the reply here." }),
+        pasteBox(h("button", { class: "btn ghost", onclick: () => setBrief(E.clone(SAMPLE.brief), null) }, "Show the sample brief"))));
     }
+  }
+
+  function isFresh() { return !!(state.brief && state.brief.date === today() && state.brief.source !== "sample"); }
+
+  function timeOf(iso) {
+    const ms = E.parseIso(iso);
+    if (ms === null) return "";
+    try { return new Date(ms).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); } catch (e) { return ""; }
+  }
+
+  /* One line under the heading that says where today's brief stands. */
+  function statusLine(running, fresh) {
+    if (running) return h("p", { class: "status busy", id: "status" }, h("span", { class: "dot" }), "Building now");
+    if (fresh) {
+      const t = timeOf(state.brief.generated_at);
+      const n = N.stats(state.brief).total;
+      return h("p", { class: "status good", id: "status" }, ico("check"), "Ready" + (t ? ", built at " + t : "") + ". " + n + (n === 1 ? " story." : " stories."));
+    }
+    if (state.brief && state.brief.source === "sample") return h("p", { class: "status idle", id: "status" }, "Not built yet today. Showing the sample brief.");
+    if (state.brief) return h("p", { class: "status idle", id: "status" }, "Not built yet today. The page below is from " + N.prettyDate(state.brief.date) + ".");
+    return h("p", { class: "status idle", id: "status" }, "Not built yet today.");
+  }
+
+  function welcomeCard() {
+    const n = E.normalizeConfig(saved());
+    const bits = [n.categories.length + " categories", n.brief.items_per_category + " stories each", "a " + n.brief.window_hours + "-hour window"];
+    if (n.weather.enabled) bits.push("the forecast for " + n.weather.place);
+    return h("div", { class: "card welcome", role: "status" }, ico("check", "wi"),
+      h("div", { class: "grow" }, h("h2", { text: "Setup complete" }),
+        h("p", { text: "Your choices are saved in this browser: " + bits.join(", ") + ". From now on the app opens here, on your brief." }),
+        h("div", { class: "row" },
+          h("button", { class: "link", onclick: () => show("setup") }, "See your choices"),
+          h("button", { class: "link", onclick: () => { state.welcome = ""; save(); refresh(); } }, "Hide this message"))));
+  }
+
+  function runCard(fresh, v) {
+    const useHist = h("input", { type: "checkbox", id: "usehist", checked: true });
+    const go = h("button", { class: "btn big", id: "go", disabled: v.errors.length > 0, onclick: () => getToday(useHist.checked) },
+      fresh ? "Check for newer stories" : "Get today's brief");
+    const auto = h("input", { type: "checkbox", id: "autorun", checked: !!state.auto_run, onchange: e => { state.auto_run = e.target.checked; save(); } });
+    const what = fresh ? "Today's brief is below. Check again later for stories published since; anything you have already seen stays out."
+      : desktop ? "Searches Google News and the publisher feeds for every category, keeps fresh, on-topic stories, and leaves out anything you have already seen. About a minute."
+        : "Collects fresh stories for your " + saved().categories.length + " categories from free news sources, right in this browser, and leaves out anything you have already seen. About a minute; the page stays usable.";
+    return h("div", { class: "card runcard" + (fresh ? " quiet" : "") },
+      h("p", { text: what }),
+      h("div", { class: "row" }, go,
+        h("div", { class: "check" }, useHist, h("label", { for: "usehist" }, "Leave out stories I have already seen"))),
+      h("div", { class: "check" }, auto, h("label", { for: "autorun" }, h("b", { text: "Build it automatically when I open this page" }),
+        h("span", { class: "hint", text: "Once a day. Your choices are saved in this browser, so bookmarking this page is all a daily routine needs." }))));
+  }
+
+  /* While a brief is being built, the run card becomes a panel that names each stage. */
+  const STAGES = [
+    ["choices", "Your choices", "Saved in this browser"],
+    ["feeds", "Publisher feeds", "Reading the news sites' own feeds"],
+    ["search", "News search", "Searching the news index for categories the feeds left short"],
+    ["layout", "Your page", "Picking the freshest stories and laying out the page"]
+  ];
+  const DESKTOP_STAGES = [
+    ["choices", "Your choices", "Saved in this browser"],
+    ["sources", "News sources", "Google News and the publisher feeds"],
+    ["layout", "Your page", "Picking the freshest stories and laying out the page"]
+  ];
+
+  function buildCard() {
+    return h("div", { class: "card buildcard" }, h("h2", null, ico("sunrise", "hi"), "Building today's brief"),
+      h("div", { id: "progress", role: "status", "aria-live": "polite" }));
+  }
+
+  function pasteBox(extra) {
+    const ta = h("textarea", { rows: 5, placeholder: "Paste the whole reply from your AI assistant here. The app finds the brief JSON in it." });
+    return h("div", { class: "pastebox" }, ta,
+      h("div", { class: "actions" }, h("button", { class: "btn", onclick: () => pasteBrief(ta.value) }, "Show the pasted brief"), extra || null));
   }
 
   /* One button for every mode: the desktop app collects on this computer, the
@@ -652,15 +881,22 @@
 
   async function runWeb(useHistory) {
     if (webRun) return;
-    const v = E.validateConfig(cfg());
-    if (v.errors.length) { toast("Fix the settings first."); return; }
+    const v = E.validateConfig(saved());
+    if (v.errors.length) { toast("Fix your choices first."); return; }
     if (!C) { toast("The collector did not load. Reload the page."); return; }
-    webRun = { state: "running", done: 0, total: 0, step: "Starting", cancelled: false };
-    if (state.tab === "brief") rerender();
+    webRun = { state: "running", done: 0, total: 0, step: "", phase: "feeds", cancelled: false };
+    if (state.tab === "brief") refresh();
     const ledger = useHistory ? history : null;
     try {
-      const r = await C.runBrief(E.clone(cfg()), ledger, {
-        progress: (label, done, total) => { if (webRun) { webRun.step = label; webRun.done = done; webRun.total = total; paintProgress(); } },
+      const r = await C.runBrief(E.clone(saved()), ledger, {
+        progress: (label, done, total, phase) => {
+          if (!webRun) return;
+          webRun.step = label;
+          webRun.done = done;
+          webRun.total = total;
+          if (phase) webRun.phase = phase;
+          paintProgress();
+        },
         cancelled: () => !!(webRun && webRun.cancelled)
       });
       webRun = null;
@@ -671,7 +907,7 @@
     } catch (e) {
       const was = webRun && webRun.cancelled;
       webRun = null;
-      rerender();
+      refresh();
       toast(was ? "Stopped." : "The collection failed: " + e.message);
     }
   }
@@ -688,30 +924,43 @@
     for (const cat of Array.isArray(obj.categories) ? obj.categories : []) {
       for (const it of cat && Array.isArray(cat.items) ? cat.items : []) if (it && typeof it === "object") delete it.age_hours;
     }
-    const before = E.checkBrief(obj, cfg());
+    const before = E.checkBrief(obj, saved());
     if (before.errors.length && !confirm("This brief has " + before.errors.length + " problem(s), listed under the preview. Show it anyway?")) return;
     const f = E.filterSeen(obj, history);
-    setBrief(f.brief, null);
+    setBrief(f.brief, null, true);
     if (f.withheld) toast(f.withheld + " stories were left out because you have already seen them.");
   }
 
-  function setBrief(brief, health) {
+  /* A short fingerprint of the choices a brief was built with, so the page can say
+     when the choices changed afterwards. */
+  function sig(c) {
+    const s = JSON.stringify([c.categories, c.brief, c.reader, c.weather, c.countdown]);
+    let x = 5381;
+    for (let i = 0; i < s.length; i++) x = ((x * 33) ^ s.charCodeAt(i)) >>> 0;
+    return x.toString(36);
+  }
+
+  function staleChoices() { return !!(state.brief && state.brief_sig && state.brief_sig !== sig(saved())); }
+
+  function setBrief(brief, health, goToBrief) {
     state.brief = brief;
     state.health = health;
+    state.brief_sig = brief && brief.source !== "sample" && brief.source !== "ai" ? sig(saved()) : "";
     save();
-    rerender();
+    if (goToBrief && ready() && state.tab !== "brief") show("brief"); else rerender();
+    // Just after setup, the welcome message stays in view; later runs jump to the page.
     const v = document.getElementById("briefview");
-    if (v) v.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (v && state.welcome !== today()) v.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function rendered() {
     const isSample = state.brief && state.brief.source === "sample";
-    return N.render(state.brief, isSample ? SAMPLE.settings : cfg());
+    return N.render(state.brief, isSample ? SAMPLE.settings : saved());
   }
 
   function briefView() {
     const out = rendered();
-    const chk = E.checkBrief(state.brief, state.brief.source === "sample" ? SAMPLE.settings : cfg());
+    const chk = E.checkBrief(state.brief, state.brief.source === "sample" ? SAMPLE.settings : saved());
     // No scripts may run in the page; same-origin only lets this app measure its height.
     const frame = h("iframe", { class: "page", title: "Today's brief", sandbox: "allow-same-origin allow-popups allow-popups-to-escape-sandbox" });
     frame.srcdoc = out.html.replace("<head>", "<head><base target=\"_blank\">");
@@ -745,7 +994,7 @@
   async function markRead() {
     if (desktop) {
       try {
-        const r = await S.api("/api/commit", { brief: state.brief, config: cfg() });
+        const r = await S.api("/api/commit", { brief: state.brief, config: saved() });
         desktop.ledger_size = r.ledger_size;
         toast("Marked as read. These stories will not come back.");
       } catch (e) { toast(e.message); }
@@ -758,10 +1007,10 @@
 
   async function runDesktop(useHistory) {
     try {
-      const r = await S.api("/api/run", { config: cfg(), use_history: useHistory });
+      const r = await S.api("/api/run", { config: saved(), use_history: useHistory });
       if (r.already_running) toast("A collection was already running, so this shows that one. Run again when it finishes to use new settings.");
       job = { id: r.job, state: "running", done: 0, total: 0, step: "Starting" };
-      rerender();
+      refresh();
       pollJob();
     } catch (e) { toast(e.message); }
   }
@@ -782,10 +1031,18 @@
     const p = document.getElementById("progress");
     const run = job || webRun;
     if (!p || !run) return;
-    const pct = run.total ? Math.round(100 * run.done / run.total) : 3;
-    clear(p).append(h("div", { class: "bar" }, h("div", { class: "fill", style: "width:" + pct + "%" })),
-      h("p", { class: "hint", text: "Checking " + (run.step || "") + " (" + run.done + " of " + (run.total || "?") + " sources)" }),
-      webRun ? h("button", { class: "link", onclick: () => { if (webRun) webRun.cancelled = true; } }, "Stop") : null);
+    const stages = job ? DESKTOP_STAGES : STAGES;
+    const phase = job ? "sources" : (run.phase || "feeds");
+    const at = Math.max(1, stages.findIndex(s => s[0] === phase));
+    const pct = phase === "layout" ? 100 : run.total ? Math.round(100 * run.done / run.total) : 3;
+    const detail = run.step && phase !== "layout" && run.total ? run.step + ": " + run.done + " of " + run.total + " sources checked" : "";
+    clear(p).append(
+      h("ol", { class: "stages" }, stages.map((s, k) => h("li", { class: k < at ? "done" : k === at ? "now" : "" },
+        h("span", { class: "sm" }, k < at ? ico("check") : h("span", { text: String(k + 1) })),
+        h("span", null, h("b", { text: s[1] }), h("span", { class: "hint", text: k === at && detail ? detail : s[2] }))))),
+      h("div", { class: "bar" }, h("div", { class: "fill", style: "width:" + pct + "%" })),
+      h("div", { class: "row spread" }, h("p", { class: "hint", text: "About a minute. You can keep using the page." }),
+        webRun ? h("button", { class: "link", onclick: () => { if (webRun) webRun.cancelled = true; } }, "Stop") : null));
   }
 
   function healthView(health) {
@@ -835,12 +1092,12 @@
     add(sec, h("div", { class: "card" }, h("h2", null, ico("sunrise", "hi"), "Every morning, in this browser"),
       h("ol", { class: "ways" },
         h("li", null, h("b", { text: "Keep this page handy. " }), "Bookmark it, or add it to your home screen: on a phone, use Share, then Add to Home Screen; in Chrome or Edge on a computer, use the install button in the address bar. It then opens like an app."),
-        h("li", null, h("b", { text: "Let it collect by itself. " }), h("span", { class: "check inline" }, auto, h("label", { for: "autorun2", text: "Collect automatically when I open this page (once a day)" }))),
+        h("li", null, h("b", { text: "Let it build by itself. " }), h("span", { class: "check inline" }, auto, h("label", { for: "autorun2", text: "Build it automatically when I open this page (once a day)" }))),
         h("li", null, h("b", { text: "Same browser, same device. " }), "Choices live in this browser only. To use another device, download the settings file (Settings) and import it there.")),
       h("p", { class: "hint", text: "Nothing is sent anywhere except the searches themselves: your search words go to the GDELT news index, and the forecast request carries your town's map position to Open-Meteo." })));
     add(sec, h("div", { class: "card" }, h("h2", null, ico("megaphone", "hi"), "Share or keep a copy"),
       h("ol", { class: "ways" },
-        h("li", null, h("b", { text: "Open as a full page or Download page. " }), "On the Today tab. The page is one HTML file that opens in any browser and can be printed."),
+        h("li", null, h("b", { text: "Open as a full page or Download page. " }), "On Today's brief. The page is one HTML file that opens in any browser and can be printed."),
         h("li", null, h("b", { text: "Copy newsletter. " }), "Copies the formatted page, ready to paste into a document or a message."))));
     add(sec, cloudCard());
     if (desktop) add(sec, scheduleCard());
@@ -908,7 +1165,7 @@
       h("p", { text: "The prompt makes Claude, ChatGPT, Gemini or Grok run the same interview and write the brief from a live web search, with a Lead Analysis and no repeats." })));
     const tabs = h("div", { class: "seg", role: "radiogroup", "aria-label": "Assistant" });
     Object.keys(PLATFORMS).forEach(k => tabs.append(h("button", { class: k === aiPlatform ? "on" : "", role: "radio", "aria-checked": k === aiPlatform ? "true" : "false",
-      onclick: () => { aiPlatform = k; rerender(); } }, PLATFORMS[k].name)));
+      onclick: () => { aiPlatform = k; refresh(); } }, PLATFORMS[k].name)));
     add(sec, tabs);
     const p = PLATFORMS[aiPlatform];
     const kind = p.prompt;
@@ -929,9 +1186,11 @@
       kind === "compact" ? h("p", { class: "hint" }, "The compact prompt is " + text.length + " characters and expects your settings as a file. For a scheduled task, which cannot take files, use ",
         h("button", { class: "link", onclick: async () => toast(await S.copyText(withSettings) ? "Copied (" + withSettings.length + " characters)." : "Copy blocked.") }, "the compact prompt with your settings built in"),
         " (" + withSettings.length + " characters).") : null));
-    add(sec, h("div", { class: "card" }, h("h2", { text: "Get the newsletter" }),
-      h("p", { text: "Ask the assistant for JSON (type JSON), copy its reply, and paste it on step 3. The app turns it into the newsletter." }),
-      h("button", { class: "btn ghost", onclick: () => show("brief") }, "Go to step 3")));
+    add(sec, h("div", { class: "card" }, h("h2", { text: "Show the assistant's brief here" }),
+      h("p", { text: "Ask the assistant for JSON (type JSON), copy its whole reply, and paste it below. The app turns it into your brief page" + (ready() ? " on Today's brief." : ".") }),
+      pasteBox()));
+    // Before setup is saved there is no Today page, so a pasted brief shows here.
+    if (!ready() && state.brief) add(sec, briefView());
   }
 
   // ------------------------------------------------------------ Settings
@@ -944,6 +1203,16 @@
     if (v.errors.length) { alert("These settings have problems:\n\n" + v.errors.join("\n")); return false; }
     state.config = E.merge(E.DEFAULTS, obj);
     delete state.config.email;  // version 0.1.0 settings may still hold addresses
+    state.editing = false;
+    state.draft = null;
+    if (!ready()) {
+      // A new browser: show the imported choices on the last question, ready to save.
+      state.step = INTERVIEW.length - 1;
+      save();
+      show("setup");
+      toast("Settings imported. Check them, then press Save and build my brief.");
+      return true;
+    }
     save();
     toast("Settings imported.");
     rerender();
@@ -1009,12 +1278,14 @@
     delete st.config.email;
     if (st.tab === "email" || st.tab === "deliver") st.tab = "daily";
     if (st.brief && (typeof st.brief !== "object" || !Array.isArray(st.brief.categories))) st.brief = null;
+    st.editing = false;
+    st.draft = null;
     state = st;
     history = E.cleanLedger(obj.history);
     save();
     saveHistory();
     toast("Restored.");
-    show("setup");
+    show(state.setup_done ? "brief" : "setup");
   }
 
   // ------------------------------------------------------------ Help
@@ -1025,7 +1296,7 @@
       h("h2", { text: "Four ways to use it" }),
       h("ol", null,
         h("li", null, h("b", { text: "This web page. " }), "Runs the setup interview, remembers your choices in this browser, collects the news itself from free sources, and shows the brief as a page. Nothing to install, no account."),
-        h("li", null, h("b", { text: "Your GitHub copy (optional). " }), "A private copy of the project runs every morning on GitHub's servers: it collects the news from Google News and publisher feeds and posts it as an issue in your copy. Free, no password. Step 4 walks through it."),
+        h("li", null, h("b", { text: "Your GitHub copy (optional). " }), "A private copy of the project runs every morning on GitHub's servers: it collects the news from Google News and publisher feeds and posts it as an issue in your copy. Free, no password. The Every day tab walks through it."),
         h("li", null, h("b", { text: "The desktop app. " }), "Download the project from GitHub (Code, Download ZIP), unzip it, and double-click Start-Windows.bat, Start-Mac.command or start-linux.sh. It opens this same app with live news from Google News and publisher feeds and the no-repeat history on disk. It needs Python 3.9 or newer from python.org, and no account or key."),
         h("li", null, h("b", { text: "An AI assistant. " }), "Claude, ChatGPT, Gemini or Grok runs the interview and writes the brief from a web search, adding a Lead Analysis.")),
       proj ? h("p", null, "Project page and download: ", h("a", { href: proj, target: "_blank", rel: "noopener", text: proj.replace("https://", "") }), " | ",
@@ -1056,11 +1327,11 @@
 
   // ------------------------------------------------------------ start
   document.querySelectorAll("#tabs button").forEach(b => b.addEventListener("click", () => show(b.getAttribute("data-tab"))));
-  modebar();
-  if (state.setup_done && (state.tab === "setup" || !state.tab)) state.tab = "brief";
+  // Once set up, the app opens on the brief, unless changes to the choices are in progress.
+  if (state.setup_done && (state.tab === "setup" || !state.tab) && !state.editing) state.tab = "brief";
   show(state.tab || "setup");
   // A daily routine: the first visit of the day collects by itself when asked to.
-  const wantsAuto = () => state.auto_run && state.setup_done && !(state.brief && state.brief.date === today() && state.brief.source !== "sample");
+  const wantsAuto = () => state.auto_run && state.setup_done && !state.editing && !isFresh();
   S.detectDesktop().then(async info => {
     if (!info) return;
     desktop = info;

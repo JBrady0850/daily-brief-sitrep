@@ -36,7 +36,7 @@ Email sending was removed in version 0.2.0.
    participate in; the brief mentions you, which counts as participating.
 5. **Set the time.** GitHub schedules in UTC and cannot follow a time zone, so
    the workflow runs twice, an hour apart, and sends on the first run at or
-   after your delivery time. Step 4 of the app (Every day) shows the two `cron:` lines for
+   after your delivery time. The app's **Every day** tab shows the two `cron:` lines for
    your time and zone. In your copy open
    `.github/workflows/daily-brief.yml`, choose **Edit**, replace the two lines
    under `schedule:`, and commit.

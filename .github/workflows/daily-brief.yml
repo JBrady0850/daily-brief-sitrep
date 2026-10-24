@@ -9,7 +9,7 @@ on:
     # Times are UTC; GitHub cannot follow a time zone. Two runs an hour apart
     # cover daylight saving time, and the brief goes out on the first run at or
     # after delivery.time in delivery.timezone. These two lines suit 06:15 in
-    # US Eastern time. The app's Deliver step gives the lines for your time.
+    # US Eastern time. The app's Every day tab gives the lines for your time.
     # Minute 15, not 00, because GitHub delays and drops runs at the top of the hour.
     - cron: "15 10 * * *"
     - cron: "15 11 * * *"

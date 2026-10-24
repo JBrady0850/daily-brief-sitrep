@@ -151,8 +151,9 @@ def test_web_version_interview_collects_and_shows_the_page(browser):
     for _ in range(5):
         page.click("text=Next question")
     assert "Springfield, Illinois (fahrenheit)" in page.inner_text(".interview")
-    page.click("text=Save and get my brief")
+    page.click("button:has-text('Save and build my brief')")
     page.wait_for_selector("iframe.page", timeout=30000)
+    assert "Setup complete" in page.inner_text(".welcome") and "forecast for Springfield, Illinois" in page.inner_text(".welcome")
     frame = page.frame_locator("iframe.page")
     assert "SPRINGFIELD, ILLINOIS" in frame.locator("section.wx").inner_text().upper() and "51" in frame.locator("div.wxt").inner_text()
     assert frame.locator("li.lead img").count() >= 1
@@ -208,13 +209,29 @@ def test_a_busy_news_index_still_gives_a_brief_from_the_feeds(browser):
     ctx.close()
 
 
+def ready_state(**extra):
+    """Saved choices from the example settings, without the local categories."""
+    cfg = json.loads((ROOT / "examples" / "sample-settings.json").read_text())
+    cfg["categories"] = [c for c in cfg["categories"] if not c.get("needs_location")]
+    st = {"version": 1, "tab": "brief", "config": cfg, "setup_done": True}
+    st.update(extra)
+    return st
+
+
+def visible_tabs(page):
+    """The tab buttons a visitor can see, in the order shown."""
+    return page.evaluate("""() => [...document.querySelectorAll('#tabs button')].filter(b => !b.hidden)
+        .sort((a, b) => (+a.style.order) - (+b.style.order)).map(b => b.dataset.tab)""")
+
+
 def test_pasted_and_sample_briefs(browser):
-    ctx, page, errors = open_page(browser, APP)
+    ctx, page, errors = open_page(browser, APP, state=ready_state())
     page.click('#tabs button[data-tab="brief"]')
     page.click("text=Other ways to fill the page")
     page.click("text=Show the sample brief")
     page.wait_for_selector("iframe.page")
     assert "[SAMPLE]" in page.inner_text("#briefview h2")
+    assert "Showing the sample brief" in page.inner_text("#status")
     frame = page.frame_locator("iframe.page")
     assert "Friday, October 23, 2026" in frame.locator("h1.ttl").inner_text()
     assert frame.locator("section.card .ico svg").count() == 6
@@ -266,10 +283,19 @@ def test_category_tiles_toggle_and_show_every_group(browser):
 def test_phone_layout_never_scrolls_sideways(browser):
     ctx, page, errors = open_page(browser, APP, device="iPhone 13")
     page.wait_for_selector(".interview")
-    for tab in ("setup", "categories", "brief", "daily", "ai", "settings", "help"):
+    for tab in visible_tabs(page):
         page.click('#tabs button[data-tab="%s"]' % tab)
         assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), tab
-    assert errors == []
+    ctx.close()
+    ctx, page, errors2 = open_page(browser, APP, device="iPhone 13", state=ready_state(welcome="2099-01-01"))
+    page.wait_for_selector(".todayhead")
+    for tab in ("brief", "setup", "categories", "daily", "ai", "settings", "help"):
+        page.evaluate("t => DB_APP.show(t)", tab)
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), tab
+    page.evaluate("DB_APP.show('setup')")
+    page.click("button:has-text('Change my answers')")
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), "editing"
+    assert errors == [] and errors2 == []
     ctx.close()
 
 
@@ -277,7 +303,7 @@ def test_desktop_app_collects_and_shows_the_page(browser):
     app = server.DesktopApp(port=0, fetcher=lambda u: feed_bytes("google_news.xml" if "google" in u else "rss_feed.xml"), pause=0)
     app.start_background()
     try:
-        ctx, page, errors = open_page(browser, app.url)
+        ctx, page, errors = open_page(browser, app.url, state=ready_state())
         page.wait_for_selector(".modebar.on")
         page.click('#tabs button[data-tab="brief"]')
         page.click("text=Get today's brief")
@@ -312,13 +338,12 @@ def test_a_crafted_backup_is_refused_and_copy_never_injects_html(browser, tmp_pa
     # fallback (no rich clipboard) copies text only: the page title never changes.
     page.evaluate("p => { DB_APP.state().config.brief.summary_max_chars = p; }", cfg["brief"]["summary_max_chars"])
     page.evaluate("window.ClipboardItem = undefined")
-    page.click("#tabs button[data-tab=brief]")
+    page.click("#tabs button[data-tab=ai]")
     brief = json.loads((ROOT / "examples" / "sample-brief.json").read_text())
     brief["source"] = "ai"
-    page.click("text=Other ways to fill the page")
-    page.fill("#tab-brief textarea", json.dumps(brief))
-    page.click("text=Show the pasted brief")
-    page.wait_for_selector("iframe.page")
+    page.fill("#tab-ai textarea", json.dumps(brief))
+    page.click("#tab-ai button:has-text('Show the pasted brief')")
+    page.wait_for_selector("#tab-ai iframe.page")
     page.click("text=Copy newsletter")
     page.wait_for_timeout(300)
     assert page.title() != "owned" and errors == []
@@ -362,5 +387,132 @@ def test_a_category_the_feeds_fill_needs_no_news_search(browser):
     items = brief["categories"][0]["items"]
     assert len(items) == 5 and all(i["image"].startswith("https://img.example.com/") for i in items)
     assert items[0]["summary"] == "A short summary. Second sentence."
+    assert errors == []
+    ctx.close()
+
+
+def test_setup_is_its_own_mode_until_saved_then_the_app_opens_on_the_brief(browser, http_app):
+    calls = []
+    ctx, page, errors = open_page(browser, http_app, calls=calls)
+    page.wait_for_selector(".hero")
+    # Before saving: only the interview and the pages that need no setup.
+    assert visible_tabs(page) == ["setup", "ai", "settings", "help"]
+    page.evaluate("DB_APP.show('brief')")
+    assert page.evaluate("DB_APP.state().tab") == "setup", "no brief page before setup is saved"
+    assert "nothing is collected until you save" in page.inner_text("#modebar")
+    with ctx.expect_page() as pop:
+        page.click("button:has-text('See a sample brief')")
+    sample = pop.value
+    sample.wait_for_load_state()
+    assert "Friday, October 23, 2026" in sample.inner_text("h1.ttl")
+    sample.close()
+    page.click(".stepper button[aria-label^='Question 8']")
+    assert page.locator(".stepbar").count() == 0 and page.locator("text=Next: Categories").count() == 0
+    assert calls == [], "nothing is collected during setup"
+    # Saving: a confirmation, a panel that names each stage, then the brief.
+    page.evaluate("""() => { window.__stages = []; new MutationObserver(() => {
+        const now = document.querySelector('ol.stages li.now b');
+        if (now && window.__stages[window.__stages.length - 1] !== now.textContent) window.__stages.push(now.textContent);
+      }).observe(document.body, { subtree: true, childList: true }); }""")
+    page.click("button:has-text('Save and build my brief')")
+    page.wait_for_selector("iframe.page", timeout=30000)
+    stages = page.evaluate("window.__stages")
+    assert stages[:1] == ["Publisher feeds"] and "News search" in stages and stages[-1] == "Your page", stages
+    assert "Setup complete" in page.inner_text(".welcome")
+    assert page.inner_text("#status").startswith("Ready, built at")
+    assert visible_tabs(page) == ["brief", "setup", "daily", "ai", "settings", "help"]
+    assert page.inner_text('#tabs button[data-tab="setup"]') == "Your choices"
+    assert page.inner_text('#tabs button[data-tab="brief"]') == "Today's brief"
+    state = page.evaluate("DB_APP.state()")
+    assert state["setup_done"] and state["setup_saved"] and state["brief_sig"]
+    # From now on the app opens on the brief, and setup shows the saved choices.
+    page.reload()
+    page.wait_for_selector("iframe.page")
+    assert page.evaluate("DB_APP.state().tab") == "brief"
+    page.click('#tabs button[data-tab="setup"]')
+    assert page.inner_text("#tab-setup h1") == "Your choices" and "Question 8" not in page.inner_text("#tab-setup")
+    assert "Saved" in page.inner_text("#tab-setup .pill")
+    assert errors == []
+    ctx.close()
+
+
+def test_changes_to_saved_choices_apply_only_on_save(browser, http_app):
+    ctx, page, errors = open_page(browser, http_app, state=ready_state())
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=30000)
+    saved_before = page.evaluate("JSON.stringify(DB_APP.state().config)")
+    nfl = "c => c.categories.some(x => x.id === 'nfl')"
+    page.click('#tabs button[data-tab="setup"]')
+    page.click("button[aria-label='Change: Categories']")
+    assert page.inner_text("#tab-setup h1") == "Change your choices"
+    page.click("label[for=lib-nfl]")
+    assert page.evaluate("(%s)(DB_APP.state().draft)" % nfl)
+    assert page.evaluate("JSON.stringify(DB_APP.state().config)") == saved_before, "saved choices untouched while changing"
+    # Elsewhere in the app the saved choices stay in use, with a reminder.
+    page.click('#tabs button[data-tab="brief"]')
+    assert "unsaved changes to your choices" in page.inner_text("#modebar")
+    assert page.locator(".notice").count() == 0
+    # Unsaved changes survive a reload.
+    page.reload()
+    page.wait_for_selector("#modebar.edit")
+    page.click("#modebar button:has-text('Continue changing')")
+    assert page.evaluate("(%s)(DB_APP.state().draft)" % nfl)
+    page.click(".edithead button:has-text('Cancel changes')")
+    assert page.evaluate("DB_APP.state().draft") is None
+    assert page.evaluate("JSON.stringify(DB_APP.state().config)") == saved_before
+    assert page.inner_text("#tab-setup h1") == "Your choices"
+    # Saving applies them, and today's brief offers a rebuild.
+    page.click("button[aria-label='Change: Categories']")
+    page.click("label[for=lib-nfl]")
+    page.click(".stepper button[aria-label^='Question 8']")
+    page.click("button:has-text('Save changes')")
+    assert page.evaluate("DB_APP.state().tab") == "brief"
+    assert page.evaluate("(%s)(DB_APP.state().config)" % nfl)
+    assert "Your choices changed after this brief was built" in page.inner_text(".notice")
+    page.click("button:has-text('Rebuild with my new choices')")
+    page.wait_for_function("DB_APP.state().brief.categories.some(c => c.id === 'nfl')", timeout=30000)
+    page.wait_for_selector("#status.good")
+    assert page.locator(".notice").count() == 0
+    assert errors == []
+    ctx.close()
+
+
+def test_choosing_categories_keeps_your_place(browser):
+    ctx, page, errors = open_page(browser, APP)
+    page.wait_for_selector(".interview")
+    page.click("button:has-text('Next question')")
+    page.evaluate("document.querySelector('details[data-key=group-life]').open = true")
+    tile = page.locator("label[for=lib-pets]")
+    tile.scroll_into_view_if_needed()
+    y = page.evaluate("window.scrollY")
+    assert y > 600
+    tile.click()
+    assert page.evaluate("window.scrollY") == y, "ticking a category must not jump to the top"
+    assert page.locator(".ctile.on >> text=Pets and Animals").count() == 1
+    assert page.evaluate("document.activeElement.id") == "lib-pets"
+    assert "chosen" in page.inner_text("details[data-key=group-life] .gcount")
+    assert "(8 of 15 chosen)" in page.inner_text(".interview")
+    tile.click()
+    assert page.evaluate("window.scrollY") == y
+    assert page.locator(".ctile.on >> text=Pets and Animals").count() == 0
+    assert "(7 of 15 chosen)" in page.inner_text(".interview")
+    # A group with nothing chosen stays open after a tick and an untick.
+    page.evaluate("document.querySelector('details[data-key=group-culture]').open = true")
+    game = page.locator("label[for=lib-gaming]")
+    game.scroll_into_view_if_needed()
+    game.click()
+    game.click()
+    assert page.evaluate("document.querySelector('details[data-key=group-culture]').open"), "the group stays open when emptied"
+    assert "to choose from" in page.inner_text("details[data-key=group-culture] .gcount")
+    # A typed topic and a pack redraw the page in place: same spot, same open groups.
+    box = page.locator("#topic")
+    box.scroll_into_view_if_needed()
+    y = page.evaluate("window.scrollY")
+    box.fill("beekeeping")
+    box.press("Enter")
+    assert abs(page.evaluate("window.scrollY") - y) <= 2
+    assert page.evaluate("document.activeElement.id") == "topic"
+    page.locator(".pack >> nth=1").click()
+    assert page.evaluate("document.querySelector('details[data-key=group-life]').open")
     assert errors == []
     ctx.close()

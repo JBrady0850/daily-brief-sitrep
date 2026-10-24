@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 (2026-10-23)
+
+Setting up and reading the brief are now clearly separate.
+
+- Before setup is saved, the app shows only the setup questions, AI
+  assistants, Settings and Help. Nothing is collected until **Save and build
+  my brief** on the last question. A **See a sample brief** button shows what
+  the result looks like.
+- Saving shows **Setup complete**, then a **Building today's brief** panel that
+  names each stage (your choices, publisher feeds, news search, your page)
+  before the brief appears.
+- After setup the app opens on **Today's brief**, with a line that says whether
+  today's brief is ready, being built, or not built yet.
+- The Setup tab becomes **Your choices**: the saved answers, each with a
+  Change link. Changes apply only on **Save changes**; **Cancel changes**
+  keeps the saved ones, and a reminder shows on other pages while changes are
+  unsaved. If the choices change after today's brief was built, the page
+  offers to rebuild it.
+- The numbered tabs and the Next and Back bar between pages are gone.
+- Ticking a category no longer jumps to the top of the page: the tile changes
+  in place. Packs, typed topics and other changes on a page keep the scroll
+  position, the open groups and the focused box.
+- A brief pasted from an AI assistant before setup shows on the AI assistants
+  tab.
+
 ## 0.2.1 (2026-10-23)
 
 - More categories read publisher feeds that allow web pages (The New York

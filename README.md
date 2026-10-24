@@ -49,15 +49,25 @@ you want to follow** turns any topic in your own words into a category.
 
 ![Category tiles](docs/images/03-category-tiles.png)
 
-## The five steps in the app
+## Set up once, then read it every day
 
-| Step | What you do |
+The app has two modes, so you always know where you are.
+
+| Mode | What you see |
 |---|---|
-| 1 Setup | Eight questions, each with a sensible default, including your town for the forecast |
-| 2 Categories | Add, remove, reorder and fine-tune categories |
-| 3 Today | Get today's brief, see it as a page, open it full screen, download it or copy it |
-| 4 Every day | Keep the page handy, turn on the once-a-day automatic collection, or set up a GitHub copy |
-| 5 AI assistants | Copy the prompt for Claude, ChatGPT, Gemini or Grok |
+| Setting up | Eight questions, each with a sensible default, including your town for the forecast. Nothing is collected until you press **Save and build my brief** on the last question. |
+| Your brief | Once saved, the app says **Setup complete**, builds today's brief while it shows each stage, and from then on opens on **Today's brief**. |
+
+After setup the tabs are:
+
+| Tab | What you do there |
+|---|---|
+| Today's brief | See whether today's brief is ready, build it, open it full screen, download it or copy it |
+| Your choices | Your saved answers, with a Change link for each one. Changes take effect only when you press **Save changes**; **Cancel changes** keeps the old ones. **Fine-tune categories** edits searches and filters. |
+| Every day | Keep the page handy, turn on the once-a-day automatic build, or set up a GitHub copy |
+| AI assistants | Copy the prompt for Claude, ChatGPT, Gemini or Grok, and paste the assistant's brief |
+
+![Your saved choices](docs/images/06-your-choices.png)
 
 ## How stories are picked
 

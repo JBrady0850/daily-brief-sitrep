@@ -33,7 +33,7 @@ def _config(path: Optional[str]) -> dict:
     else:
         cfg = store.load_config()
         if cfg is None:
-            raise SystemExit("No saved settings. Save them in the desktop app (step 4, Deliver: Save my settings for scheduled runs) "
+            raise SystemExit("No saved settings. Save them in the desktop app (Every day: Save my settings for scheduled runs) "
                              "or pass --config FILE.")
     v = E.validate_config(cfg)
     for w in v["warnings"]:
