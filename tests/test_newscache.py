@@ -47,6 +47,15 @@ def test_the_backup_collection_covers_every_category_except_the_town_ones():
     assert data["sources"]["feeds_failed"] == 1 and data["sources"]["searches"] >= 2
 
 
+def test_the_backup_keeps_only_stories_on_the_category_topic():
+    lib = {"version": 1, "groups": [], "packs": [], "categories": [
+        {"id": "net", "name": "Network security", "queries": ['"zero trust"'], "require": [["zero trust", "VPN"]], "exclude": ["guidance"]}]}
+    data = NC.build(NOW, lib, fake_fetcher([]), pause=0)
+    titles = [i["title"] for i in data["categories"]["net"]]
+    assert titles and all(("zero trust" in t.lower() or "VPN" in t) and "guidance" not in t.lower() for t in titles), titles
+    assert not any("Bakery" in t for t in titles), "off-topic stories stay out of the backup"
+
+
 def test_the_backup_keeps_only_the_newest_stories_per_category():
     data = NC.build(NOW, LIB, fake_fetcher([]), pause=0, per_category=2)
     assert all(len(v) <= 2 for v in data["categories"].values())

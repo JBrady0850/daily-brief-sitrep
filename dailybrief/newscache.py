@@ -31,7 +31,11 @@ def is_local(cat: dict) -> bool:
     return bool(cat.get("needs_location")) or "{location}" in text or "{local_terms}" in text
 
 
-def _keep(it: dict, now_ms: int) -> Optional[dict]:
+def _keep(it: dict, now_ms: int, cat: dict, cfg: dict) -> Optional[dict]:
+    """A story worth keeping: dated, recent, and on the library category's topic (the
+    page checks it again against the reader's own version of the category)."""
+    if E.gate_item(E.clean_item(it, SUMMARY_CHARS), cat, cfg):
+        return None
     ms = E.parse_iso(it.get("published"))
     if ms is None or (now_ms - ms) / 3600000 > MAX_AGE_HOURS or ms - now_ms > 3600000:
         return None
@@ -51,11 +55,13 @@ def build(now_iso: str, lib: Optional[dict] = None, fetcher: Optional[C.Fetcher]
     """Collects every non-town library category and returns the file's content."""
     lib = lib or library()
     cats = [E.category_from_library(lib, c["id"]) for c in lib["categories"] if not is_local(c)]
-    candidates, health = C.collect({"version": 1, "categories": cats}, now_iso, None, fetcher, None, pause)
+    cfg = E.normalize_config({"version": 1, "categories": cats})
+    candidates, health = C.collect(cfg, now_iso, None, fetcher, None, pause)
     now_ms = E.parse_iso(now_iso)
+    by_id = {c["id"]: E.resolve_category(c, cfg["reader"]) for c in cfg["categories"]}
     out: dict = {}
     for cid, items in candidates.items():
-        kept = [k for k in (_keep(it, now_ms) for it in items) if k]
+        kept = [k for k in (_keep(it, now_ms, by_id[cid], cfg) for it in items) if k]
         kept.sort(key=lambda x: x["published"], reverse=True)
         out[cid] = kept[:per_category]
     sources = {"searches": 0, "searches_failed": 0, "feeds": 0, "feeds_failed": 0}
