@@ -498,7 +498,7 @@
     const box = h("div", { class: "wxpick localfeeds" });
     const status = h("div", { class: "hint", "aria-live": "polite" });
     const ta = h("textarea", { rows: 2, id: "localfeeds", value: (r.local_feeds || []).join("\n"),
-      placeholder: "https://www.example-tv.com/arc/outboundfeeds/rss/category/news/?outputType=xml",
+      placeholder: "https://www.example-tv.com/news/rss.xml",
       oninput: e => { r.local_feeds = lines(e.target.value).slice(0, 5); save(); } });
     async function check() {
       const urls = lines(ta.value).slice(0, 5);
@@ -519,7 +519,7 @@
       clear(status).append(h("ul", { class: "plain" }, out));
     }
     add(box, h("h3", null, ico("news", "hi"), "Your local news feed (optional)"));
-    add(box, h("p", { class: "hint", text: "Town news comes from the GDELT news search, which is sometimes busy. A feed from your local TV station or paper makes the town categories dependable. Paste up to five feed links, one per line, then press Check." }));
+    add(box, h("p", { class: "hint", text: "Town news comes from the GDELT news search, which is sometimes busy. A feed from your local TV station or paper helps, if the site lets web pages read it; many do not. Paste up to five feed links, one per line, then press Check." }));
     add(box, ta);
     add(box, h("div", { class: "row" }, h("button", { class: "btn ghost", onclick: check }, "Check")));
     add(box, status);

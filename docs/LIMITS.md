@@ -17,9 +17,11 @@
   asks too often (HTTP 503 and 429, seen on 2026-10-23; after a day of heavy
   testing it refused one home connection for hours). The town categories and
   categories you type yourself depend on it, unless you add a local news feed
-  on the town question. Many local sites do not let web pages read their feeds:
-  of 18 local news feeds tried in one region on 2026-10-24, one (a TV station's
-  news feed on the Arc publishing system) allowed it. The Check button tells.
+  on the town question that allows web pages to read it. Many local sites do
+  not: of 18 local news feeds tried in one region on 2026-10-24, none did
+  dependably (one answered once, then refused; its server sends no permission
+  for other sites). The Check button tells. The desktop app and the GitHub copy
+  read any feed, and add your state to Google News town searches.
   It asks one search at a time, waits six seconds between searches (twelve
   after a refusal), retries a refused search once, and after three refused
   searches in a row uses the feeds alone for the rest of the run. A live run
