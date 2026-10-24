@@ -18,8 +18,8 @@ publisher feeds for the news, and Open-Meteo for the forecast.
 
 ### [jbrady0850.github.io/daily-brief-sitrep](https://jbrady0850.github.io/daily-brief-sitrep/)
 
-Open the link on a computer, tablet or phone. Answer the eight questions, press
-**Save and get my brief**, and the brief appears as a page a minute later. On a
+Open the link on a computer, tablet or phone. Answer the nine questions, press
+**Save and build my brief**, and the brief appears as a page a minute later. On a
 phone, **Share**, **Add to Home Screen** keeps it one tap away; in Chrome or
 Edge on a computer, the install button in the address bar does the same.
 
@@ -49,13 +49,20 @@ you want to follow** turns any topic in your own words into a category.
 
 ![Category tiles](docs/images/03-category-tiles.png)
 
+**Put them in order.** The next question lists the categories you picked, with
+buttons to move each one up, down or to the top. The brief shows them in that
+order, most important first, and a story that fits two categories goes to the
+one higher on the list. **Your choices** has a Change link for the order too.
+
+![Putting the categories in order](docs/images/10-order.png)
+
 ## Set up once, then read it every day
 
 The app has two modes, so you always know where you are.
 
 | Mode | What you see |
 |---|---|
-| Setting up | Eight questions, each with a sensible default, including your town for the forecast. Nothing is collected until you press **Save and build my brief** on the last question. |
+| Setting up | Nine questions, each with a sensible default, including your town for the forecast. Nothing is collected until you press **Save and build my brief** on the last question. |
 | Your brief | Once saved, the app says **Setup complete**, builds today's brief while it shows each stage, and from then on opens on **Today's brief**. |
 
 After setup the tabs are:

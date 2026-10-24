@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.7.0 (2026-10-24)
+
+Put your categories in order.
+
+- Setup has a new third question, **Put them in order**. It lists the
+  categories you picked with buttons to move each one up, down or to the top.
+  The brief shows the categories in that order, most important first, and a
+  story that fits two categories goes to the one higher on the list. The
+  buttons work with touch, mouse and keyboard, keep the page where it is, keep
+  the focus on the moved category and announce its new place.
+- **Your choices** has an **Order** row with its own Change link.
+- Setup now has nine questions. Change links find their question by name, so
+  a new question never sends a link to the wrong page.
+
 ## 0.6.3 (2026-10-24)
 
 - Choices saved before 0.2.0 no longer show "delivery.channels lists email"

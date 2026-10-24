@@ -272,3 +272,16 @@ ol.stages li.now .sm { border-color: var(--gold); color: var(--warn); box-shadow
   .status { font-size: 14px; }
   .welcome, .notice { padding: 14px; }
 }
+
+/* Put them in order: one row per category with up, down and to-the-top buttons. */
+ol.order { list-style: none; margin: 12px 0 0; padding: 0; }
+.orow { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; margin: 0 0 8px; background: var(--paper); }
+.orow .opos { min-width: 1.6em; font-weight: bold; color: var(--muted); text-align: right; }
+.orow .oname { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.orow .obtns { display: flex; gap: 6px; flex: 0 0 auto; }
+.obtn { font: inherit; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line);
+  border-radius: 8px; background: var(--paper); color: var(--ink); cursor: pointer; }
+.obtn:disabled { opacity: .35; cursor: default; }
+.obtn:focus-visible { outline: 3px solid var(--accent, #2b6cb0); outline-offset: 2px; }
+.obtn .ic svg { width: 20px; height: 20px; }
+@media (max-width: 420px) { .orow { gap: 6px; padding: 6px 8px; } .obtn { width: 40px; height: 40px; } }

@@ -51,6 +51,10 @@ ICONS = {
     # app status marks
     "check": '<circle cx="12" cy="12" r="9"/><path d="M8 12.4l2.8 2.8L16.2 9.6"/>',
     "pencil": '<path d="M4 20h4L19.2 8.8a2 2 0 0 0 0-2.8l-1.2-1.2a2 2 0 0 0-2.8 0L4 16z"/><path d="M13.5 6.5l4 4"/>',
+    # ordering controls
+    "up": '<path d="M12 19V5M6 11l6-6 6 6"/>',
+    "down": '<path d="M12 5v14M6 13l6 6 6-6"/>',
+    "top": '<path d="M5 4h14M12 20V9M6.5 14.5L12 9l5.5 5.5"/>',
     "sunrise": '<path d="M3 18h18M6 18a6 6 0 0 1 12 0M12 4v4M4.6 9.6l2 1.5M19.4 9.6l-2 1.5M8 21h8"/>',
     "pin": '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
     "city": '<path d="M3 21h18M5 21V8l6-3v16M11 21V9h8v12M14 12h2M14 15h2M14 18h2M7.5 10h1M7.5 13h1M7.5 16h1"/>',

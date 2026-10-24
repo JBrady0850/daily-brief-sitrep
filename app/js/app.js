@@ -280,15 +280,18 @@
 
   // ------------------------------------------------------------ 1 Setup (interview)
   const INTERVIEW = [
-    { title: "What is the brief for?", short: "Purpose", icon: "sparkle", body: stepPurpose },
-    { title: "Pick your categories", short: "Topics", icon: "news", body: stepCategories },
-    { title: "Your town and weather", short: "Town", icon: "pin", body: stepArea },
-    { title: "How much, and how fresh", short: "Amount", icon: "chart", body: stepVolume },
-    { title: "What matters to you", short: "Focus", icon: "star", body: stepWatch },
-    { title: "A countdown (optional)", short: "Countdown", icon: "calendar", body: stepCountdown },
-    { title: "Name your brief", short: "Name", icon: "sunrise", body: stepTitle },
-    { title: "Review and save", short: "Review", icon: "shield", body: stepReview }
+    { key: "purpose", title: "What is the brief for?", short: "Purpose", icon: "sparkle", body: stepPurpose },
+    { key: "topics", title: "Pick your categories", short: "Topics", icon: "news", body: stepCategories },
+    { key: "order", title: "Put them in order", short: "Order", icon: "up", body: stepOrder },
+    { key: "town", title: "Your town and weather", short: "Town", icon: "pin", body: stepArea },
+    { key: "amount", title: "How much, and how fresh", short: "Amount", icon: "chart", body: stepVolume },
+    { key: "focus", title: "What matters to you", short: "Focus", icon: "star", body: stepWatch },
+    { key: "countdown", title: "A countdown (optional)", short: "Countdown", icon: "calendar", body: stepCountdown },
+    { key: "name", title: "Name your brief", short: "Name", icon: "sunrise", body: stepTitle },
+    { key: "review", title: "Review and save", short: "Review", icon: "shield", body: stepReview }
   ];
+  // Questions are found by key, so adding one never shifts a "Change" link.
+  const stepOf = key => Math.max(0, INTERVIEW.findIndex(q => q.key === key));
 
   function renderSetup(sec) {
     if (ready() && !state.editing) { renderChoices(sec); return; }
@@ -303,7 +306,7 @@
     } else if (i === 0) {
       add(sec, h("div", { class: "hero" },
         h("div", { class: "herotext" }, h("p", { class: "kicker", text: "Free, private, no account" }), h("h1", { text: "Your news, every morning, on one page" }),
-          h("p", { text: "Answer eight short questions. The Daily Brief remembers your choices in this browser, collects fresh stories from free sources each day, leaves out anything you have already seen, and lays it all out as one clean page with photos and your local forecast." }),
+          h("p", { text: "Answer nine short questions. The Daily Brief remembers your choices in this browser, collects fresh stories from free sources each day, leaves out anything you have already seen, and lays it all out as one clean page with photos and your local forecast." }),
           h("ul", { class: "heroticks" }, h("li", null, ico("news"), "Pick from " + LIB.categories.length + " ready-made categories or type your own"),
             h("li", null, ico("sun"), "A forecast for your town"), h("li", null, ico("shield"), "No sign-up, no tracking, no keys")),
           h("div", { class: "heroactions" }, h("button", { class: "btn onnavy", onclick: showSample }, "See a sample brief"),
@@ -485,6 +488,49 @@
     return box;
   }
 
+  /* The order of the brief. Desks appear in this order, and a story that fits two
+     categories goes to the one higher on the list. The buttons work with touch, mouse
+     and keyboard, keep the page where it is and keep the focus on the moved category. */
+  function stepOrder(card) {
+    const c = cfg();
+    const cats = c.categories;
+    if (!cats.length) { add(card, h("p", { text: "Pick some categories first, then put them in order here." })); return; }
+    add(card, h("p", { text: "Your brief shows the categories in this order, most important first. A story that fits two categories goes to the one higher on the list." }));
+    const sid = cat => "o-" + String(cat.id).replace(/[^A-Za-z0-9_-]/g, "-");
+    const status = h("p", { class: "hint", id: "orderstatus", "aria-live": "polite" });
+    function move(k, to, kind) {
+      if (to < 0 || to >= cats.length || to === k) return;
+      const it = cats.splice(k, 1)[0];
+      cats.splice(to, 0, it);
+      save();
+      refresh();
+      // Keep the focus on the moved category; at an end, on the button that still works.
+      const want = document.getElementById(kind + "-" + sid(it));
+      const other = document.getElementById((to === 0 ? "down" : "up") + "-" + sid(it));
+      const el = want && !want.disabled ? want : other;
+      if (el) { try { el.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
+      const st = document.getElementById("orderstatus");
+      if (st) st.textContent = E.resolveCategory(it, c.reader).name + " is now number " + (to + 1) + " of " + cats.length + ".";
+    }
+    const list = h("ol", { class: "order", id: "order" });
+    cats.forEach((cat, k) => {
+      const name = E.resolveCategory(cat, c.reader).name;
+      const lc = E.categoryFromLibrary(LIB, cat.id);
+      const col = /^#[0-9a-fA-F]{6}$/.test(String(cat.color || "")) ? cat.color : lc && lc.color ? lc.color : "#0b5e8f";
+      list.append(h("li", { class: "orow", style: "--c:" + col },
+        h("span", { class: "opos", text: String(k + 1) }), ico(catIcon(cat), "ci"), h("span", { class: "oname", text: name }),
+        h("span", { class: "obtns" },
+          h("button", { class: "obtn", id: "top-" + sid(cat), "aria-label": "Move " + name + " to the top", title: "To the top", disabled: k === 0,
+            onclick: () => move(k, 0, "top") }, ico("top")),
+          h("button", { class: "obtn", id: "up-" + sid(cat), "aria-label": "Move " + name + " up", title: "Up", disabled: k === 0,
+            onclick: () => move(k, k - 1, "up") }, ico("up")),
+          h("button", { class: "obtn", id: "down-" + sid(cat), "aria-label": "Move " + name + " down", title: "Down", disabled: k === cats.length - 1,
+            onclick: () => move(k, k + 1, "down") }, ico("down")))));
+    });
+    add(card, list);
+    add(card, status);
+  }
+
   function stepArea(card) {
     const r = cfg().reader;
     const local = localCats();
@@ -664,19 +710,20 @@
   function summaryRows(c) {
     const n = E.normalizeConfig(c);
     return [
-      ["Categories", n.categories.map(x => E.resolveCategory(x, n.reader).name).join(", ") || "none", 1],
-      ["Your area", [n.reader.location, n.reader.region].map(E.collapse).filter(Boolean).join(", ") || "not set", 2],
-      ["Also local", (n.reader.local_terms || []).join(", ") || "none", 2],
-      ["Local news feeds", (n.reader.local_feeds || []).map(E.hostOf).join(", ") || "none", 2],
-      ["Weather", n.weather.enabled ? "forecast for " + n.weather.place + " (" + n.weather.units + ")" : "off", 2],
-      ["Stories per category", String(n.brief.items_per_category), 3],
-      ["Fresh window", n.brief.window_hours + " hours", 3],
-      ["Older stories", n.brief.backfill_max_hours > n.brief.window_hours ? "up to " + n.brief.backfill_max_hours + " hours, labelled OLDER" : "off", 3],
-      ["Reference pages", n.brief.allow_reference ? "allowed, labelled REFERENCE" : "off", 3],
-      ["Watch list", (n.reader.watch_list || []).join(", ") || "empty", 4],
-      ["Countdown", n.countdown.enabled ? n.countdown.label + " on " + n.countdown.date : "off", 5],
-      ["Brief name", E.collapse(n.brief.title) || "Daily Brief", 6],
-      ["What it is for", (n.reader.goals || []).join("; ") || "not set", 0]
+      ["Categories", n.categories.map(x => E.resolveCategory(x, n.reader).name).join(", ") || "none", stepOf("topics")],
+      ["Order", n.categories.length > 1 ? "as listed above, most important first" : "one category", stepOf("order")],
+      ["Your area", [n.reader.location, n.reader.region].map(E.collapse).filter(Boolean).join(", ") || "not set", stepOf("town")],
+      ["Also local", (n.reader.local_terms || []).join(", ") || "none", stepOf("town")],
+      ["Local news feeds", (n.reader.local_feeds || []).map(E.hostOf).join(", ") || "none", stepOf("town")],
+      ["Weather", n.weather.enabled ? "forecast for " + n.weather.place + " (" + n.weather.units + ")" : "off", stepOf("town")],
+      ["Stories per category", String(n.brief.items_per_category), stepOf("amount")],
+      ["Fresh window", n.brief.window_hours + " hours", stepOf("amount")],
+      ["Older stories", n.brief.backfill_max_hours > n.brief.window_hours ? "up to " + n.brief.backfill_max_hours + " hours, labelled OLDER" : "off", stepOf("amount")],
+      ["Reference pages", n.brief.allow_reference ? "allowed, labelled REFERENCE" : "off", stepOf("amount")],
+      ["Watch list", (n.reader.watch_list || []).join(", ") || "empty", stepOf("focus")],
+      ["Countdown", n.countdown.enabled ? n.countdown.label + " on " + n.countdown.date : "off", stepOf("countdown")],
+      ["Brief name", E.collapse(n.brief.title) || "Daily Brief", stepOf("name")],
+      ["What it is for", (n.reader.goals || []).join("; ") || "not set", stepOf("purpose")]
     ];
   }
 
@@ -690,7 +737,7 @@
     add(card, msgList(v));
     if (localCats().length && !E.collapse(cfg().reader.location)) {
       add(card, h("div", { class: "actions" },
-        h("button", { class: "btn ghost", onclick: () => { state.step = 2; rerender(); } }, "Add my town"),
+        h("button", { class: "btn ghost", onclick: () => { state.step = stepOf("town"); rerender(); } }, "Add my town"),
         h("button", { class: "btn ghost", onclick: () => {
           const drop = localCats();
           cfg().categories = cfg().categories.filter(c => drop.indexOf(c) < 0);

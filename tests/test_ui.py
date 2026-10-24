@@ -142,8 +142,8 @@ def test_web_version_interview_collects_and_shows_the_page(browser):
     calls = []
     ctx, page, errors = open_page(browser, APP, calls=calls)
     page.wait_for_selector(".hero")
-    page.click("text=Next question")
-    page.click("text=Next question")
+    for _ in range(3):  # purpose, categories, order
+        page.click("text=Next question")
     page.fill(".wxpick input", "Springfield")
     page.click("text=Find my town")
     page.click(".wxpick .chip >> text=Springfield, Illinois")
@@ -406,7 +406,7 @@ def test_setup_is_its_own_mode_until_saved_then_the_app_opens_on_the_brief(brows
     sample.wait_for_load_state()
     assert "Friday, October 23, 2026" in sample.inner_text("h1.ttl")
     sample.close()
-    page.click(".stepper button[aria-label^='Question 8']")
+    page.click(".stepper button[aria-label^='Question 9']")
     assert page.locator(".stepbar").count() == 0 and page.locator("text=Next: Categories").count() == 0
     assert calls == [], "nothing is collected during setup"
     # Saving: a confirmation, a panel that names each stage, then the brief.
@@ -430,7 +430,7 @@ def test_setup_is_its_own_mode_until_saved_then_the_app_opens_on_the_brief(brows
     page.wait_for_selector("iframe.page")
     assert page.evaluate("DB_APP.state().tab") == "brief"
     page.click('#tabs button[data-tab="setup"]')
-    assert page.inner_text("#tab-setup h1") == "Your choices" and "Question 8" not in page.inner_text("#tab-setup")
+    assert page.inner_text("#tab-setup h1") == "Your choices" and "Question 9" not in page.inner_text("#tab-setup")
     assert "Saved" in page.inner_text("#tab-setup .pill")
     assert errors == []
     ctx.close()
@@ -464,7 +464,7 @@ def test_changes_to_saved_choices_apply_only_on_save(browser, http_app):
     # Saving applies them, and today's brief offers a rebuild.
     page.click("button[aria-label='Change: Categories']")
     page.click("label[for=lib-nfl]")
-    page.click(".stepper button[aria-label^='Question 8']")
+    page.click(".stepper button[aria-label^='Question 9']")
     page.click("button:has-text('Save changes')")
     assert page.evaluate("DB_APP.state().tab") == "brief"
     assert page.evaluate("(%s)(DB_APP.state().config)" % nfl)
@@ -602,8 +602,8 @@ def local_feed():
 def test_town_question_fills_the_state_and_county_and_checks_a_local_feed(browser):
     ctx, page, errors = open_page(browser, APP)
     page.route("**/local-news.xml", lambda r: r.fulfill(status=200, body=local_feed(), headers=dict(CORS, **{"content-type": "application/rss+xml"})))
-    page.click("button:has-text('Next question')")
-    page.click("button:has-text('Next question')")
+    for _ in range(3):  # purpose, categories, order
+        page.click("button:has-text('Next question')")
     page.fill("#town", "Springfield")
     page.fill(".wxpick input[aria-label='Town for the forecast']", "Springfield")
     page.click("text=Find my town")
@@ -767,7 +767,7 @@ def test_a_tab_left_open_across_a_release_reloads_once_and_then_builds(browser, 
 def test_choices_saved_before_email_was_removed_review_without_a_warning(browser):
     """Settings from version 0.1.0 list email as a delivery channel; the review shows no
     email warning, and the saved choices lose the retired channel."""
-    state = {"version": 1, "tab": "setup", "step": 7, "setup_done": False,
+    state = {"version": 1, "tab": "setup", "step": 8, "setup_done": False,
              "config": {"version": 1, "delivery": {"time": "06:15", "timezone": "America/Chicago", "channels": ["issue", "email"]},
                         "email": {"to": ["someone@example.com"]},
                         "categories": [{"id": "net", "name": "Network", "queries": ['"zero trust"'], "require": [["zero trust"]]}]}}
@@ -777,5 +777,39 @@ def test_choices_saved_before_email_was_removed_review_without_a_warning(browser
     assert "email" not in text.lower(), "no warning about the retired email channel"
     assert page.evaluate("DB_APP.state().config.delivery.channels") == ["issue"]
     assert "email" not in page.evaluate("Object.keys(DB_APP.state().config)")
+    assert errors == []
+    ctx.close()
+
+
+def test_put_the_categories_in_order(browser):
+    """The third question lists the chosen categories with up, down and to-the-top
+    buttons; the order is saved, the page stays put and the focus stays on the moved row."""
+    ctx, page, errors = open_page(browser, APP)
+    page.wait_for_selector(".hero")
+    page.click("button:has-text('Next question')")
+    page.click("button:has-text('Next question')")
+    assert page.inner_text(".interview h2") == "Put them in order"
+    ids = page.evaluate("DB_APP.state().config.categories.map(c => c.id)")
+    assert len(ids) >= 4 and page.locator("ol.order li").count() == len(ids)
+    last = ids[-1]
+    assert page.is_disabled("#up-o-" + ids[0]) and page.is_disabled("#down-o-" + last)
+    page.locator("#top-o-" + last).scroll_into_view_if_needed()
+    y = page.evaluate("window.scrollY")
+    page.click("#top-o-" + last)
+    assert page.evaluate("DB_APP.state().config.categories.map(c => c.id)") == [last] + ids[:-1]
+    assert page.evaluate("document.activeElement.id") == "down-o-" + last, "at the top, the focus moves to the button that still works"
+    assert abs(page.evaluate("window.scrollY") - y) < 5, "the page stays where it was"
+    assert "is now number 1 of %d" % len(ids) in page.inner_text("#orderstatus")
+    page.keyboard.press("Enter")  # the focused Down button moves it back down one place
+    assert page.evaluate("DB_APP.state().config.categories.map(c => c.id)")[:2] == [ids[0], last]
+    assert page.evaluate("document.activeElement.id") == "down-o-" + last
+    assert page.inner_text("ol.order li >> nth=1").split("\n")[0].strip() == "2"
+    # The saved order survives a reload and shows on the review.
+    page.reload()
+    page.wait_for_selector("ol.order")
+    assert page.evaluate("DB_APP.state().config.categories.map(c => c.id)")[:2] == [ids[0], last]
+    page.click(".stepper button[aria-label^='Question 9']")
+    rows = page.inner_text("table.summary")
+    assert "Order" in rows and "most important first" in rows
     assert errors == []
     ctx.close()

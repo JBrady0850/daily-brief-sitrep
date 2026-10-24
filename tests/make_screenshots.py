@@ -48,6 +48,10 @@ def main() -> int:
         page.locator("details.group >> nth=2").scroll_into_view_if_needed()
         page.screenshot(path=str(OUT / "03-category-tiles.png"))
         page.click("button:has-text('Next question')")
+        page.click("#up-o-travel")  # Travel moves up one place
+        page.locator("ol.order").scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "10-order.png"))
+        page.click("button:has-text('Next question')")
         page.fill(".wxpick input", "Springfield")
         page.click("text=Find my town")
         page.click(".wxpick .chip >> text=Springfield, Illinois")
