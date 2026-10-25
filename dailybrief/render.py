@@ -85,7 +85,7 @@ def _wx_ok(wx: Any) -> bool:
     return isinstance(wx, dict) and isinstance(wx.get("days"), list)
 
 
-def weather_html(wx: Any, day: str) -> str:
+def weather_html(wx: Any, day: str, tz: Any = None) -> str:
     """The forecast panel. Numbers are checked before they are written."""
     if not _wx_ok(wx):
         return ""
@@ -108,7 +108,7 @@ def weather_html(wx: Any, day: str) -> str:
         rain = str(rnd(d["rain"])) + "% rain" if _num(d.get("rain")) and d["rain"] > 0 else ""
         h += ('<li title="' + esc(words.get(k, "")) + '"><span class="wxdn">' + _day_label(d["date"], day) + "</span>" + wx_svg(k, "wxi")
               + '<span class="wxhl"><b>' + hi + "</b> / " + lo + '</span><span class="wxr">' + rain + "</span></li>")
-    when = stamp(wx.get("fetched_at"))
+    when = stamp(wx.get("fetched_at"), tz)
     return (h + '</ol><p class="wxs">Forecast by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0)'
             + (" &middot; updated " + when if when else "") + "</p></section>")
 
@@ -156,12 +156,78 @@ def short_date(d: str) -> str:
     return DAYS[_weekday_index(dt)][:3] + " " + MONTHS[dt.month - 1] + " " + E.pad2(dt.day) + ", " + str(dt.year)
 
 
-def stamp(iso: Any) -> str:
+# US time zones by their usual names: (standard offset in minutes, standard, daylight).
+# Elsewhere the offset from UTC is shown (mirrors US_ZONES in newsletter.js).
+US_ZONES = {
+    "America/New_York": (-300, "EST", "EDT"), "America/Detroit": (-300, "EST", "EDT"), "America/Indiana/Indianapolis": (-300, "EST", "EDT"),
+    "America/Kentucky/Louisville": (-300, "EST", "EDT"), "America/Chicago": (-360, "CST", "CDT"), "America/Denver": (-420, "MST", "MDT"),
+    "America/Boise": (-420, "MST", "MDT"), "America/Phoenix": (-420, "MST", "MST"), "America/Los_Angeles": (-480, "PST", "PDT"),
+    "America/Anchorage": (-540, "AKST", "AKDT"), "Pacific/Honolulu": (-600, "HST", "HST"),
+}
+
+
+def zone_clock(ms: int, tz: str) -> Optional[tuple]:
+    """The wall clock at an instant in a time zone: (year, month, day, hour, minute, offset
+    in minutes), or None when the zone is unknown here. The instant counts to the minute."""
+    t = ms - (ms % 60000)
+    if not tz or tz == "UTC":
+        d = E.utc_dt(t)
+        return (d.year, d.month, d.day, d.hour, d.minute, 0)
+    try:
+        from zoneinfo import ZoneInfo
+        z = ZoneInfo(tz)
+    except Exception:  # unknown name, or no time zone data on this computer
+        return None
+    d = datetime.fromtimestamp(t / 1000, tz=timezone.utc).astimezone(z)
+    off = d.utcoffset()
+    return (d.year, d.month, d.day, d.hour, d.minute, int(round(off.total_seconds() / 60)) if off is not None else 0)
+
+
+def zone_name(tz: str, off: int) -> str:
+    us = US_ZONES.get(tz)
+    if us:
+        return us[1] if off == us[0] else us[2]
+    if off == 0:
+        return "UTC"
+    a = abs(off)
+    return "UTC" + ("-" if off < 0 else "+") + str(a // 60) + (":" + E.pad2(a % 60) if a % 60 else "")
+
+
+def local_clock(iso: Any, tz: Any) -> Optional[tuple]:
+    """A time as the reader's clock shows it: (clock, zone), or None without a readable time."""
     ms = E.parse_iso(iso)
     if ms is None:
+        return None
+    zone = E.collapse(tz) or "UTC"
+    c = zone_clock(ms, zone)
+    if c is None:
+        zone = "UTC"
+        c = zone_clock(ms, zone)
+    return c, zone
+
+
+def clock_time(c: tuple, zone: str) -> str:
+    return (str(12 if c[3] % 12 == 0 else c[3] % 12) + ":" + E.pad2(c[4]) + " " + ("AM" if c[3] < 12 else "PM")
+            + " " + zone_name(zone, c[5]))
+
+
+def built_label(iso: Any, tz: Any) -> str:
+    """When a brief was built, in the reader's time zone (UTC when it is unknown):
+    "Sunday, October 25, 2026 at 6:16 AM CDT". Empty without a readable time."""
+    lc = local_clock(iso, tz)
+    if lc is None:
         return ""
-    dt = E.utc_dt(ms)
-    return MONTHS[dt.month - 1] + " " + E.pad2(dt.day) + ", " + E.pad2(dt.hour) + ":" + E.pad2(dt.minute) + "Z"
+    c = lc[0]
+    return pretty_date(str(c[0]) + "-" + E.pad2(c[1]) + "-" + E.pad2(c[2])) + " at " + clock_time(c, lc[1])
+
+
+def stamp(iso: Any, tz: Any = None) -> str:
+    """A story's or the forecast's time, short: "Oct 25, 9:20 AM CDT"."""
+    lc = local_clock(iso, tz)
+    if lc is None:
+        return ""
+    c = lc[0]
+    return MONTHS[c[1] - 1] + " " + E.pad2(c[2]) + ", " + clock_time(c, lc[1])
 
 
 def age_of(item: dict, brief: dict) -> Optional[float]:
@@ -323,8 +389,10 @@ def card_html(cat: dict, brief: dict, cfg: dict, index: int, win: Any) -> str:
         title = esc(E.collapse(it.get("title")))
         head = ('<a class="hl" href="' + esc(href) + '">' + title + "</a>") if href else ('<span class="hl">' + title + "</span>")
         src = esc(E.collapse(it.get("source")))
-        if it.get("published") and it.get("recency") != "reference" and stamp(it.get("published")):
-            src += (" &middot; " if src else "") + stamp(it.get("published"))
+        dv = cfg.get("delivery")
+        tz = dv.get("timezone") if isinstance(dv, dict) else None
+        if it.get("published") and it.get("recency") != "reference" and stamp(it.get("published"), tz):
+            src += (" &middot; " if src else "") + stamp(it.get("published"), tz)
         summ = E.collapse(it.get("summary"))
         st = ""
         if cfg["brief"]["conversation_starters"] and E.collapse(it.get("starter")):
@@ -400,6 +468,8 @@ def render(brief: dict, cfg: Any = None) -> dict:
     day = str(brief.get("date") or "")
     w = brief.get("withheld")
     withheld = w if isinstance(w, (int, float)) and not isinstance(w, bool) else None
+    dv = n.get("delivery")
+    built = built_label(brief.get("generated_at"), dv.get("timezone") if isinstance(dv, dict) else None)
     W = _js_str(win)
     dek = (str(s["total"]) + " stories across " + str(s["cats"]) + " categories &middot; " + str(s["news"])
            + " published in the last " + W + " hours")
@@ -439,27 +509,33 @@ def render(brief: dict, cfg: Any = None) -> dict:
             + '<header class="mast"><div class="art">' + icons()["art"].get("masthead", "") + '</div><div class="in"><div class="kick">'
             + icon_svg("sunrise", "ki") + esc(title) + " &middot; Edition " + esc(day)
             + '</div><h1 class="ttl">' + esc(pretty_date(day)) + '</h1><p class="dl">' + dek
-            + '</p></div></header><div class="rule"></div><main class="in">'
-            + sample + weather_html(brief.get("weather"), day) + (countdown_html(cd, day) if cd else "") + tiles_html + bar + analysis_html(brief.get("analysis"), n) + gap
+            + "</p>" + ('<p class="built">Built ' + esc(built) + "</p>" if built else "")
+            + '</div></header><div class="rule"></div><main class="in">'
+            + sample + weather_html(brief.get("weather"), day, dv.get("timezone") if isinstance(dv, dict) else None) + (countdown_html(cd, day) if cd else "") + tiles_html + bar + analysis_html(brief.get("analysis"), n) + gap
             + '<div class="grid">' + cards + "</div>"
             + '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + W
             + '-hour window (under 6h, under 12h, under ' + W + 'h). <span class="pill old">OLDER</span> is beyond ' + W
             + 'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span>'
             + ' is an undated authoritative page, never presented as an event.</div>'
-            + '</main><footer class="foot"><div class="in">Generated ' + esc(brief.get("generated_at") or "") + " &middot; " + esc(source_label(brief))
+            + '</main><footer class="foot"><div class="in">'
+            + ("Built " + esc(built) if built else "Generated " + esc(brief.get("generated_at") or ""))
+            + " &middot; " + esc(source_label(brief))
             + " &middot; " + W + "-hour window &middot; summaries capped at " + esc(cap)
             + " characters &middot; Daily Brief " + E.VERSION
             + "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story.</div></footer></body></html>")
     return {"subject": subject, "html": html,
-            "text": plain_text(brief, n, s, cd, win, title, day, withheld)}
+            "text": plain_text(brief, n, s, cd, win, title, day, withheld, built)}
 
 
 def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, title: str, day: str,
-               withheld: Any) -> str:
+               withheld: Any, built: str = "") -> str:
     W = _js_str(win)
     L = []
     rule = "=" * 65
-    L += [title.upper() + " - " + pretty_date(day), rule]
+    L.append(title.upper() + " - " + pretty_date(day))
+    if built:
+        L.append("Built " + built)
+    L.append(rule)
     L.append(str(s["total"]) + " stories across " + str(s["cats"]) + " categories | " + str(s["news"]) + " fresh under " + W + "h"
              + (" | " + _js_str(withheld or 0) + " withheld as already sent" if brief.get("ledger_applied") else ""))
     if brief.get("source") == "sample":
@@ -518,5 +594,6 @@ def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, titl
                 L.append("    " + E.collapse(it.get("summary")))
             if n["brief"]["conversation_starters"] and E.collapse(it.get("starter")):
                 L.append("    Ask: " + E.collapse(it.get("starter")))
-    L += ["", rule, "Generated " + str(brief.get("generated_at") or "") + " | " + source_label(brief) + " | Daily Brief " + E.VERSION]
+    L += ["", rule, ("Built " + built if built else "Generated " + str(brief.get("generated_at") or ""))
+          + " | " + source_label(brief) + " | Daily Brief " + E.VERSION]
     return "\n".join(L) + "\n"

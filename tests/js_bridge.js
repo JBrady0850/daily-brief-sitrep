@@ -12,7 +12,7 @@ process.stdin.on("end", () => {
   const reqs = JSON.parse(input);
   const out = (Array.isArray(reqs) ? reqs : [reqs]).map(req => {
     const fn = req.fn === "render" ? N.render : req.fn === "subjectLine" ? N.subjectLine
-      : req.fn.indexOf("collect.") === 0 ? C[req.fn.slice(8)] : E[req.fn];
+      : req.fn.indexOf("collect.") === 0 ? C[req.fn.slice(8)] : req.fn.indexOf("N.") === 0 ? N[req.fn.slice(2)] : E[req.fn];
     if (typeof fn !== "function") return { error: "no function " + req.fn };
     try {
       const v = fn.apply(null, req.args || []);

@@ -26,6 +26,13 @@ optional `age_hours`, `starter` and `image`. `image` is an https link to the
 story's photo; anything else is ignored with a warning, so the page never loads
 a picture over plain http.
 
+The file stores every time in UTC. The page, its plain text and the GitHub
+issue show them in the reader's time zone (`delivery.timezone` in the
+settings, or the browser's zone when that is empty): "Built Sunday, October
+25, 2026 at 9:56 AM CDT" under the date, and "Oct 25, 9:20 AM CDT" beside a
+story or the forecast. US zones use their usual letters; other zones show the
+offset, such as UTC+5:30. An unknown zone reads as UTC, spelled out.
+
 ## Settings (`version: 1`)
 
 See section 7 of `prompt/daily-brief-prompt.md`, `examples/sample-settings.json`,

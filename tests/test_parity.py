@@ -453,3 +453,60 @@ def test_settings_from_before_0_2_0_lose_email_quietly():
     assert v0 == {"errors": [], "warnings": []}, "no warning on every review"
     assert n1["delivery"]["channels"] == ["issue"] and v1["errors"] == [] and v1["warnings"] == []
     assert v2["errors"] == ['delivery.channels must be ["issue"].'], "other unknown channels are still errors"
+
+
+def test_built_time_labels_agree(sample_brief, sample_settings):
+    """The page says when it was built, in the reader's time zone, the same way in both engines."""
+    times = ["2026-10-25T14:56:08Z", "2026-01-15T05:30:00Z", "2026-03-08T07:59:00Z", "2026-03-08T08:00:00Z",
+             "2026-11-01T06:59:59Z", "2026-11-01T07:00:00Z", "2026-06-30T00:00:00Z", "2026-06-30T12:00:00Z", "not a time", None]
+    zones = ["America/Chicago", "America/New_York", "America/Phoenix", "Pacific/Honolulu", "Europe/London", "Asia/Kolkata",
+             "Australia/Lord_Howe", "Asia/Kathmandu", "UTC", "", "Nowhere/Land", None]
+    pairs = [(t, z) for t in times for z in zones]
+    got = js_calls([{"fn": "N.builtLabel", "args": [t, z]} for t, z in pairs])
+    for (t, z), j in zip(pairs, got):
+        assert R.built_label(t, z) == j, (t, z, R.built_label(t, z), j)
+    assert R.built_label("2026-10-25T14:56:08Z", "America/Chicago") == "Sunday, October 25, 2026 at 9:56 AM CDT"
+    assert R.built_label("2026-01-15T05:30:00Z", "America/Chicago") == "Wednesday, January 14, 2026 at 11:30 PM CST"
+    assert R.built_label("2026-03-08T08:00:00Z", "America/Chicago") == "Sunday, March 08, 2026 at 3:00 AM CDT", "daylight time starts"
+    assert R.built_label("2026-06-30T12:00:00Z", "Asia/Kolkata") == "Tuesday, June 30, 2026 at 5:30 PM UTC+5:30"
+    assert R.built_label("2026-06-30T00:00:00Z", "") == "Tuesday, June 30, 2026 at 12:00 AM UTC"
+    assert R.built_label("2026-06-30T12:00:00Z", "Nowhere/Land").endswith("12:00 PM UTC"), "an unknown zone falls back to UTC"
+    assert R.built_label("not a time", "America/Chicago") == ""
+    # The page, its plain text and the GitHub issue all carry it, identically in both engines.
+    cfg = copy.deepcopy(sample_settings)
+    cfg["delivery"] = dict(cfg.get("delivery") or {}, timezone="America/Chicago")
+    b = copy.deepcopy(sample_brief)
+    b["generated_at"] = "2026-10-25T14:56:08Z"
+    j = js_calls([{"fn": "render", "args": [b, cfg]}])[0]
+    p = R.render(b, cfg)
+    for k in ("subject", "text", "html"):
+        assert p[k] == j[k], k
+    assert '<p class="built">Built Sunday, October 25, 2026 at 9:56 AM CDT</p>' in p["html"]
+    assert "Built Sunday, October 25, 2026 at 9:56 AM CDT &middot;" in p["html"] and "14:56" not in p["html"], "no UTC time in the page"
+    assert p["text"].splitlines()[1] == "Built Sunday, October 25, 2026 at 9:56 AM CDT"
+    from dailybrief.markdown import render_markdown
+    assert "Built Sunday, October 25, 2026 at 9:56 AM CDT" in render_markdown(b, cfg)
+    no_time = dict(b, generated_at="")
+    assert 'class="built"' not in R.render(no_time, cfg)["html"], "no time, no line"
+
+
+def test_story_and_forecast_times_use_the_reader_zone(sample_brief, sample_settings):
+    """Story times and the forecast's "updated" time follow the reader's zone, never UTC with a Z."""
+    import re
+    pairs = [(t, z) for t in ["2026-10-23T07:48:00Z", "2026-01-15T05:30:00Z", "2026-03-08T08:00:00Z", "bad", None]
+             for z in ["America/Chicago", "Asia/Kolkata", "UTC", "", "Nowhere/Land", None]]
+    got = js_calls([{"fn": "N.stamp", "args": [t, z]} for t, z in pairs])
+    for (t, z), j in zip(pairs, got):
+        assert R.stamp(t, z) == j, (t, z, R.stamp(t, z), j)
+    assert R.stamp("2026-10-23T07:48:00Z", "America/Chicago") == "Oct 23, 2:48 AM CDT"
+    assert R.stamp("2026-01-15T05:30:00Z", "America/Chicago") == "Jan 14, 11:30 PM CST", "the date follows the zone too"
+    assert R.stamp("2026-10-23T07:48:00Z", None) == "Oct 23, 7:48 AM UTC", "no zone set reads as UTC, spelled out"
+    assert R.stamp("bad", "America/Chicago") == ""
+    cfg = copy.deepcopy(sample_settings)
+    cfg["delivery"] = dict(cfg.get("delivery") or {}, timezone="America/Chicago")
+    j = js_calls([{"fn": "render", "args": [sample_brief, cfg]}])[0]
+    p = R.render(sample_brief, cfg)
+    assert p["html"] == j["html"]
+    assert not re.search(r"[0-9]{2}:[0-9]{2}Z", p["html"]), "no Zulu time anywhere on the page"
+    assert re.search(r"updated [A-Z][a-z]{2} [0-9]{2}, [0-9]{1,2}:[0-9]{2} [AP]M C[DS]T", p["html"]), "the forecast time is local"
+    assert re.search(r"&middot; [A-Z][a-z]{2} [0-9]{2}, [0-9]{1,2}:[0-9]{2} [AP]M C[DS]T", p["html"]), "story times are local"

@@ -419,7 +419,7 @@ def test_setup_is_its_own_mode_until_saved_then_the_app_opens_on_the_brief(brows
     stages = page.evaluate("window.__stages")
     assert stages[:1] == ["Publisher feeds"] and "News search" in stages and stages[-1] == "Your page", stages
     assert "Setup complete" in page.inner_text(".welcome")
-    assert page.inner_text("#status").startswith("Ready, built at")
+    assert page.inner_text("#status").startswith("Ready, built today at")
     assert visible_tabs(page) == ["brief", "setup", "daily", "ai", "settings", "help"]
     assert page.inner_text('#tabs button[data-tab="setup"]') == "Your choices"
     assert page.inner_text('#tabs button[data-tab="brief"]') == "Today's brief"
@@ -811,5 +811,24 @@ def test_put_the_categories_in_order(browser):
     page.click(".stepper button[aria-label^='Question 9']")
     rows = page.inner_text("table.summary")
     assert "Order" in rows and "most important first" in rows
+    assert errors == []
+    ctx.close()
+
+
+def test_the_brief_says_when_it_was_built(browser):
+    """An earlier brief on screen says when it was built, in the reader's time zone, on the
+    status line, above the page and inside the page."""
+    from dailybrief.jsdata import load_js_json
+    sample = load_js_json(ROOT / "app" / "data" / "sample.js", "DB_SAMPLE")
+    brief = dict(sample["brief"], source="web", date="2026-10-23", generated_at="2026-10-23T11:16:00Z")
+    cfg = dict(sample["settings"], delivery={"time": "06:15", "timezone": "America/Chicago", "channels": ["issue"]})
+    state = {"version": 1, "tab": "brief", "setup_done": True, "config": cfg, "brief": brief, "health": None}
+    ctx, page, errors = open_page(browser, APP, state=state)
+    page.wait_for_selector("#status")
+    when = "Friday, October 23, 2026 at 6:16 AM CDT"
+    assert page.inner_text("#status") == "Not built yet today. The page below was built " + when + "."
+    assert ("Built " + when + ".") in page.inner_text("#builtline")
+    frame = page.frame_locator("iframe.page")
+    assert frame.locator("p.built").inner_text() == "Built " + when
     assert errors == []
     ctx.close()

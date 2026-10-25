@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 from . import engine as E
-from .render import age_of, countdown_data, pretty_date, source_label, stats, subject_line, tag_of
+from .render import age_of, built_label, countdown_data, pretty_date, source_label, stats, subject_line, tag_of
 
 _MD_SPECIAL = re.compile(r"([\\`*_{}\[\]<>()#+!|~])")
 
@@ -34,6 +34,10 @@ def render_markdown(brief: dict, cfg: Any = None) -> str:
     L = ["# " + md(title), "",
          "**" + md(pretty_date(day)) + "** | " + str(s["total"]) + " stories across " + str(s["cats"])
          + " categories | " + str(s["news"]) + " fresh in the last " + str(win) + " hours", ""]
+    dv = n.get("delivery")
+    built = built_label(brief.get("generated_at"), dv.get("timezone") if isinstance(dv, dict) else None)
+    if built:
+        L[-1:-1] = ["", "Built " + md(built)]
     if brief.get("source") == "sample":
         L += ["> Sample brief: invented headlines that show the layout.", ""]
     cd = countdown_data(n, day)
@@ -83,6 +87,6 @@ def render_markdown(brief: dict, cfg: Any = None) -> str:
             if E.collapse(it.get("summary")):
                 L.append("  " + md(it.get("summary")))
         L.append("")
-    L += ["---", "*" + md(subject_line(brief, n)) + ". Generated " + md(brief.get("generated_at") or "") + ", "
+    L += ["---", "*" + md(subject_line(brief, n)) + ". " + ("Built " + md(built) if built else "Generated " + md(brief.get("generated_at") or "")) + ", "
           + md(source_label(brief)) + ". Daily Brief " + E.VERSION + ".*"]
     return "\n".join(L) + "\n"

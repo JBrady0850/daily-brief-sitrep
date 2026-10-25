@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.1 (2026-10-25)
+
+See when your brief was built, in your own time.
+
+- The brief shows **Built** with the day and time under its date, for example
+  "Built Sunday, October 25, 2026 at 9:56 AM CDT", so a reader can tell a
+  fresh brief from an old one. The status line and the brief heading in the
+  app say the same, and an old brief reads "Not built yet today. The page
+  below was built ...". The plain text and the GitHub issue carry the line too.
+- Story times and the forecast's "updated" time now use your time zone
+  instead of UTC ("Oct 25, 9:20 AM CDT" instead of "Oct 25, 14:20Z"). The
+  zone comes from your choices, or from the browser when none is set. US zones
+  use their usual letters, other zones show the offset (UTC+5:30), and an
+  unknown zone reads as UTC.
+- The footer no longer repeats the UTC build time; the saved brief file still
+  stores every time in UTC.
+
 ## 0.7.0 (2026-10-24)
 
 Put your categories in order.

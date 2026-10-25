@@ -31,6 +31,7 @@ header.mast .in{padding-top:28px;padding-bottom:22px;}
 div.kick{font-size:12px;font-weight:bold;letter-spacing:.18em;text-transform:uppercase;color:#e0b43a;}
 h1.ttl{font-family:Georgia,'Times New Roman',serif;font-size:34px;line-height:1.15;font-weight:bold;margin:8px 0 6px;}
 p.dl{font-size:14px;color:#d3dbe6;margin:0;}
+p.built{font-size:13px;color:#d3dbe6;margin:6px 0 0;}
 div.rule{background:#d4a017;height:4px;}
 main{padding-top:20px;padding-bottom:28px;}
 section.cd{background:#fff8e1;border-left:5px solid #d4a017;padding:14px 16px;margin:0 0 18px;}
@@ -144,11 +145,71 @@ p.wxs a{color:#2b6cc4;}
     return DAYS[dt.getUTCDay()].slice(0, 3) + " " + MONTHS[dt.getUTCMonth()] + " " + E.pad2(dt.getUTCDate()) + ", " + dt.getUTCFullYear();
   }
 
-  function stamp(iso) {
+  /* US time zones by their usual names: [standard offset in minutes, standard, daylight].
+     Elsewhere the offset from UTC is shown (mirrors US_ZONES in render.py). */
+  const US_ZONES = {
+    "America/New_York": [-300, "EST", "EDT"], "America/Detroit": [-300, "EST", "EDT"], "America/Indiana/Indianapolis": [-300, "EST", "EDT"],
+    "America/Kentucky/Louisville": [-300, "EST", "EDT"], "America/Chicago": [-360, "CST", "CDT"], "America/Denver": [-420, "MST", "MDT"],
+    "America/Boise": [-420, "MST", "MDT"], "America/Phoenix": [-420, "MST", "MST"], "America/Los_Angeles": [-480, "PST", "PDT"],
+    "America/Anchorage": [-540, "AKST", "AKDT"], "Pacific/Honolulu": [-600, "HST", "HST"]
+  };
+
+  /* The wall clock at an instant in a time zone: [year, month, day, hour, minute, offset
+     in minutes], or null when the zone is unknown. The instant counts to the minute. */
+  function zoneClock(ms, tz) {
+    const t = ms - (((ms % 60000) + 60000) % 60000);
+    if (!tz || tz === "UTC") {
+      const d = new Date(t);
+      return [d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), d.getUTCHours(), d.getUTCMinutes(), 0];
+    }
+    let parts;
+    try {
+      parts = new Intl.DateTimeFormat("en-US", { timeZone: tz, hourCycle: "h23", year: "numeric", month: "numeric", day: "numeric",
+        hour: "numeric", minute: "numeric" }).formatToParts(new Date(t));
+    } catch (e) { return null; }
+    const get = k => { const p = parts.filter(x => x.type === k)[0]; return p ? Number(p.value) : NaN; };
+    const c = [get("year"), get("month"), get("day"), get("hour") % 24, get("minute")];
+    if (!c.every(v => isFinite(v))) return null;
+    return c.concat([Math.round((Date.UTC(c[0], c[1] - 1, c[2], c[3], c[4]) - t) / 60000)]);
+  }
+
+  function zoneName(tz, off) {
+    const us = US_ZONES[tz];
+    if (us) return off === us[0] ? us[1] : us[2];
+    if (off === 0) return "UTC";
+    const a = Math.abs(off);
+    return "UTC" + (off < 0 ? "-" : "+") + Math.floor(a / 60) + (a % 60 ? ":" + E.pad2(a % 60) : "");
+  }
+
+  /* When a brief was built, in the reader's time zone (UTC when it is unknown):
+     "Sunday, October 25, 2026 at 6:16 AM CDT". Empty without a readable time. */
+  /* A time as the reader's clock shows it: [clock, zone], or null without a readable time. */
+  function localClock(iso, tz) {
     const ms = E.parseIso(iso);
-    if (ms === null) return "";
-    const dt = new Date(ms);
-    return MONTHS[dt.getUTCMonth()] + " " + E.pad2(dt.getUTCDate()) + ", " + E.pad2(dt.getUTCHours()) + ":" + E.pad2(dt.getUTCMinutes()) + "Z";
+    if (ms === null) return null;
+    let zone = E.collapse(tz) || "UTC";
+    let c = zoneClock(ms, zone);
+    if (!c) { zone = "UTC"; c = zoneClock(ms, zone); }
+    return [c, zone];
+  }
+
+  function clockTime(c, zone) {
+    return (c[3] % 12 === 0 ? 12 : c[3] % 12) + ":" + E.pad2(c[4]) + " " + (c[3] < 12 ? "AM" : "PM") + " " + zoneName(zone, c[5]);
+  }
+
+  function builtLabel(iso, tz) {
+    const lc = localClock(iso, tz);
+    if (!lc) return "";
+    const c = lc[0];
+    return prettyDate(c[0] + "-" + E.pad2(c[1]) + "-" + E.pad2(c[2])) + " at " + clockTime(c, lc[1]);
+  }
+
+  /* A story's or the forecast's time, short: "Oct 25, 9:20 AM CDT". */
+  function stamp(iso, tz) {
+    const lc = localClock(iso, tz);
+    if (!lc) return "";
+    const c = lc[0];
+    return MONTHS[c[1] - 1] + " " + E.pad2(c[2]) + ", " + clockTime(c, lc[1]);
   }
 
   function ageOf(item, brief) {
@@ -189,7 +250,7 @@ p.wxs a{color:#2b6cc4;}
 
   /* The forecast panel. Numbers are checked before they are written, so a
      pasted brief cannot put markup into the page through them. */
-  function weatherHtml(wx, day) {
+  function weatherHtml(wx, day, tz) {
     if (!wx || typeof wx !== "object" || Array.isArray(wx) || !Array.isArray(wx.days)) return "";
     const days = wx.days.filter(d => d && typeof d === "object" && E.isDateStr(d.date)).slice(0, 4);
     if (!days.length) return "";
@@ -209,7 +270,7 @@ p.wxs a{color:#2b6cc4;}
       h += '<li title="' + esc(ICONS.weather_words[k] || "") + '"><span class="wxdn">' + label + "</span>" + wxSvg(k, "wxi") +
         '<span class="wxhl"><b>' + hi + "</b> / " + lo + '</span><span class="wxr">' + rain + "</span></li>";
     });
-    const when = stamp(wx.fetched_at);
+    const when = stamp(wx.fetched_at, tz);
     return h + '</ol><p class="wxs">Forecast by <a href="https://open-meteo.com/">Open-Meteo.com</a> (CC BY 4.0)' +
       (when ? " &middot; updated " + when : "") + "</p></section>";
   }
@@ -322,7 +383,8 @@ p.wxs a{color:#2b6cc4;}
       const title = esc(E.collapse(it.title));
       const head = href ? '<a class="hl" href="' + esc(href) + '">' + title + "</a>" : '<span class="hl">' + title + "</span>";
       let src = esc(E.collapse(it.source));
-      if (it.published && it.recency !== "reference" && stamp(it.published)) src += (src ? " &middot; " : "") + stamp(it.published);
+      const tz = cfg.delivery && cfg.delivery.timezone;
+      if (it.published && it.recency !== "reference" && stamp(it.published, tz)) src += (src ? " &middot; " : "") + stamp(it.published, tz);
       const sum = E.collapse(it.summary);
       const st = cfg.brief.conversation_starters && E.collapse(it.starter) ? '<p class="st">Ask: ' + esc(E.collapse(it.starter)) + "</p>" : "";
       const text = head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src + "</span></div>" +
@@ -371,6 +433,7 @@ p.wxs a{color:#2b6cc4;}
     const title = E.collapse(brief.title) || n.brief.title;
     const day = String(brief.date || "");
     const withheld = typeof brief.withheld === "number" ? brief.withheld : null;
+    const built = builtLabel(brief.generated_at, n.delivery && n.delivery.timezone);
     let dek = s.total + " stories across " + s.cats + " categories &middot; " + s.news + " published in the last " + win + " hours";
     if (brief.ledger_applied) dek += withheld ? " &middot; " + withheld + " withheld as already sent" : " &middot; nothing here has been sent to you before";
     const tiles = [[s.total, "stories"], [s.news, "fresh, under " + win + "h"], [s.filled + " of " + s.cats, "categories filled"],
@@ -396,21 +459,25 @@ p.wxs a{color:#2b6cc4;}
       "<meta http-equiv=\"Content-Security-Policy\" content=\"default-src 'none'; img-src https: data:; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'\">" +
       "<title>" + esc(subject) + "</title><style>" + CSS + "</style></head><body>" +
       '<header class="mast"><div class="art">' + (ICONS.art.masthead || "") + '</div><div class="in"><div class="kick">' + iconSvg("sunrise", "ki") + esc(title) + " &middot; Edition " + esc(day) + '</div><h1 class="ttl">' +
-      esc(prettyDate(day)) + '</h1><p class="dl">' + dek + '</p></div></header><div class="rule"></div><main class="in">' +
-      sample + weatherHtml(brief.weather, day) + (cd ? countdownHtml(cd, day) : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + '<div class="grid">' + cards + "</div>" +
+      esc(prettyDate(day)) + '</h1><p class="dl">' + dek + "</p>" + (built ? '<p class="built">Built ' + esc(built) + "</p>" : "") +
+      '</div></header><div class="rule"></div><main class="in">' +
+      sample + weatherHtml(brief.weather, day, n.delivery && n.delivery.timezone) + (cd ? countdownHtml(cd, day) : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + '<div class="grid">' + cards + "</div>" +
       '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + win +
       '-hour window (under 6h, under 12h, under ' + win + 'h). <span class="pill old">OLDER</span> is beyond ' + win +
       'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span> is an undated authoritative page, never presented as an event.</div>' +
-      '</main><footer class="foot"><div class="in">Generated ' + esc(brief.generated_at || "") + " &middot; " + esc(sourceLabel(brief)) + " &middot; " + win +
+      '</main><footer class="foot"><div class="in">' + (built ? "Built " + esc(built) : "Generated " + esc(brief.generated_at || "")) +
+      " &middot; " + esc(sourceLabel(brief)) + " &middot; " + win +
       "-hour window &middot; summaries capped at " + esc(cap) + " characters &middot; Daily Brief " + E.VERSION +
       "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story.</div></footer></body></html>";
-    return { subject: subject, html: html, text: plainText(brief, n, s, cd, win, title, day, withheld) };
+    return { subject: subject, html: html, text: plainText(brief, n, s, cd, win, title, day, withheld, built) };
   }
 
-  function plainText(brief, n, s, cd, win, title, day, withheld) {
+  function plainText(brief, n, s, cd, win, title, day, withheld, built) {
     const L = [];
     const rule = "=".repeat(65);
-    L.push(title.toUpperCase() + " - " + prettyDate(day), rule);
+    L.push(title.toUpperCase() + " - " + prettyDate(day));
+    if (built) L.push("Built " + built);
+    L.push(rule);
     L.push(s.total + " stories across " + s.cats + " categories | " + s.news + " fresh under " + win + "h" +
       (brief.ledger_applied ? " | " + (withheld || 0) + " withheld as already sent" : ""));
     if (brief.source === "sample") L.push("SAMPLE: invented headlines that show the layout. Nothing here is real news.");
@@ -454,9 +521,10 @@ p.wxs a{color:#2b6cc4;}
         if (n.brief.conversation_starters && E.collapse(it.starter)) L.push("    Ask: " + E.collapse(it.starter));
       }
     });
-    L.push("", rule, "Generated " + (brief.generated_at || "") + " | " + sourceLabel(brief) + " | Daily Brief " + E.VERSION);
+    L.push("", rule, (built ? "Built " + built : "Generated " + (brief.generated_at || "")) + " | " + sourceLabel(brief) +
+      " | Daily Brief " + E.VERSION);
     return L.join("\n") + "\n";
   }
 
-  return { CSS, ICONS, esc, prettyDate, stamp, stats, subjectLine, countdownData, iconSvg, wxKind, wxSvg, weatherHtml, render };
+  return { CSS, ICONS, esc, prettyDate, builtLabel, stamp, stats, subjectLine, countdownData, iconSvg, wxKind, wxSvg, weatherHtml, render };
 });

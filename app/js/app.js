@@ -924,12 +924,23 @@
       const t = timeOf(state.brief.generated_at);
       const n = N.stats(state.brief).total;
       const old = state.brief_version && state.brief_version !== E.VERSION;
-      return h("p", { class: "status good", id: "status" }, ico("check"), "Ready" + (t ? ", built at " + t : "") + ". " + n + (n === 1 ? " story." : " stories.") +
+      return h("p", { class: "status good", id: "status" }, ico("check"), "Ready" + (t ? ", built today at " + t : "") + ". " + n + (n === 1 ? " story." : " stories.") +
         (old ? " Built by version " + state.brief_version + "; check again to use " + E.VERSION + "." : ""));
     }
     if (state.brief && state.brief.source === "sample") return h("p", { class: "status idle", id: "status" }, "Not built yet today. Showing the sample brief.");
-    if (state.brief) return h("p", { class: "status idle", id: "status" }, "Not built yet today. The page below is from " + N.prettyDate(state.brief.date) + ".");
+    if (state.brief) {
+      const built = builtWhen(state.brief);
+      return h("p", { class: "status idle", id: "status" }, "Not built yet today. " +
+        (built ? "The page below was built " + built + "." : "The page below is from " + N.prettyDate(state.brief.date) + "."));
+    }
     return h("p", { class: "status idle", id: "status" }, "Not built yet today.");
+  }
+
+  /* When the brief on screen was built, in this reader's time zone. */
+  function builtWhen(brief) {
+    if (!brief || brief.source === "sample") return "";
+    const tz = E.collapse(E.normalizeConfig(saved()).delivery.timezone) || browserZone();
+    return N.builtLabel(brief.generated_at, tz);
   }
 
   function welcomeCard() {
@@ -1113,7 +1124,8 @@
     const st = N.stats(state.brief);
     const box = h("div", { class: "card", id: "briefview" },
       h("h2", { text: out.subject }),
-      h("p", { class: "hint", text: st.total + " stories, " + st.news + " fresh, " + st.empty.length + " empty categories." }),
+      h("p", { class: "hint", id: "builtline", text: st.total + " stories, " + st.news + " fresh, " + st.empty.length + " empty categories." +
+        (builtWhen(state.brief) ? " Built " + builtWhen(state.brief) + "." : "") }),
       h("div", { class: "actions" },
         h("button", { class: "btn", onclick: () => S.openPage(out.html) }, "Open as a full page"),
         h("button", { class: "btn ghost", onclick: () => S.download(fileStem() + ".html", out.html, "text/html") }, "Download page"),
