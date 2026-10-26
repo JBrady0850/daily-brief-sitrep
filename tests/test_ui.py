@@ -953,3 +953,34 @@ def test_countdown_question_takes_several_ideas_as_tick_boxes(browser, http_app)
     assert "Countdowns" in rows and "Days to the reunion on 2099-07-04" in rows and "Days to retirement on " + target in rows
     assert errors == []
     ctx.close()
+
+
+def test_countdown_ideas_and_saved_countdowns_never_double_up(browser, http_app):
+    """A countdown saved twice loads once; one saved before ideas carried ids still ticks its
+    idea, so ticking that idea cannot add a second copy; and only one retirement idea shows."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    season = {"label": "Days to Federal Benefits Open Season", "date": "2099-11-09", "start": "", "milestones": []}
+    state = {"version": 1, "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
+                                      "categories": [pick["federal-retirement"], pick["retirement-planning"]],
+                                      "countdowns": [season, dict(season), {"label": "Days to retirement", "date": "2099-12-31", "milestones": []}]}}
+    ctx, page, errors = open_page(browser, http_app, state=state)
+    page.wait_for_selector(".stepper")
+    page.click(".stepper button[aria-label*='countdowns']")
+    page.wait_for_selector("#ideas")
+    cds = lambda: page.evaluate("DB_APP.state().config.countdowns.map(c => c.label)")
+    assert cds() == ["Days to Federal Benefits Open Season", "Days to retirement"], "the saved copy loads once"
+    assert page.is_checked("#ideachk-open-season") and page.is_checked("#ideachk-federal-retirement")
+    labels = page.eval_on_selector_all("#ideas .idearow label b", "xs => xs.map(x => x.textContent.toLowerCase())")
+    assert len(labels) == len(set(labels)) and labels.count("days to retirement") == 1, labels
+    assert page.locator("#ideachk-retirement").count() == 0
+    page.uncheck("#ideachk-open-season")
+    assert cds() == ["Days to retirement"]
+    page.check("#ideachk-open-season")
+    page.uncheck("#ideachk-federal-retirement")
+    page.check("#ideachk-federal-retirement")
+    page.fill("#ideadate-federal-retirement", "2099-12-31")
+    page.dispatch_event("#ideadate-federal-retirement", "change")
+    assert sorted(cds()) == ["Days to Federal Benefits Open Season", "Days to retirement"], cds()
+    assert errors == []
+    ctx.close()

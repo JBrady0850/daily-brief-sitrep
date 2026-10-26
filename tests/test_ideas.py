@@ -88,3 +88,41 @@ def test_personal_ideas_count_back_from_the_readers_date():
     assert call("fill", "trip", "2026-10-25", "2026-10-25") is None, "the date has to be after today"
     assert call("fill", "trip", "", "2026-10-25") is None and call("fill", "nothing", "2027-01-01", "2026-10-25") is None
     assert call("fill", "season", "2027-09-09", "2026-10-25")["milestones"] == []
+
+
+def test_no_idea_shows_twice():
+    """Across every category, reader and time of year, an idea (by id or by name) shows
+    once: in the ideas that fit, or in More ideas, never both and never twice."""
+    from conftest import ROOT
+    import json
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    ids = [c["id"] for c in lib["categories"]]
+    picks = [[i] for i in ids] + [ids, ["federal-retirement", "retirement-planning"], ["retirement-planning", "federal-retirement"],
+                                  ["health-wellness", "retirement-planning", "local-weather"], []]
+    dates = ["2026-%02d-15" % m for m in range(1, 13)] + ["2026-10-20", "2026-11-20", "2026-12-10", "2026-12-14", "2027-06-01"]
+    readers = [{"region": "Florida"}, {"region": "Illinois"}]
+    cases = [(p, d, r) for p in picks for d in dates for r in readers]
+    first = js_calls([{"fn": "I.ideasFor", "args": [cats(*p), d, r, 99]} for p, d, r in cases])
+    second = js_calls([{"fn": "I.moreIdeas", "args": [cats(*p), d, r, [i["id"] for i in f]]} for (p, d, r), f in zip(cases, first)])
+    every = {i["id"] for i in call("moreIdeas", [], "2026-10-25", {}, [])}
+    for (p, d, r), f, m in zip(cases, first, second):
+        shown = f + m
+        names = [i["label"].lower() for i in shown]
+        assert len({i["id"] for i in shown}) == len(shown), (p, d, r, [i["id"] for i in shown])
+        assert len(set(names)) == len(names), (p, d, r, names)
+        # Every idea is reachable, except the second "Days to retirement".
+        assert {i["id"] for i in shown} | {"retirement", "federal-retirement"} == every | {"retirement", "federal-retirement"}
+        assert len({"retirement", "federal-retirement"} & {i["id"] for i in shown}) == 1
+
+
+def test_a_countdown_saved_without_its_idea_still_belongs_to_it():
+    got = js_calls([{"fn": "I.belongsTo", "args": [cd, idea]} for cd, idea in [
+        ({"label": "Days to Federal Benefits Open Season", "date": "2026-11-09"}, "open-season"),
+        ({"label": "days left in federal benefits open season ", "date": "2026-12-14"}, "open-season"),
+        ({"label": "Days to retirement", "date": "2030-12-31"}, "federal-retirement"),
+        ({"label": "Days to retirement", "date": "2030-12-31"}, "retirement"),
+        ({"label": "Days to retirement", "date": "2030-12-31", "idea": "retirement"}, "federal-retirement"),
+        ({"label": "Days to the reunion", "date": "2099-07-04"}, "trip"),
+        ({"label": "", "date": "2026-11-03"}, "election"),
+        (None, "election")]])
+    assert got == [True, True, True, True, False, False, False, False]

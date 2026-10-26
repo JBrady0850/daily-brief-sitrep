@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.10.0"
+VERSION = "0.10.1"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_COUNTDOWNS = 4
@@ -398,14 +398,27 @@ def resolve_category(cat: dict, reader: dict) -> dict:
 def upgrade_countdown(cfg: Any) -> Any:
     """Settings from before 0.10.0 hold one `countdown` with an on/off switch; it becomes
     the first entry of `countdowns` (or none when it was off)."""
-    if not is_obj(cfg) or "countdown" not in cfg:
+    if not is_obj(cfg):
         return cfg
     out = dict(cfg)
-    old = out.pop("countdown")
-    if "countdowns" not in out:
-        out["countdowns"] = ([{"label": old.get("label"), "date": old.get("date"), "start": old.get("start") or "",
-                               "milestones": old.get("milestones") if isinstance(old.get("milestones"), list) else []}]
-                             if is_obj(old) and old.get("enabled") is True else [])
+    if "countdown" in out:
+        old = out.pop("countdown")
+        if "countdowns" not in out:
+            out["countdowns"] = ([{"label": old.get("label"), "date": old.get("date"), "start": old.get("start") or "",
+                                   "milestones": old.get("milestones") if isinstance(old.get("milestones"), list) else []}]
+                                 if is_obj(old) and old.get("enabled") is True else [])
+    # The same countdown twice (same name and date) is kept once.
+    if isinstance(out.get("countdowns"), list):
+        seen: list = []
+        keep = []
+        for cd in out["countdowns"]:
+            if is_obj(cd):
+                k = collapse(cd.get("label")).lower() + "|" + collapse(cd.get("date"))
+                if k in seen:
+                    continue
+                seen.append(k)
+            keep.append(cd)
+        out["countdowns"] = keep
     return out
 
 

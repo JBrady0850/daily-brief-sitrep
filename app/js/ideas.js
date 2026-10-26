@@ -79,17 +79,18 @@
   // fixed(today) -> {date, start, label?, milestones?} or offsets for a date the reader picks.
   // optional(reader) -> true keeps an idea out of the suggestions (it stays in "More ideas").
   const IDEAS = [
+    { id: "retirement", label: "Days to retirement", about: "Your retirement date, with the decisions on the way.",
+      cats: ["retirement-planning"],
+      offsets: [[-365, "Check the retirement budget and savings"], [-180, "Decide when to start Social Security and Medicare"],
+        [-120, "Apply for Social Security if it starts then (up to 4 months ahead)"], [-60, "Give notice at work"]] },
     { id: "federal-retirement", label: "Days to retirement", about: "Your federal retirement date, with the paperwork on the way.",
       cats: ["federal-retirement", "federal-workforce", "federal-pay"],
       offsets: [[-365, "Ask HR for a retirement estimate"], [-180, "Review TSP withdrawals and FEHB choices"],
         [-120, "Apply for Social Security if it starts then (up to 4 months ahead)"],
         [-90, "Give HR your retirement application (agencies need at least 60 days)"], [-14, "Check final leave and the last paycheck"]] },
-    { id: "retirement", label: "Days to retirement", about: "Your retirement date, with the decisions on the way.",
-      cats: ["retirement-planning"],
-      offsets: [[-365, "Check the retirement budget and savings"], [-180, "Decide when to start Social Security and Medicare"],
-        [-120, "Apply for Social Security if it starts then (up to 4 months ahead)"], [-60, "Give notice at work"]] },
     { id: "open-season", label: "Days to Federal Benefits Open Season",
       about: "FEHB, PSHB, FEDVIP and FSAFEDS: the second Monday of November to the second Monday of December.",
+      aliases: ["Days left in Federal Benefits Open Season"],
       cats: ["federal-retirement", "federal-workforce", "federal-pay"],
       fixed: t => {
         const y = Number(t.slice(0, 4));
@@ -110,6 +111,7 @@
         return { date: electionDay(even), start: t, milestones: [] };
       } },
     { id: "hurricane", label: "Days to hurricane season", about: "The Atlantic and Gulf hurricane season, June 1 to November 30.",
+      aliases: ["Days left in hurricane season"],
       cats: ["local-weather", "severe-weather", "weather-outlook"],
       optional: reader => STORM_COAST.indexOf(E.stateCode(reader && reader.region)) < 0,
       fixed: t => {
@@ -123,6 +125,7 @@
       } },
     { id: "medicare", label: "Days to Medicare Open Enrollment",
       about: "For people on Medicare: October 15 to December 7, when Medicare plans can change for next year.",
+      aliases: ["Days left in Medicare Open Enrollment"],
       cats: ["retirement-planning", "federal-retirement", "health-wellness"],
       optional: () => true,
       fixed: t => {
@@ -198,6 +201,19 @@
 
   const optional = (idea, reader) => typeof idea.optional === "function" && idea.optional(reader || {});
   const name = c => E.collapse(c && c.name) || (c && c.id) || "";
+  const key = label => E.collapse(label).toLowerCase();
+  /* Every name an idea's countdown can carry ("Days to ..." and "Days left in ..."). */
+  const labelsOf = idea => [idea.label].concat(idea.aliases || []).map(key);
+
+  /* Whether a countdown came from an idea: by its idea id, or, for one saved without an
+     id, by its name. Both retirement ideas answer to "Days to retirement"; the lists
+     never show both at once. */
+  function belongsTo(cd, id) {
+    if (!cd || typeof cd !== "object") return false;
+    if (cd.idea) return cd.idea === id;
+    const idea = IDEAS.filter(i => i.id === id)[0];
+    return !!idea && !!key(cd.label) && labelsOf(idea).indexOf(key(cd.label)) >= 0;
+  }
 
   /* Up to `limit` (default MAX) suggestions for the chosen categories, in the order of
      the categories. Ideas that fit only some readers are left for moreIdeas. */
@@ -208,7 +224,7 @@
       const id = c && c.id;
       for (const idea of IDEAS) {
         if (out.length >= most || idea.cats.indexOf(id) < 0 || optional(idea, reader) ||
-          out.some(o => o.id === idea.id || o.label === idea.label)) continue;
+          out.some(o => o.id === idea.id || labelsOf(idea).indexOf(key(o.label)) >= 0)) continue;
         out.push(card(idea, name(c), today));
       }
     }
@@ -218,11 +234,17 @@
   /* Every other idea, for the reader to pick from: first those that fit a chosen
      category (in the order of the categories), then the rest. */
   function moreIdeas(categories, today, reader, shown) {
-    const skip = (shown || []).slice();
+    const taken = [];  // ids and names already in a list, so no idea shows twice
+    for (const id of shown || []) {
+      const idea = IDEAS.filter(x => x.id === id)[0];
+      taken.push(id);
+      if (idea) for (const l of labelsOf(idea)) taken.push(l);
+    }
     const out = [];
     const take = (idea, from) => {
-      if (skip.indexOf(idea.id) >= 0) return;
-      skip.push(idea.id);
+      if (taken.indexOf(idea.id) >= 0 || labelsOf(idea).some(l => taken.indexOf(l) >= 0)) return;
+      taken.push(idea.id);
+      for (const l of labelsOf(idea)) taken.push(l);
       out.push(card(idea, from, today));
     };
     for (const c of categories || []) for (const idea of IDEAS) if (idea.cats.indexOf(c && c.id) >= 0) take(idea, name(c));
@@ -250,5 +272,5 @@
     return { label: idea.label, date: target, start: today, milestones: milestones(idea.offsets, target, today), idea: id };
   }
 
-  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, fill };
+  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, belongsTo, fill };
 });

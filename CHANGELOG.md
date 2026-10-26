@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.10.1 (2026-10-26)
+
+No idea or countdown shows twice.
+
+- Only one "Days to retirement" idea shows at a time: the federal one when a
+  federal category is chosen, otherwise the general one. Before, More ideas
+  could list both. Ideas are now kept apart by name as well as by id, in the
+  ideas that fit and in More ideas, for every category, reader and time of
+  year (a test checks them all).
+- A countdown saved before ideas carried an id (from 0.9.x) now ticks its idea
+  by name, so ticking that idea no longer adds a second copy, and unticking
+  removes it.
+- The same countdown saved twice (same name and date) loads once, and the
+  brief draws it once, in the web page, the desktop app and the GitHub copy.
+
 ## 0.10.0 (2026-10-26)
 
 Several countdowns.

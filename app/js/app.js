@@ -680,6 +680,7 @@
 
   function milestoneCount(n) { return n + (n === 1 ? " milestone" : " milestones"); }
 
+
   /* Countdown ideas as tick boxes: those that fit the chosen categories first (most
      important category first), then every other idea under More ideas. Ticking a
      fixed-date idea adds its countdown at once; ticking a personal one asks for its date
@@ -695,7 +696,7 @@
     const full = list.length >= E.MAX_COUNTDOWNS;
     const status = h("p", { class: "hint", id: "ideastatus", "aria-live": "polite" });
     function add1(got, idea) {
-      const k = list.findIndex(cd => cd.idea === idea.id);
+      const k = list.findIndex(cd => IDEAS.belongsTo(cd, idea.id));
       if (k >= 0) list[k] = got; else list.push(got);
       const w = ideaWaiting.indexOf(idea.id);
       if (w >= 0) ideaWaiting.splice(w, 1);
@@ -704,7 +705,7 @@
       sayIdeas("Added " + got.label + ", " + N.prettyDate(got.date) + ", with " + milestoneCount(got.milestones.length) + ".");
     }
     function toggle(idea, on) {
-      const k = list.findIndex(cd => cd.idea === idea.id);
+      const k = list.findIndex(cd => IDEAS.belongsTo(cd, idea.id));
       const w = ideaWaiting.indexOf(idea.id);
       if (!on) {
         if (k >= 0) list.splice(k, 1);
@@ -737,7 +738,7 @@
       focusOn("ideadate-" + idea.id);
     }
     function row(idea) {
-      const have = list.filter(cd => cd.idea === idea.id)[0];
+      const have = list.filter(cd => IDEAS.belongsTo(cd, idea.id))[0];
       const on = !!have || ideaWaiting.indexOf(idea.id) >= 0;
       const when = idea.fixed ? N.prettyDate(idea.date) : have && E.isDateStr(have.date) ? N.prettyDate(have.date) : "you pick the date";
       const text = h("div", { class: "ideatext" }, h("label", { for: "ideachk-" + idea.id }, h("b", { text: idea.label }),
@@ -762,7 +763,7 @@
       add(box, h("p", { class: "ideagroup", text: "Fits your categories" }));
       add(box, h("ul", { class: "idealist", id: "ideasfit" }, suggested.map(row)));
     }
-    const moreOn = more.some(i => list.some(cd => cd.idea === i.id) || ideaWaiting.indexOf(i.id) >= 0);
+    const moreOn = more.some(i => list.some(cd => IDEAS.belongsTo(cd, i.id)) || ideaWaiting.indexOf(i.id) >= 0);
     add(box, h("details", { class: "more", "data-key": "moreideas", open: !suggested.length || moreOn },
       h("summary", { text: "More ideas (" + more.length + ")" }), h("ul", { class: "idealist", id: "ideasmore" }, more.map(row))));
     add(box, status);

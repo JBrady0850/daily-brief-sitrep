@@ -634,3 +634,10 @@ def test_several_countdowns_and_old_single_countdown_settings(sample_brief, samp
     assert got[2] == E.validate_config(old_on) and not any("countdown" in w for w in got[2]["warnings"]), got[2]
     both = dict(old_on, countdowns=[])
     assert E.normalize_config(both)["countdowns"] == [], "a countdowns list wins over the old field"
+    # The same countdown twice is kept once, in both engines and in the app's upgrade.
+    twice = dict(cfg, countdowns=[cfg["countdowns"][1], dict(cfg["countdowns"][1], label=" days to election day ", start=""),
+                                  cfg["countdowns"][0], "x", "x"])
+    got = js_calls([{"fn": "normalizeConfig", "args": [twice]}, {"fn": "upgradeCountdown", "args": [twice]}])
+    py = E.normalize_config(twice)["countdowns"]
+    assert got[0]["countdowns"] == py == got[1]["countdowns"] == E.upgrade_countdown(twice)["countdowns"]
+    assert [c if isinstance(c, str) else c["label"] for c in py] == ["Days to Election Day", "Days to retirement", "x", "x"]

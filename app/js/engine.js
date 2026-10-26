@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.10.0";
+  const VERSION = "0.10.1";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_COUNTDOWNS = 4;
@@ -268,13 +268,26 @@
   /* Settings from before 0.10.0 hold one `countdown` with an on/off switch; it becomes
      the first entry of `countdowns` (or none when it was off). */
   function upgradeCountdown(cfg) {
-    if (!isObj(cfg) || !has(cfg, "countdown")) return cfg;
+    if (!isObj(cfg)) return cfg;
     const out = Object.assign({}, cfg);
-    const old = out.countdown;
-    delete out.countdown;
-    if (!has(out, "countdowns")) {
-      out.countdowns = isObj(old) && old.enabled === true
-        ? [{ label: old.label, date: old.date, start: old.start || "", milestones: Array.isArray(old.milestones) ? old.milestones : [] }] : [];
+    if (has(out, "countdown")) {
+      const old = out.countdown;
+      delete out.countdown;
+      if (!has(out, "countdowns")) {
+        out.countdowns = isObj(old) && old.enabled === true
+          ? [{ label: old.label, date: old.date, start: old.start || "", milestones: Array.isArray(old.milestones) ? old.milestones : [] }] : [];
+      }
+    }
+    // The same countdown twice (same name and date) is kept once.
+    if (Array.isArray(out.countdowns)) {
+      const seen = [];
+      out.countdowns = out.countdowns.filter(cd => {
+        if (!isObj(cd)) return true;
+        const k = collapse(cd.label).toLowerCase() + "|" + collapse(cd.date);
+        if (seen.indexOf(k) >= 0) return false;
+        seen.push(k);
+        return true;
+      });
     }
     return out;
   }
