@@ -663,24 +663,23 @@
 
   /* The countdown an idea replaced, so Undo can put it back. */
   let ideaUndo = null;
-  /* Ideas the reader picked from "More ideas" in this visit: [{id, from}]. */
-  const ideaExtras = [];
+  /* The idea picked from the list in this visit; "" shows no idea. */
+  let ideaPick = "";
 
-  /* Countdown ideas from the chosen categories, most important first: a fixed date
-     fills in at once, a personal one asks for its date first. Ideas that fit only
-     some readers (Medicare) wait in the "More ideas" list until the reader picks them. */
+  /* An optional list of countdown ideas: the ones that fit the chosen categories first
+     (most important first), then every other idea. Nothing shows until the reader
+     picks one; then that one idea's date and milestones show, with a button to use it.
+     Ideas that fit only some readers (Medicare) are never in the suggested group. */
   function countdownIdeas() {
     if (!IDEAS) return null;
     const c = cfg();
     const cats = c.categories.map(cat => ({ id: cat.id, name: E.resolveCategory(cat, c.reader).name }));
-    const list = IDEAS.ideasFor(cats, today(), c.reader);
-    for (const x of ideaExtras) {
-      if (!list.some(i => i.id === x.id)) { const card = IDEAS.ideaById(x.id, today(), x.from); if (card) list.push(card); }
-    }
-    const more = IDEAS.moreIdeas(cats, today(), c.reader, list.map(i => i.id));
+    const suggested = IDEAS.ideasFor(cats, today(), c.reader, IDEAS.IDEAS.length);
+    const more = IDEAS.moreIdeas(cats, today(), c.reader, suggested.map(i => i.id));
+    const idea = suggested.concat(more).filter(i => i.id === ideaPick)[0] || null;
     const box = h("div", { class: "ideas", id: "ideas" });
     const status = h("p", { class: "hint", id: "ideastatus", "aria-live": "polite" });
-    function use(idea, target) {
+    function use(target) {
       const got = IDEAS.fill(idea.id, target, today());
       if (!got) { status.textContent = "Pick a date after today for " + idea.label.toLowerCase() + "."; return; }
       ideaUndo = { before: E.clone(c.countdown), label: got.label, date: got.date };
@@ -693,39 +692,34 @@
       const u = document.getElementById("ideaundo");
       if (u) { try { u.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
     }
-    add(box, h("h3", null, ico("calendar", "hi"), "Ideas from your categories"));
-    add(box, h("p", { class: "hint", text: list.length
-      ? "Pick one to fill in the countdown and its milestones; you can change any of it below. Check the dates that matter to you with the source."
-      : "None of your categories has a suggestion. Pick one from More ideas below." }));
-    const grid = h("div", { class: "ideagrid" });
-    for (const idea of list) {
+    const option = i => h("option", { value: i.id, selected: i.id === ideaPick, text: i.label + (i.from ? " (fits " + i.from + ")" : "") });
+    const sel = h("select", { id: "ideapick", onchange: e => {
+      ideaPick = e.target.value;
+      refresh();
+      const st = document.getElementById("ideastatus");
+      const shown = suggested.concat(more).filter(i => i.id === ideaPick)[0];
+      if (st) st.textContent = shown ? "Showing " + shown.label + ". Use it if it fits." : "";
+      const back = document.getElementById("ideapick");
+      if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
+    } }, h("option", { value: "", text: "No idea, thanks", selected: !ideaPick }),
+      suggested.length ? h("optgroup", { label: "Fits your categories" }, suggested.map(option)) : null,
+      h("optgroup", { label: suggested.length ? "More ideas" : "Ideas" }, more.map(option)));
+    add(box, h("label", { for: "ideapick", class: "ideahead" }, ico("calendar", "hi"), "Start from an idea (optional)"));
+    add(box, h("p", { class: "hint", text: "Pick one to see its date and milestones, then use it if it fits. Or skip this and set your own countdown below." }));
+    add(box, sel);
+    if (idea) {
       const item = h("div", { class: "idea" }, h("b", { text: idea.label }), h("p", { class: "hint", text: idea.about + (idea.from ? " From " + idea.from + "." : "") }));
-      if (idea.steps.length) item.append(h("ul", { class: "steps" }, idea.steps.map(s => h("li", { text: s }))));
+      if (idea.steps.length) item.append(h("ul", { class: "steps" }, idea.steps.map(t => h("li", { text: t }))));
       if (idea.fixed) {
         item.append(h("div", { class: "go" }, h("p", { class: "when", text: N.prettyDate(idea.date) }),
           h("button", { class: "btn ghost", id: "idea-" + idea.id, "aria-label": "Use " + idea.label + ", " + N.prettyDate(idea.date),
-            onclick: () => use(idea, "") }, "Use this countdown")));
+            onclick: () => use("") }, "Use this countdown")));
       } else {
         const when = h("input", { type: "date", id: "ideadate-" + idea.id, min: tomorrow(), "aria-label": "Date for " + idea.label });
         item.append(h("div", { class: "go" }, h("div", { class: "row" }, when,
-          h("button", { class: "btn ghost", id: "idea-" + idea.id, onclick: () => use(idea, when.value) }, "Use this date"))));
+          h("button", { class: "btn ghost", id: "idea-" + idea.id, onclick: () => use(when.value) }, "Use this date"))));
       }
-      grid.append(item);
-    }
-    if (list.length) add(box, grid);
-    if (more.length) {
-      const sel = h("select", { id: "moreideas", "aria-label": "More countdown ideas" }, h("option", { value: "", text: "More ideas..." }),
-        more.map(m => h("option", { value: m.id, text: m.label + (m.from ? " (fits " + m.from + ")" : "") })));
-      add(box, h("div", { class: "row moreideas" }, sel, h("button", { class: "btn ghost", id: "moreideas-show", onclick: () => {
-        const pick = more.filter(m => m.id === sel.value)[0];
-        if (!pick) { status.textContent = "Pick an idea from the list first."; return; }
-        ideaExtras.push({ id: pick.id, from: pick.from });
-        refresh();
-        const st = document.getElementById("ideastatus");
-        if (st) st.textContent = "Added " + pick.label + ". Use it below, or pick another.";
-        const b = document.getElementById("ideadate-" + pick.id) || document.getElementById("idea-" + pick.id);
-        if (b) { try { b.focus({ preventScroll: false }); } catch (e) { /* focus is a convenience */ } }
-      } }, "Show this idea")));
+      add(box, item);
     }
     const filled = ideaUndo && c.countdown.label === ideaUndo.label && c.countdown.date === ideaUndo.date;
     if (filled) {
@@ -736,8 +730,8 @@
         refresh();
         const st = document.getElementById("ideastatus");
         if (st) st.textContent = "Put back the countdown you had.";
-        const first = document.querySelector("#ideas button");
-        if (first) { try { first.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
+        const back = document.getElementById("ideapick");
+        if (back) { try { back.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
       } }, "Undo")));
     }
     add(box, status);

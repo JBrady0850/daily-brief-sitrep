@@ -903,9 +903,10 @@ def test_the_brief_says_when_it_was_built(browser):
     ctx.close()
 
 
-def test_countdown_question_suggests_ideas_from_the_categories(browser, http_app):
-    """The countdown question offers ideas from the chosen categories: a fixed date fills in
-    at once, a personal one after its date is picked, and Undo puts the old countdown back."""
+def test_countdown_question_offers_ideas_only_when_picked(browser, http_app):
+    """Countdown ideas are an optional list: no idea shows until the reader picks one.
+    A fixed date fills in at once, a personal one after its date is picked, Undo puts the
+    old countdown back, and Medicare is never among the ideas that fit the categories."""
     lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
     pick = {c["id"]: c for c in lib["categories"]}
     state = {"version": 1, "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
@@ -915,23 +916,31 @@ def test_countdown_question_suggests_ideas_from_the_categories(browser, http_app
     ctx, page, errors = open_page(browser, http_app, state=state)
     page.wait_for_selector(".stepper")
     page.click(".stepper button[aria-label*='countdown']")
-    page.wait_for_selector("#ideas")
-    names = page.locator("#ideas .idea b").all_inner_texts()
-    expect = page.evaluate("DB_IDEAS.ideasFor(DB_APP.state().config.categories, (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), DB_APP.state().config.reader)")
-    assert names == [i["label"] for i in expect] and [i["id"] for i in expect] == ["federal-retirement", "open-season", "election", "trip"]
-    assert page.locator("#idea-medicare").count() == 0, "Medicare is not suggested on its own"
-    assert "From Federal Retirement" in page.inner_text("#ideas .idea >> nth=0"), "each idea names the category it came from"
-    election = [i for i in expect if i["id"] == "election"][0]
+    page.wait_for_selector("#ideapick")
+    assert page.locator("#ideas .idea").count() == 0, "no idea card until one is picked"
+    assert page.input_value("#ideapick") == ""
+    fits = page.eval_on_selector_all("#ideapick optgroup[label='Fits your categories'] option", "os => os.map(o => o.value)")
+    assert fits == ["federal-retirement", "open-season", "election", "trip"], fits
+    more = page.eval_on_selector_all("#ideapick optgroup[label='More ideas'] option", "os => os.map(o => o.value)")
+    assert "medicare" in more and "medicare" not in fits, "Medicare waits in More ideas"
+    assert "(fits Federal Retirement" in page.inner_text("#ideapick option[value=medicare]")
+    # A fixed date: pick it, see its card, use it, then undo.
+    page.select_option("#ideapick", "election")
+    assert page.locator("#ideas .idea").count() == 1 and page.inner_text("#ideas .idea b") == "Days to Election Day"
+    assert page.evaluate("document.activeElement.id") == "ideapick" and "Showing Days to Election Day" in page.inner_text("#ideastatus")
+    assert "From Politics and Policy" in page.inner_text("#ideas .idea")
+    shown = page.evaluate("DB_IDEAS.ideaById('election', (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), '')")
     page.click("#idea-election")
     cd = page.evaluate("DB_APP.state().config.countdown")
-    assert (cd["enabled"], cd["label"], cd["date"]) == (True, "Days to Election Day", election["date"])
+    assert (cd["enabled"], cd["label"], cd["date"]) == (True, "Days to Election Day", shown["date"])
     assert "Filled in: Days to Election Day" in page.inner_text("#ideastatus")
     assert page.evaluate("document.activeElement.id") == "ideaundo"
     page.keyboard.press("Enter")  # Undo
     cd = page.evaluate("DB_APP.state().config.countdown")
     assert (cd["label"], cd["date"]) == ("Days to the reunion", "2099-07-04"), "Undo puts the old countdown back"
-    assert "Put back" in page.inner_text("#ideastatus")
+    assert "Put back" in page.inner_text("#ideastatus") and page.evaluate("document.activeElement.id") == "ideapick"
     # A personal idea asks for its date first.
+    page.select_option("#ideapick", "federal-retirement")
     page.click("#idea-federal-retirement")
     assert "Pick a date after today" in page.inner_text("#ideastatus")
     target = (datetime.now() + timedelta(days=300)).strftime("%Y-%m-%d")
@@ -943,18 +952,11 @@ def test_countdown_question_suggests_ideas_from_the_categories(browser, http_app
     assert all(m["date"] < target for m in cd["milestones"]) and len(cd["milestones"]) == 4, cd["milestones"]
     assert page.locator(".milestones .mrow").count() == 4, "the milestones show in the fields below, ready to change"
     assert page.evaluate("DB_ENGINE.validateConfig(DB_APP.state().config).errors") == []
-    # Medicare is one pick away in More ideas.
-    options = page.locator("#moreideas option").all_inner_texts()
-    assert any(o.startswith("Days left in Medicare Open Enrollment (fits Federal Retirement") or
-               o.startswith("Days to Medicare Open Enrollment (fits Federal Retirement") for o in options), options
-    page.click("#moreideas-show")
-    assert "Pick an idea from the list first" in page.inner_text("#ideastatus")
-    page.select_option("#moreideas", "medicare")
-    page.click("#moreideas-show")
-    assert page.locator("#idea-medicare").count() == 1 and page.evaluate("document.activeElement.id") == "idea-medicare"
-    assert "Added " in page.inner_text("#ideastatus")
-    assert page.locator("#moreideas option[value=medicare]").count() == 0, "a shown idea leaves the list"
+    # Medicare only when picked; "No idea, thanks" hides the card again.
+    page.select_option("#ideapick", "medicare")
     page.click("#idea-medicare")
     assert "Medicare Open Enrollment" in page.evaluate("DB_APP.state().config.countdown.label")
+    page.select_option("#ideapick", "")
+    assert page.locator("#ideas .idea").count() == 0
     assert errors == []
     ctx.close()

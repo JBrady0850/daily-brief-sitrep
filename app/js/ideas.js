@@ -153,7 +153,7 @@
       offsets: [[-60, "Book movers or a truck"], [-30, "Set up utilities and change your address"], [-14, "Start packing"],
         [-2, "Confirm the movers and pack the essentials"]] },
     { id: "launch", label: "Days to the launch", about: "A product, shop or project going live.",
-      cats: ["small-business", "open-source", "ai-tools", "enterprise-ai"],
+      cats: ["small-business", "open-source"],
       offsets: [[-30, "Finish the plan"], [-14, "Tell customers it is coming"], [-7, "Final test run"], [-1, "Last check"]] },
     { id: "school", label: "Days to the first day of school", about: "The start of a school year or term.",
       cats: ["education", "parenting-family"],
@@ -199,14 +199,15 @@
   const optional = (idea, reader) => typeof idea.optional === "function" && idea.optional(reader || {});
   const name = c => E.collapse(c && c.name) || (c && c.id) || "";
 
-  /* Up to MAX suggestions for the chosen categories, in the order of the categories.
-     Ideas that fit only some readers are left for moreIdeas. */
-  function ideasFor(categories, today, reader) {
+  /* Up to `limit` (default MAX) suggestions for the chosen categories, in the order of
+     the categories. Ideas that fit only some readers are left for moreIdeas. */
+  function ideasFor(categories, today, reader, limit) {
+    const most = typeof limit === "number" && limit > 0 ? limit : MAX;
     const out = [];
     for (const c of categories || []) {
       const id = c && c.id;
       for (const idea of IDEAS) {
-        if (out.length >= MAX || idea.cats.indexOf(id) < 0 || optional(idea, reader) ||
+        if (out.length >= most || idea.cats.indexOf(id) < 0 || optional(idea, reader) ||
           out.some(o => o.id === idea.id || o.label === idea.label)) continue;
         out.push(card(idea, name(c), today));
       }

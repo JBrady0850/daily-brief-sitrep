@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.2 (2026-10-25)
+
+- Countdown ideas are now one optional list, **Start from an idea**, instead of
+  a set of idea cards that always showed. Nothing shows until you pick an idea;
+  then only that idea's date and milestones show, with a button to use it.
+  "No idea, thanks" hides it again. The list puts the ideas that fit your
+  categories first and every other idea after them; Medicare is never in the
+  first group.
+- "Days to the launch" no longer comes from the AI categories, only from Small
+  Business and Open Source.
+
 ## 0.9.1 (2026-10-25)
 
 - Medicare Open Enrollment is no longer suggested on its own, because most

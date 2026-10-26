@@ -35,6 +35,9 @@ def test_ideas_follow_the_category_order_and_stop_at_four():
     # One retirement idea, even when two categories suggest it; nothing for unknown categories.
     assert [i["id"] for i in call("ideasFor", cats("retirement-planning", "federal-retirement"), "2026-10-25", {})] == ["retirement", "open-season"]
     assert call("ideasFor", cats("world-news"), "2026-10-25", {}) == [] and call("ideasFor", [], "2026-10-25", None) == []
+    every = call("ideasFor", cats("federal-retirement", "local-weather", "politics", "travel", "nfl"), "2026-10-25", {"region": "Florida"}, 99)
+    assert [i["id"] for i in every] == ["federal-retirement", "open-season", "hurricane", "election", "trip", "season"], "a limit lifts the cap"
+    assert "launch" not in [i["id"] for i in call("ideasFor", cats("enterprise-ai", "ai-tools"), "2026-10-25", {}, 99)]
 
 
 def test_ideas_for_some_readers_wait_in_more_ideas():
