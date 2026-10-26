@@ -1059,3 +1059,23 @@ def test_mail_draft_builds_an_email_link_without_attachments(browser):
     assert page.evaluate("typeof DB_SERVICES.shareFile") == "function"
     assert errors == []
     ctx.close()
+
+
+def test_saved_countdowns_lose_steps_that_assumed_eligibility(browser, http_app):
+    """A countdown saved with the old Social Security or FSAFEDS steps loads without them;
+    the reader's own steps stay."""
+    steps = [{"date": "2099-01-01", "label": "Ask HR for a retirement estimate", "note": ""},
+             {"date": "2099-09-02", "label": "Apply for Social Security if it starts then (up to 4 months ahead)", "note": ""},
+             {"date": "2099-10-01", "label": "My own step", "note": ""}]
+    state = {"version": 1, "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
+                                      "countdowns": [{"label": "Days to retirement", "date": "2099-12-31", "idea": "federal-retirement",
+                                                      "milestones": steps}]}}
+    ctx, page, errors = open_page(browser, http_app, state=state)
+    page.wait_for_selector(".stepper")
+    got = page.evaluate("DB_APP.state().config.countdowns[0].milestones.map(m => m.label)")
+    assert got == ["Ask HR for a retirement estimate", "My own step"]
+    page.reload()
+    page.wait_for_selector(".stepper")
+    assert page.evaluate("JSON.parse(localStorage.getItem('db.state.v1')).config.countdowns[0].milestones.length") == 2, "saved that way"
+    assert errors == []
+    ctx.close()

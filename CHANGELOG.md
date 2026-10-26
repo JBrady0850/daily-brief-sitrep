@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.11.1 (2026-10-26)
+
+- Countdowns saved before 0.11.0 lose the steps that assumed the reader
+  qualifies: "Apply for Social Security if it starts then", "Decide when to
+  start Social Security and Medicare" and "Re-enroll in FSAFEDS if you use it".
+  Steps you wrote yourself stay. This happens when the page opens, for saved
+  choices, unsaved setup changes and restored backups.
+- The Federal Benefits Open Season idea no longer adds the FSAFEDS step, for
+  the same reason: not every reader uses FSAFEDS.
+
 ## 0.11.0 (2026-10-26)
 
 Email this brief.

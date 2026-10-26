@@ -77,7 +77,8 @@ def test_fixed_ideas_fill_in_the_next_date_and_future_milestones():
     assert (before["label"], before["date"], before["start"]) == ("Days to Federal Benefits Open Season", "2026-11-09", "2026-10-25")
     during = call("fill", "open-season", "", "2026-11-20")
     assert (during["label"], during["date"], during["start"]) == ("Days left in Federal Benefits Open Season", "2026-12-14", "2026-11-09")
-    assert [m["label"] for m in during["milestones"]][1] == "Re-enroll in FSAFEDS if you use it (it does not carry over)"
+    assert [m["label"] for m in during["milestones"]] == ["Compare health, dental and vision plans for next year",
+                                                          "Make any change on your benefits site"], "no step only some readers use"
     assert call("fill", "open-season", "", "2026-12-14")["date"] == "2027-11-08", "after the last day, next year's"
 
 
@@ -85,10 +86,14 @@ def test_personal_ideas_count_back_from_the_readers_date():
     got = call("fill", "federal-retirement", "2027-06-30", "2026-10-25")
     assert (got["label"], got["date"], got["start"]) == ("Days to retirement", "2027-06-30", "2026-10-25")
     assert [m["date"] for m in got["milestones"]] == ["2027-01-01", "2027-04-01", "2027-06-16"], "past steps drop out"
-    # Retiring does not make a reader eligible for Social Security or Medicare: no idea assumes it.
-    for idea in ("retirement", "federal-retirement"):
-        steps = call("ideaById", idea, "2026-10-25", "")["steps"]
-        assert not any("Social Security" in s or "Medicare" in s for s in steps), (idea, steps)
+    # No idea adds a dated step that only some readers qualify for or use, at any time of year.
+    every = [i["id"] for i in call("moreIdeas", [], "2026-10-25", {}, [])]
+    for d in ("2026-01-15", "2026-06-15", "2026-10-25", "2026-11-20"):
+        for idea in every:
+            steps = call("ideaById", idea, d, "")["steps"]
+            assert not any(w in s for s in steps for w in ("Social Security", "FSAFEDS")), (idea, d, steps)
+            if idea != "medicare":
+                assert not any("Medicare" in s for s in steps), (idea, d, steps)
     assert call("fill", "trip", "2026-10-25", "2026-10-25") is None, "the date has to be after today"
     assert call("fill", "trip", "", "2026-10-25") is None and call("fill", "nothing", "2027-01-01", "2026-10-25") is None
     assert call("fill", "season", "2027-09-09", "2026-10-25")["milestones"] == []
@@ -130,3 +135,17 @@ def test_a_countdown_saved_without_its_idea_still_belongs_to_it():
         ({"label": "", "date": "2026-11-03"}, "election"),
         (None, "election")]])
     assert got == [True, True, True, True, False, False, False, False]
+
+
+def test_steps_that_assumed_eligibility_leave_saved_countdowns():
+    saved = {"countdowns": [
+        {"label": "Days to retirement", "date": "2027-12-31", "idea": "federal-retirement", "milestones": [
+            {"date": "2026-12-31", "label": "Ask HR for a retirement estimate"},
+            {"date": "2027-09-02", "label": "Apply for Social Security if it starts then (up to 4 months ahead)"},
+            {"date": "2027-07-01", "label": "decide when to start social security and medicare "}]},
+        {"label": "Days left in Federal Benefits Open Season", "date": "2026-12-14", "milestones": [
+            {"date": "2026-12-07", "label": "Re-enroll in FSAFEDS if you use it (it does not carry over)"}, "x"]},
+        {"label": "Mine", "date": "2027-01-01", "milestones": [{"date": "2026-12-01", "label": "Apply for Social Security, my own note"}]},
+        "x"]}
+    got = js_calls([{"fn": "I.dropRetiredSteps", "args": [saved]}])[0]
+    assert got == 3

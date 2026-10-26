@@ -20,9 +20,10 @@
    (April 16) (IRS); the Atlantic hurricane season runs June 1 to November 30
    (NOAA); Medicare Open Enrollment runs October 15 to December 7 (Medicare.gov);
    an agency needs at least 60 days to process a federal retirement application
-   (OPM). Retirement ideas name no Social Security or Medicare step: retiring does
-   not make a reader eligible for either, and their dates depend on age, not on the
-   retirement date.
+   (OPM). No idea adds a step that only some readers qualify for or use (Social
+   Security, Medicare, FSAFEDS): retiring does not make a reader eligible, their
+   dates depend on age or enrollment, and a dated step would assume both. Steps that
+   earlier versions added are taken out of saved countdowns (RETIRED_STEPS).
    Checked on 2026-10-26: Federal Benefits Open Season (FEHB, PSHB, FEDVIP,
    FSAFEDS) runs from the Monday of the second full workweek in November through
    the Monday of the second full workweek in December (5 CFR 890.301(f)), which is
@@ -97,8 +98,7 @@
         const [open, close] = openSeason(y);
         if (t >= open && t < close) {
           return { label: "Days left in Federal Benefits Open Season", date: close, start: open,
-            milestones: [[-14, "Compare health, dental and vision plans for next year"],
-              [-7, "Re-enroll in FSAFEDS if you use it (it does not carry over)"], [-2, "Make any change on your benefits site"]] };
+            milestones: [[-14, "Compare health, dental and vision plans for next year"], [-2, "Make any change on your benefits site"]] };
         }
         const next = t < open ? open : openSeason(y + 1)[0];
         return { date: next, start: t, milestones: [[-14, "Read next year's plan changes and premiums"]] };
@@ -175,6 +175,24 @@
         "sports-headlines", "local-sports"],
       offsets: [] }
   ];
+
+  // Steps earlier versions put into countdowns that assumed the reader qualifies.
+  const RETIRED_STEPS = ["Apply for Social Security if it starts then (up to 4 months ahead)",
+    "Decide when to start Social Security and Medicare", "Re-enroll in FSAFEDS if you use it (it does not carry over)"];
+
+  /* Takes those steps out of saved countdowns. Changes the settings in place and
+     returns how many steps it removed. */
+  function dropRetiredSteps(cfg) {
+    const gone = RETIRED_STEPS.map(t => E.collapse(t).toLowerCase());
+    let n = 0;
+    for (const cd of cfg && Array.isArray(cfg.countdowns) ? cfg.countdowns : []) {
+      if (!cd || typeof cd !== "object" || !Array.isArray(cd.milestones)) continue;
+      const keep = cd.milestones.filter(m => !(m && typeof m === "object" && gone.indexOf(E.collapse(m.label).toLowerCase()) >= 0));
+      n += cd.milestones.length - keep.length;
+      cd.milestones = keep;
+    }
+    return n;
+  }
 
   /* Milestone dates for a target: kept only when they fall after today and before the target. */
   function milestones(list, target, today) {
@@ -272,5 +290,5 @@
     return { label: idea.label, date: target, start: today, milestones: milestones(idea.offsets, target, today), idea: id };
   }
 
-  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, belongsTo, fill };
+  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, belongsTo, fill, RETIRED_STEPS, dropRetiredSteps };
 });
