@@ -255,24 +255,25 @@ window.DB_SAMPLE = {
     "library hours"
    ]
   },
-  "countdown": {
-   "enabled": true,
-   "label": "Days to the spring trip",
-   "date": "2027-03-31",
-   "start": "2026-10-01",
-   "milestones": [
-    {
-     "date": "2026-11-15",
-     "label": "Book flights",
-     "note": "fares usually rise after this"
-    },
-    {
-     "date": "2027-01-10",
-     "label": "Renew passports",
-     "note": "allow eight weeks"
-    }
-   ]
-  },
+  "countdowns": [
+   {
+    "label": "Days to the spring trip",
+    "date": "2027-03-31",
+    "start": "2026-10-01",
+    "milestones": [
+     {
+      "date": "2026-11-15",
+      "label": "Book flights",
+      "note": "fares usually rise after this"
+     },
+     {
+      "date": "2027-01-10",
+      "label": "Renew passports",
+      "note": "allow eight weeks"
+     }
+    ]
+   }
+  ],
   "sources": {
    "avoid_hosts": [
     "instagram.com",

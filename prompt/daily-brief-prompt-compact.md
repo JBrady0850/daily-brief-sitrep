@@ -41,7 +41,7 @@ queries, require term groups, exclude terms, items).
 5. Stories per category [5]; freshness window hours [24]; older items labelled
    OLDER up to [72] hours when thin; undated REFERENCE pages [yes].
 6. Lead Analysis [yes]; watch list topics; conversation starters [no].
-7. Optional countdown: label, target date, start date, milestones.
+7. Optional countdowns (up to 4): label, target date, start date, milestones.
 8. Title [The Morning Brief]; subject [Daily Brief - {total}-Item SITREP | {date}];
    for the GitHub run (posts an issue): delivery.time [06:15],
    delivery.timezone (IANA name); delivery.channels stays ["issue"].
@@ -73,7 +73,7 @@ queries, require term groups, exclude terms, items).
 ## Output
 JSON after a brief re-prints that brief; do not search again or drop its own
 stories as repeats. Newsletter: `# title`, a line with the date, story count and fresh count, the
-countdown if set, `## Lead analysis`, then for each category
+countdowns if set, `## Lead analysis`, then for each category
 `## [id] name (n fresh, n older, n reference)` with items as
 `- **[headline](link)** | outlet | NEWS, 5h ago` and a summary line, then a
 one-line legend. JSON mode: one json code block with schema "daily-brief/v1",

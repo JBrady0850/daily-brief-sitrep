@@ -235,18 +235,19 @@
     return idea ? card(idea, from || "", today) : null;
   }
 
-  /* The countdown settings an idea fills in. `target` is the reader's own date for a
-     personal idea and is ignored for a fixed one. Returns null for a date not after today. */
+  /* The countdown an idea makes: {label, date, start, milestones, idea}. `target` is the
+     reader's own date for a personal idea and is ignored for a fixed one. Returns null
+     for a date not after today. */
   function fill(id, target, today) {
     const idea = IDEAS.filter(i => i.id === id)[0];
     if (!idea) return null;
     if (idea.fixed) {
       const f = idea.fixed(today);
-      return { enabled: true, label: f.label || idea.label, date: f.date, start: f.start < f.date ? f.start : today,
-        milestones: milestones(f.milestones, f.date, today) };
+      return { label: f.label || idea.label, date: f.date, start: f.start < f.date ? f.start : today,
+        milestones: milestones(f.milestones, f.date, today), idea: id };
     }
     if (!E.isDateStr(target) || target <= today) return null;
-    return { enabled: true, label: idea.label, date: target, start: today, milestones: milestones(idea.offsets, target, today) };
+    return { label: idea.label, date: target, start: today, milestones: milestones(idea.offsets, target, today), idea: id };
   }
 
   return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, fill };

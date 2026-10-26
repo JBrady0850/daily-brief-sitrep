@@ -339,22 +339,32 @@ def subject_line(brief: dict, cfg: Any) -> str:
     return out
 
 
-def countdown_data(cfg: dict, day: str) -> Optional[dict]:
-    cd = cfg.get("countdown") or {}
-    if cd.get("enabled") is not True or not E.is_date_str(cd.get("date")) or not E.is_date_str(day):
+def countdown_data(cd: Any, day: str) -> Optional[dict]:
+    """One countdown as the page draws it, or None when it is unreadable or already past."""
+    if not isinstance(cd, dict) or not E.is_date_str(cd.get("date")) or not E.is_date_str(day):
         return None
     days = E.days_between(day, cd["date"])
+    if days < 0:
+        return None
     pct = None
     if E.is_date_str(cd.get("start")):
         span = max(E.days_between(cd["start"], cd["date"]), 1)
         done = min(max(E.days_between(cd["start"], day), 0), span)
         pct = math.floor(100 * done / span + 0.5)
     allm = [{"date": m["date"], "label": E.collapse(m.get("label")), "note": E.collapse(m.get("note")), "mark": False}
-            for m in (cd.get("milestones") or []) if E.is_date_str(m.get("date"))]
+            for m in (cd.get("milestones") if isinstance(cd.get("milestones"), list) else [])
+            if isinstance(m, dict) and E.is_date_str(m.get("date"))]
     allm.append({"date": cd["date"], "label": "Target date", "note": E.collapse(cd.get("label")), "mark": True})
     allm.sort(key=lambda m: (m["date"], 1 if m["mark"] else 0))
     upcoming = [m for m in allm if m["date"] >= day][:5]
     return {"days": days, "pct": pct, "label": E.collapse(cd.get("label")), "date": cd["date"], "upcoming": upcoming}
+
+
+def countdown_list(cfg: dict, day: str) -> list:
+    """Every countdown in the settings that is still ahead, at most E.MAX_COUNTDOWNS."""
+    cds = cfg.get("countdowns")
+    out = [countdown_data(cd, day) for cd in (cds[:E.MAX_COUNTDOWNS] if isinstance(cds, list) else [])]
+    return [c for c in out if c]
 
 
 def countdown_html(c: dict, day: str) -> str:
@@ -548,7 +558,7 @@ def render(brief: dict, cfg: Any = None) -> dict:
                      + "</span>" for x in segs)
     bar = ('<div class="srcbar">' + cells + '</div><div class="lgd">Today\'s stories by age: '
            + legend + "</div>") if cells else ""
-    cd = countdown_data(n, day)
+    cds = countdown_list(n, day)
     gap = ""
     quiet = [c for c in s["empty"] if c.get("unchecked") is not True]
     unchecked = [c for c in s["empty"] if c.get("unchecked") is True]
@@ -570,7 +580,7 @@ def render(brief: dict, cfg: Any = None) -> dict:
             + '</div><h1 class="ttl">' + esc(pretty_date(day)) + '</h1><p class="dl">' + dek
             + "</p>" + ('<p class="built">Built ' + esc(built) + "</p>" if built else "")
             + '</div></header><div class="rule"></div><main class="in">'
-            + sample + weather_html(brief.get("weather"), day, dv.get("timezone") if isinstance(dv, dict) else None) + (countdown_html(cd, day) if cd else "") + tiles_html + bar + analysis_html(brief.get("analysis"), n) + gap
+            + sample + weather_html(brief.get("weather"), day, dv.get("timezone") if isinstance(dv, dict) else None) + ('<div class="cdg">' + "".join(countdown_html(c, day) for c in cds) + "</div>" if cds else "") + tiles_html + bar + analysis_html(brief.get("analysis"), n) + gap
             + '<div class="grid">' + cards + "</div>"
             + '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + W
             + '-hour window (under 6h, under 12h, under ' + W + 'h). <span class="pill old">OLDER</span> is beyond ' + W
@@ -585,10 +595,10 @@ def render(brief: dict, cfg: Any = None) -> dict:
             + "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story."
             + ("<br>" + EVENT_NOTE if events else "") + "</div></footer></body></html>")
     return {"subject": subject, "html": html,
-            "text": plain_text(brief, n, s, cd, win, title, day, withheld, built)}
+            "text": plain_text(brief, n, s, cds, win, title, day, withheld, built)}
 
 
-def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, title: str, day: str,
+def plain_text(brief: dict, n: dict, s: dict, cds: list, win: Any, title: str, day: str,
                withheld: Any, built: str = "") -> str:
     W = _js_str(win)
     L = []
@@ -612,7 +622,7 @@ def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, titl
                  for d in _wx_days(wx)]
         if parts:
             L += ["", "WEATHER, " + (E.collapse(wx.get("place")) or "your area").upper() + ": " + " | ".join(parts)]
-    if cd:
+    for cd in cds:
         L += ["", cd["label"].upper() + ": " + str(cd["days"]) + " days to " + pretty_date(cd["date"])
               + ("" if cd["pct"] is None else " (" + str(cd["pct"]) + "% elapsed)")]
         for m in cd["upcoming"]:

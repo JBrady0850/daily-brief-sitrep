@@ -60,7 +60,7 @@ def test_ideas_for_some_readers_wait_in_more_ideas():
 
 def test_fixed_ideas_fill_in_the_next_date_and_future_milestones():
     med = call("fill", "medicare", "", "2026-10-25")
-    assert med == {"enabled": True, "label": "Days left in Medicare Open Enrollment", "date": "2026-12-07", "start": "2026-10-15",
+    assert med == {"label": "Days left in Medicare Open Enrollment", "date": "2026-12-07", "start": "2026-10-15", "idea": "medicare",
                    "milestones": [{"date": "2026-11-16", "label": "Compare plans for next year", "note": ""},
                                   {"date": "2026-11-30", "label": "Make any change", "note": ""}]}
     assert call("fill", "medicare", "", "2026-12-20")["label"] == "Days to Medicare Open Enrollment"

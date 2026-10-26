@@ -59,7 +59,7 @@ def main() -> int:
         page.screenshot(path=str(OUT / "04-town-and-weather.png"))
         for _ in range(3):  # amount, focus, countdown
             page.click("button:has-text('Next question')")
-        page.select_option("#ideapick", index=1)  # the first idea that fits the categories
+        page.locator("#ideasfit input[type=checkbox]").first.check()  # the first idea that fits the categories
         page.locator("#ideas").scroll_into_view_if_needed()
         page.screenshot(path=str(OUT / "11-countdown-ideas.png"))
         for _ in range(2):

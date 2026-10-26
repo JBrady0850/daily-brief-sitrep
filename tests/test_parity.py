@@ -105,7 +105,11 @@ def configs():
     bad["countdown"] = {"enabled": True, "label": "", "date": "2026-02-30", "milestones": [{"date": "x"}]}
     bad["email"] = {"to": ["nope", "you@example.com"]}
     bad["extra"] = 1
-    return [good, bad, {}, [], {"categories": [{"id": "constructor", "name": "c", "queries": ["q"]}]}]
+    many = copy.deepcopy(good)
+    many["countdowns"] = [{"label": "", "date": "2026-02-30", "milestones": [{"date": "x"}]}, "x",
+                          {"label": "Late start", "date": "2027-01-01", "start": "2028-01-01", "idea": 3},
+                          {"label": "Fine", "date": "2027-01-01"}, {"label": "Fifth", "date": "2027-02-01", "milestones": None}]
+    return [good, bad, many, dict(good, countdowns="soon"), {}, [], {"categories": [{"id": "constructor", "name": "c", "queries": ["q"]}]}]
 
 
 def test_validation_agrees():
@@ -591,3 +595,42 @@ def test_event_times_and_nearest_calendars_agree():
     assert [c["slug"] for c in near[0]] == ["ExampleTV"], "only calendars whose area reaches the town"
     assert [c["slug"] for c in near[1]] == ["FarAwayTV"]
     assert near[2] == [] and near[3] == []
+
+
+def test_several_countdowns_and_old_single_countdown_settings(sample_brief, sample_settings):
+    """Up to four countdown cards, each with its milestones; a past one drops out; settings
+    with the old single `countdown` keep it as the first card, or none when it was off."""
+    cfg = copy.deepcopy(sample_settings)
+    cfg["countdowns"] = [
+        {"label": "Days to retirement", "date": "2027-06-30", "start": "2026-10-01", "idea": "federal-retirement",
+         "milestones": [{"date": "2027-01-01", "label": "Review TSP withdrawals", "note": ""}]},
+        {"label": "Days to Election Day", "date": "2026-11-03", "start": "2026-10-23", "milestones": []},
+        {"label": "Already over", "date": "2026-10-01", "milestones": []},
+        {"label": "Days to Thanksgiving", "date": "2026-11-26", "milestones": [{"date": "2026-11-24", "label": "Cook ahead"}]},
+        {"label": "Fifth is ignored", "date": "2026-12-25", "milestones": []}]
+    assert E.validate_config(cfg)["errors"] == ["Use at most 4 countdowns."]
+    j = js_calls([{"fn": "render", "args": [sample_brief, cfg]}])[0]
+    p = R.render(sample_brief, cfg)
+    for k in ("subject", "text", "html"):
+        assert p[k] == j[k], k
+    assert p["html"].count('<section class="cd">') == 3, "past and fifth countdowns drop out"
+    assert '<div class="cdg"><section class="cd">' in p["html"]
+    for label in ("Days to retirement", "Days to Election Day", "Days to Thanksgiving"):
+        assert label in p["html"] and label.upper() in p["text"]
+    assert "Already over" not in p["html"] and "Fifth is ignored" not in p["html"]
+    from dailybrief.markdown import render_markdown
+    md = render_markdown(sample_brief, cfg)
+    assert "**Days to retirement:" in md and "**Days to Thanksgiving:" in md
+    # Old settings: one countdown with an on/off switch.
+    old_on = {k: v for k, v in sample_settings.items() if k != "countdowns"}
+    old_on["countdown"] = {"enabled": True, "label": "Days to the spring trip", "date": "2027-03-31", "start": "", "milestones": []}
+    old_off = dict(old_on, countdown=dict(old_on["countdown"], enabled=False))
+    got = js_calls([{"fn": "normalizeConfig", "args": [old_on]}, {"fn": "normalizeConfig", "args": [old_off]},
+                    {"fn": "validateConfig", "args": [old_on]}])
+    assert got[0]["countdowns"] == E.normalize_config(old_on)["countdowns"] == [
+        {"label": "Days to the spring trip", "date": "2027-03-31", "start": "", "milestones": []}]
+    assert "countdown" not in got[0] and "countdown" not in E.normalize_config(old_on)
+    assert got[1]["countdowns"] == E.normalize_config(old_off)["countdowns"] == []
+    assert got[2] == E.validate_config(old_on) and not any("countdown" in w for w in got[2]["warnings"]), got[2]
+    both = dict(old_on, countdowns=[])
+    assert E.normalize_config(both)["countdowns"] == [], "a countdowns list wins over the old field"

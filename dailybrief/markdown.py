@@ -6,7 +6,7 @@ import re
 from typing import Any
 
 from . import engine as E
-from .render import (EVENT_NOTE, age_of, built_label, countdown_data, event_when, event_where, has_events, pretty_date,
+from .render import (EVENT_NOTE, age_of, built_label, countdown_list, event_when, event_where, has_events, pretty_date,
                      source_label, stats, subject_line, tag_of)
 
 _MD_SPECIAL = re.compile(r"([\\`*_{}\[\]<>()#+!|~])")
@@ -41,8 +41,7 @@ def render_markdown(brief: dict, cfg: Any = None) -> str:
         L[-1:-1] = ["", "Built " + md(built)]
     if brief.get("source") == "sample":
         L += ["> Sample brief: invented headlines that show the layout.", ""]
-    cd = countdown_data(n, day)
-    if cd:
+    for cd in countdown_list(n, day):
         L.append("**" + md(cd["label"]) + ": " + str(cd["days"]) + " days** to " + md(pretty_date(cd["date"])))
         for m in cd["upcoming"]:
             L.append("- " + str(E.days_between(day, m["date"])) + " d, " + m["date"] + ": " + md(m["label"])

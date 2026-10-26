@@ -13,9 +13,10 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.9.2"
+VERSION = "0.10.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
+MAX_COUNTDOWNS = 4
 MAX_RECENT = 3000
 MAX_LEDGER = 20000
 MAX_SENT_DATES = 400
@@ -51,7 +52,7 @@ DEFAULTS: dict = {
         "region": "US",
     },
     "reader": {"role": "", "location": "", "region": "", "local_terms": [], "local_feeds": [], "goals": [], "watch_list": []},
-    "countdown": {"enabled": False, "label": "", "date": "", "start": "", "milestones": []},
+    "countdowns": [],
     "delivery": {"time": "06:15", "timezone": "", "channels": ["issue"]},
     "weather": {"enabled": False, "place": "", "latitude": None, "longitude": None, "units": "fahrenheit"},
     "sources": {"avoid_hosts": list(SOCIAL_HOSTS), "prefer": []},
@@ -394,8 +395,22 @@ def resolve_category(cat: dict, reader: dict) -> dict:
     return c
 
 
+def upgrade_countdown(cfg: Any) -> Any:
+    """Settings from before 0.10.0 hold one `countdown` with an on/off switch; it becomes
+    the first entry of `countdowns` (or none when it was off)."""
+    if not is_obj(cfg) or "countdown" not in cfg:
+        return cfg
+    out = dict(cfg)
+    old = out.pop("countdown")
+    if "countdowns" not in out:
+        out["countdowns"] = ([{"label": old.get("label"), "date": old.get("date"), "start": old.get("start") or "",
+                               "milestones": old.get("milestones") if isinstance(old.get("milestones"), list) else []}]
+                             if is_obj(old) and old.get("enabled") is True else [])
+    return out
+
+
 def normalize_config(cfg: Any) -> dict:
-    out = merge(DEFAULTS, cfg if is_obj(cfg) else {})
+    out = merge(DEFAULTS, upgrade_countdown(cfg if is_obj(cfg) else {}))
     cats = out["categories"] if isinstance(out.get("categories"), list) else []
     norm = []
     for i, c in enumerate([c for c in cats if is_obj(c)]):
@@ -427,7 +442,7 @@ def validate_config(cfg: Any) -> dict:
     if "version" in cfg and (not is_int(cfg["version"]) or cfg["version"] != 1):
         errors.append("version must be 1.")
     for k in cfg:
-        if k not in DEFAULTS and k != "email":
+        if k not in DEFAULTS and k not in ("email", "countdown"):
             warnings.append('Unknown setting "' + k + '" is ignored.')
     n = normalize_config(cfg)
     b = n["brief"]
@@ -515,22 +530,31 @@ def validate_config(cfg: Any) -> dict:
             errors.append(label + ": icon must be a short name like weather or football.")
         if (uses_local or c["needs_location"]) and not collapse(r["location"]):
             errors.append(label + ": needs your town in reader.location.")
-    cd = n["countdown"]
-    if cd["enabled"] is True:
-        if not is_str(cd["label"]) or not collapse(cd["label"]):
-            errors.append("countdown.label must be text.")
-        if not is_date_str(cd["date"]):
-            errors.append("countdown.date must be a date like 2027-06-30.")
-        if cd["start"] and not is_date_str(cd["start"]):
-            errors.append("countdown.start must be a date like 2026-01-01.")
-        if is_date_str(cd["date"]) and is_date_str(cd["start"]) and cd["start"] > cd["date"]:
-            errors.append("countdown.start must be before countdown.date.")
-        ms = cd["milestones"]
-        if not isinstance(ms, list) or not all(is_obj(m) and is_date_str(m.get("date")) and is_str(m.get("label"))
-                                               and collapse(m.get("label")) for m in ms):
-            errors.append("countdown.milestones must be a list of {date, label}.")
-    elif cd["enabled"] is not False:
-        errors.append("countdown.enabled must be true or false.")
+    cds = n["countdowns"]
+    if not isinstance(cds, list):
+        errors.append("countdowns must be a list.")
+    else:
+        if len(cds) > MAX_COUNTDOWNS:
+            errors.append("Use at most " + str(MAX_COUNTDOWNS) + " countdowns.")
+        for i, cd in enumerate(cds):
+            w = "Countdown " + str(i + 1)
+            if not is_obj(cd):
+                errors.append(w + " must be an object.")
+                continue
+            if not is_str(cd.get("label")) or not collapse(cd.get("label")):
+                errors.append(w + ": label must be text.")
+            if not is_date_str(cd.get("date")):
+                errors.append(w + ": date must be a date like 2027-06-30.")
+            if "start" in cd and cd["start"] != "" and not is_date_str(cd["start"]):
+                errors.append(w + ": start must be a date like 2026-01-01.")
+            if is_date_str(cd.get("date")) and is_date_str(cd.get("start")) and cd["start"] > cd["date"]:
+                errors.append(w + ": start must be before its date.")
+            ms = cd.get("milestones", [])
+            if not isinstance(ms, list) or not all(is_obj(m) and is_date_str(m.get("date")) and is_str(m.get("label"))
+                                                   and collapse(m.get("label")) for m in ms):
+                errors.append(w + ": milestones must be a list of {date, label}.")
+            if "idea" in cd and not is_str(cd["idea"]):
+                errors.append(w + ": idea must be text.")
     dv = n["delivery"]
     if not is_str(dv["time"]) or (dv["time"] and not re.match(r"^([01][0-9]|2[0-3]):[0-5][0-9]\Z", dv["time"])):
         errors.append("delivery.time must be a time like 06:15, or empty.")

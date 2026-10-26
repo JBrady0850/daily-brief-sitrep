@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.10.0 (2026-10-26)
+
+Several countdowns.
+
+- The brief can show up to four countdown cards, side by side on a wide screen,
+  each with its own milestones. A countdown leaves the brief once its date has
+  passed.
+- The countdown question, now **Your countdowns**, lists the ideas as tick
+  boxes. Tick as many as you like (up to four); each becomes its own countdown,
+  and unticking removes it. Personal ideas ask for their date first. The ideas
+  that fit your categories come first; every other idea is under More ideas.
+- Each countdown has its own fields (label, date, start, milestones) with
+  Remove, and **Add your own countdown** adds a blank one. Your choices lists
+  every countdown.
+- Settings: `countdown` (one, with `enabled`) becomes `countdowns`, a list of
+  `{label, date, start, milestones}`. Older settings, saved choices and backups
+  carry their countdown over as the first entry, or none when it was off, in
+  the web page, the desktop app and the GitHub copy.
+
 ## 0.9.2 (2026-10-25)
 
 - Countdown ideas are now one optional list, **Start from an idea**, instead of

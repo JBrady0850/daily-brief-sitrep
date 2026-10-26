@@ -56,19 +56,24 @@ one higher on the list. **Your choices** has a Change link for the order too.
 
 ![Putting the categories in order](docs/images/10-order.png)
 
-**Countdown ideas (optional).** The countdown question has a **Start from an
-idea** list. Nothing is shown or filled in until you pick one. The list starts
-with the ideas that fit your categories, most important first, then every other
-idea. Picking one shows its date and milestones with a button to use it: dates
-that follow a published rule (Election Day, Thanksgiving, Tax Day, Federal
-Benefits Open Season) fill in with one tap, and personal ones (a retirement, a
-trip, a move, a launch, an exam, the first day of school, race day, draft day or
-a season opener) ask for your date and set the milestones back from it. Ideas
-that fit only some readers (Medicare Open Enrollment, and the hurricane season
-outside the Atlantic and Gulf coast states) are never in the first group.
-Change or remove anything afterwards, or press Undo.
+**Countdowns (optional, up to 4).** The countdown question lists ideas as tick
+boxes, and nothing is ticked until you tick it. Each idea you tick becomes its
+own countdown card at the top of the brief, with its own milestones; untick it
+to remove it. The ideas that fit your categories come first, most important
+first, and every other idea is under **More ideas**. Dates that follow a
+published rule (Election Day, Thanksgiving, Tax Day, Federal Benefits Open
+Season) fill in as soon as you tick them; personal ones (a retirement, a trip, a
+move, a launch, an exam, the first day of school, race day, draft day or a
+season opener) ask for your date and set the milestones back from it. Federal
+retirement, for example, lists the HR estimate, TSP and FEHB choices, Social
+Security (up to 4 months ahead) and the retirement application (agencies need
+at least 60 days). Ideas that fit only some readers (Medicare Open Enrollment,
+and the hurricane season outside the Atlantic and Gulf coast states) are never
+in the first group. **Your countdowns** below the ideas holds each countdown's
+fields to change, with Remove and **Add your own countdown**. A countdown
+disappears from the brief once its date has passed.
 
-![Countdown ideas from your categories](docs/images/11-countdown-ideas.png)
+![Countdown ideas as tick boxes](docs/images/11-countdown-ideas.png)
 
 ## Set up once, then read it every day
 

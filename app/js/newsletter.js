@@ -34,6 +34,7 @@ p.dl{font-size:14px;color:#d3dbe6;margin:0;}
 p.built{font-size:13px;color:#d3dbe6;margin:6px 0 0;}
 div.rule{background:#d4a017;height:4px;}
 main{padding-top:20px;padding-bottom:28px;}
+div.cdg{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin:0 0 18px;} div.cdg section.cd{margin:0;}
 section.cd{background:#fff8e1;border-left:5px solid #d4a017;padding:14px 16px;margin:0 0 18px;}
 div.cdtop{display:flex;gap:16px;align-items:flex-start;}
 div.cdn{font-family:Georgia,serif;font-size:46px;line-height:1;font-weight:bold;color:#0f2744;white-space:nowrap;}
@@ -331,21 +332,28 @@ p.wxs a{color:#2b6cc4;}
     return out;
   }
 
-  function countdownData(cfg, day) {
-    const cd = cfg.countdown;
-    if (!cd || cd.enabled !== true || !E.isDateStr(cd.date) || !E.isDateStr(day)) return null;
+  /* One countdown as the page draws it, or null when it is unreadable or already past. */
+  function countdownData(cd, day) {
+    if (!cd || typeof cd !== "object" || !E.isDateStr(cd.date) || !E.isDateStr(day)) return null;
     const days = E.daysBetween(day, cd.date);
+    if (days < 0) return null;
     let pct = null;
     if (E.isDateStr(cd.start)) {
       const span = Math.max(E.daysBetween(cd.start, cd.date), 1);
       const done = Math.min(Math.max(E.daysBetween(cd.start, day), 0), span);
       pct = Math.floor(100 * done / span + 0.5);
     }
-    const all = (cd.milestones || []).filter(m => E.isDateStr(m.date)).map(m => ({ date: m.date, label: E.collapse(m.label), note: E.collapse(m.note), mark: false }));
+    const all = (Array.isArray(cd.milestones) ? cd.milestones : []).filter(m => m && typeof m === "object" && E.isDateStr(m.date)).map(m => ({ date: m.date, label: E.collapse(m.label), note: E.collapse(m.note), mark: false }));
     all.push({ date: cd.date, label: "Target date", note: E.collapse(cd.label), mark: true });
     all.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.mark === b.mark ? 0 : a.mark ? 1 : -1));
     const upcoming = all.filter(m => m.date >= day).slice(0, 5);
     return { days: days, pct: pct, label: E.collapse(cd.label), date: cd.date, upcoming: upcoming };
+  }
+
+  /* Every countdown in the settings that is still ahead, at most E.MAX_COUNTDOWNS. */
+  function countdownList(cfg, day) {
+    const list = Array.isArray(cfg.countdowns) ? cfg.countdowns.slice(0, E.MAX_COUNTDOWNS) : [];
+    return list.map(cd => countdownData(cd, day)).filter(Boolean);
   }
 
   function countdownHtml(c, day) {
@@ -474,7 +482,7 @@ p.wxs a{color:#2b6cc4;}
       '%;background:' + x[2] + '"></span>').join("");
     const legend = segs.map(x => '<span class="lg"><span class="sw" style="background:' + x[2] + '"></span>' + x[0] + " " + x[1] + "</span>").join("");
     const bar = cells ? '<div class="srcbar">' + cells + '</div><div class="lgd">Today\'s stories by age: ' + legend + "</div>" : "";
-    const cd = countdownData(n, day);
+    const cds = countdownList(n, day);
     const quiet = s.empty.filter(c => c.unchecked !== true);
     const unchecked = s.empty.filter(c => c.unchecked === true);
     const gap = (quiet.length ? '<div class="gap">No new items for: ' + quiet.map(c => esc(c.name)).join(", ") + ". Nothing was published in the last " +
@@ -490,7 +498,7 @@ p.wxs a{color:#2b6cc4;}
       '<header class="mast"><div class="art">' + (ICONS.art.masthead || "") + '</div><div class="in"><div class="kick">' + iconSvg("sunrise", "ki") + esc(title) + " &middot; Edition " + esc(day) + '</div><h1 class="ttl">' +
       esc(prettyDate(day)) + '</h1><p class="dl">' + dek + "</p>" + (built ? '<p class="built">Built ' + esc(built) + "</p>" : "") +
       '</div></header><div class="rule"></div><main class="in">' +
-      sample + weatherHtml(brief.weather, day, n.delivery && n.delivery.timezone) + (cd ? countdownHtml(cd, day) : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + '<div class="grid">' + cards + "</div>" +
+      sample + weatherHtml(brief.weather, day, n.delivery && n.delivery.timezone) + (cds.length ? '<div class="cdg">' + cds.map(c => countdownHtml(c, day)).join("") + "</div>" : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + '<div class="grid">' + cards + "</div>" +
       '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + win +
       '-hour window (under 6h, under 12h, under ' + win + 'h). <span class="pill old">OLDER</span> is beyond ' + win +
       'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span> is an undated authoritative page, never presented as an event.' +
@@ -500,10 +508,10 @@ p.wxs a{color:#2b6cc4;}
       "-hour window &middot; summaries capped at " + esc(cap) + " characters &middot; Daily Brief " + E.VERSION +
       "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story." +
       (events ? "<br>" + EVENT_NOTE : "") + "</div></footer></body></html>";
-    return { subject: subject, html: html, text: plainText(brief, n, s, cd, win, title, day, withheld, built) };
+    return { subject: subject, html: html, text: plainText(brief, n, s, cds, win, title, day, withheld, built) };
   }
 
-  function plainText(brief, n, s, cd, win, title, day, withheld, built) {
+  function plainText(brief, n, s, cds, win, title, day, withheld, built) {
     const L = [];
     const rule = "=".repeat(65);
     L.push(title.toUpperCase() + " - " + prettyDate(day));
@@ -520,7 +528,7 @@ p.wxs a{color:#2b6cc4;}
         (isNum(d.hi) ? " " + rnd(d.hi) + unit : "") + (isNum(d.lo) ? "/" + rnd(d.lo) + unit : "") + (isNum(d.rain) && d.rain > 0 ? " " + rnd(d.rain) + "% rain" : ""));
       if (parts.length) L.push("", "WEATHER, " + (E.collapse(wx.place) || "your area").toUpperCase() + ": " + parts.join(" | "));
     }
-    if (cd) {
+    for (const cd of cds) {
       L.push("", cd.label.toUpperCase() + ": " + cd.days + " days to " + prettyDate(cd.date) + (cd.pct === null ? "" : " (" + cd.pct + "% elapsed)"));
       for (const m of cd.upcoming) L.push("  " + String(E.daysBetween(day, m.date)).padStart(4) + " d  " + m.date + "  " + m.label + (m.note ? "  [" + m.note + "]" : ""));
     }
@@ -560,5 +568,5 @@ p.wxs a{color:#2b6cc4;}
     return L.join("\n") + "\n";
   }
 
-  return { CSS, ICONS, esc, prettyDate, builtLabel, stamp, eventWhen, eventWhere, stats, subjectLine, countdownData, iconSvg, wxKind, wxSvg, weatherHtml, render };
+  return { CSS, ICONS, esc, prettyDate, builtLabel, stamp, eventWhen, eventWhere, stats, subjectLine, countdownData, countdownList, iconSvg, wxKind, wxSvg, weatherHtml, render };
 });

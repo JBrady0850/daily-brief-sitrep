@@ -90,8 +90,9 @@ choices, show the default in square brackets, and accept "default", "skip" and
    change a decision the reader faces, for example a pay rule or a deadline
    (`reader.watch_list`), and the label for that section [Watch]. A one-line
    conversation starter under each story [no].
-7. **Countdown (optional).** A countdown to a date that matters, with optional
-   milestones: label, target date, start date, and milestones as date and label.
+7. **Countdowns (optional, up to 4).** Countdowns to dates that matter, each with
+   optional milestones: label, target date, start date, and milestones as date and
+   label.
 8. **Format and delivery.** Brief title [The Morning Brief]. Subject line
    [Daily Brief - {total}-Item SITREP | {date}]. Summary length in characters
    [320]. Mention that typing JSON after any brief gives the version the Daily
@@ -163,7 +164,7 @@ Keep at most the newest 300 lines.
 # {brief.title}
 **{Weekday, Month DD, YYYY}** | {total} stories across {categories} categories | {fresh} fresh in the last {window} hours
 
-{countdown, if enabled: "{label}: {N} days to {date}" and the next milestones}
+{each countdown, if any: "{label}: {N} days to {date}" and its next milestones}
 
 ## Lead analysis
 1. {top item} ({category})
@@ -257,7 +258,7 @@ in order, even when its `items` list is empty.
     "region": "US"
   },
   "reader": {"role": "", "location": "", "local_terms": [], "goals": [], "watch_list": []},
-  "countdown": {"enabled": false, "label": "", "date": "", "start": "", "milestones": []},
+  "countdowns": [],
   "delivery": {"time": "06:15", "timezone": "America/New_York", "channels": ["issue"]},
   "categories": [
     {

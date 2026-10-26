@@ -33,7 +33,7 @@ def test_untrusted_text_is_escaped_and_bad_links_are_not_links(sample_brief):
 def test_subject_template_and_countdown_off(sample_brief, sample_settings):
     s = copy.deepcopy(sample_settings)
     s["brief"]["subject"] = "{title}: {total} stories, {empty} empty, {date}"
-    s["countdown"]["enabled"] = False
+    s["countdowns"] = []
     b = dict(sample_brief, source="ai")
     out = R.render(b, s)
     assert out["subject"] == "The Morning Brief: 12 stories, 1 empty, 2026-10-23"

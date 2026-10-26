@@ -9,9 +9,10 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.9.2";
+  const VERSION = "0.10.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
+  const MAX_COUNTDOWNS = 4;
   const MAX_RECENT = 3000;
   const MAX_LEDGER = 20000;
   const MAX_SENT_DATES = 400;
@@ -47,7 +48,7 @@
       region: "US"
     },
     reader: { role: "", location: "", region: "", local_terms: [], local_feeds: [], goals: [], watch_list: [] },
-    countdown: { enabled: false, label: "", date: "", start: "", milestones: [] },
+    countdowns: [],
     delivery: { time: "06:15", timezone: "", channels: ["issue"] },
     weather: { enabled: false, place: "", latitude: null, longitude: null, units: "fahrenheit" },
     sources: { avoid_hosts: SOCIAL_HOSTS.slice(), prefer: [] },
@@ -264,8 +265,22 @@
     return c;
   }
 
+  /* Settings from before 0.10.0 hold one `countdown` with an on/off switch; it becomes
+     the first entry of `countdowns` (or none when it was off). */
+  function upgradeCountdown(cfg) {
+    if (!isObj(cfg) || !has(cfg, "countdown")) return cfg;
+    const out = Object.assign({}, cfg);
+    const old = out.countdown;
+    delete out.countdown;
+    if (!has(out, "countdowns")) {
+      out.countdowns = isObj(old) && old.enabled === true
+        ? [{ label: old.label, date: old.date, start: old.start || "", milestones: Array.isArray(old.milestones) ? old.milestones : [] }] : [];
+    }
+    return out;
+  }
+
   function normalizeConfig(cfg) {
-    const out = merge(DEFAULTS, isObj(cfg) ? cfg : {});
+    const out = merge(DEFAULTS, upgradeCountdown(isObj(cfg) ? cfg : {}));
     const cats = Array.isArray(out.categories) ? out.categories : [];
     out.categories = cats.filter(isObj).map((c, i) => {
       const base = {
@@ -299,7 +314,7 @@
     if (!isObj(cfg)) return { errors: ["The settings are not a JSON object."], warnings };
     if (cfg.version !== undefined && cfg.version !== 1) errors.push("version must be 1.");
     for (const k of Object.keys(cfg)) {
-      if (!has(DEFAULTS, k) && k !== "email") warnings.push("Unknown setting \"" + k + "\" is ignored.");
+      if (!has(DEFAULTS, k) && k !== "email" && k !== "countdown") warnings.push("Unknown setting \"" + k + "\" is ignored.");
     }
     const n = normalizeConfig(cfg);
     const b = n.brief;
@@ -380,17 +395,22 @@
         errors.push(label + ": needs your town in reader.location.");
       }
     });
-    const cd = n.countdown;
-    if (cd.enabled === true) {
-      if (!isStr(cd.label) || !collapse(cd.label)) errors.push("countdown.label must be text.");
-      if (!isDateStr(cd.date)) errors.push("countdown.date must be a date like 2027-06-30.");
-      if (cd.start && !isDateStr(cd.start)) errors.push("countdown.start must be a date like 2026-01-01.");
-      if (isDateStr(cd.date) && isDateStr(cd.start) && cd.start > cd.date) errors.push("countdown.start must be before countdown.date.");
-      if (!Array.isArray(cd.milestones) || !cd.milestones.every(m => isObj(m) && isDateStr(m.date) && isStr(m.label) && collapse(m.label))) {
-        errors.push("countdown.milestones must be a list of {date, label}.");
-      }
-    } else if (cd.enabled !== false) {
-      errors.push("countdown.enabled must be true or false.");
+    if (!Array.isArray(n.countdowns)) errors.push("countdowns must be a list.");
+    else {
+      if (n.countdowns.length > MAX_COUNTDOWNS) errors.push("Use at most " + MAX_COUNTDOWNS + " countdowns.");
+      n.countdowns.forEach((cd, i) => {
+        const w = "Countdown " + (i + 1);
+        if (!isObj(cd)) { errors.push(w + " must be an object."); return; }
+        if (!isStr(cd.label) || !collapse(cd.label)) errors.push(w + ": label must be text.");
+        if (!isDateStr(cd.date)) errors.push(w + ": date must be a date like 2027-06-30.");
+        if (cd.start !== undefined && cd.start !== "" && !isDateStr(cd.start)) errors.push(w + ": start must be a date like 2026-01-01.");
+        if (isDateStr(cd.date) && isDateStr(cd.start) && cd.start > cd.date) errors.push(w + ": start must be before its date.");
+        const ms = cd.milestones === undefined ? [] : cd.milestones;
+        if (!Array.isArray(ms) || !ms.every(m => isObj(m) && isDateStr(m.date) && isStr(m.label) && collapse(m.label))) {
+          errors.push(w + ": milestones must be a list of {date, label}.");
+        }
+        if (cd.idea !== undefined && !isStr(cd.idea)) errors.push(w + ": idea must be text.");
+      });
     }
     const dv = n.delivery;
     if (!isStr(dv.time) || (dv.time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(dv.time))) errors.push("delivery.time must be a time like 06:15, or empty.");
@@ -957,7 +977,7 @@
   }
 
   return {
-    VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_LEDGER, MAX_RECENT,
+    VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_COUNTDOWNS, MAX_LEDGER, MAX_RECENT, upgradeCountdown,
     clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, validImage, isNum, hostOf, round1, pad2,
     isAcronym, termHit, countHits, US_STATES, stateCode, isLocalCategory, areaTerms, areaQuery, resolveCategory, normalizeConfig, validateConfig,
     categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
