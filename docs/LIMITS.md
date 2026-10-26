@@ -27,6 +27,9 @@
   testing it refused one home connection for hours, and at 02:20 UTC on
   2026-10-24 it refused the first request from two unrelated networks). Categories
   you type yourself depend on it.
+- Times show in your time zone. The desktop app on Windows needs Python's time
+  zone data for that (`py -m pip install tzdata`); without it, it uses the
+  computer's own clock, and a US zone that does not match that clock shows UTC.
 - Things to Do events come from the community calendars that local TV stations
   run on CitySpark: 145 calendars in 39 states on 2026-10-25
   (`app/data/calendars.js`, rebuilt by hand with `python tools/calendars_source.py`).

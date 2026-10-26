@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.1 (2026-10-25)
+
+- On a Windows computer without Python's time zone data (the `tzdata`
+  package), the desktop app showed build and story times in UTC. It now uses
+  the computer's own clock, which is the reader's zone on a desktop; a US zone
+  that does not match the computer's clock still falls back to UTC rather than
+  a wrong time. `py -m pip install tzdata` gives exact zone names for any zone.
+  The Windows test run now installs `tzdata`.
+
 ## 0.8.0 (2026-10-25)
 
 Things to Do lists real events near your town.

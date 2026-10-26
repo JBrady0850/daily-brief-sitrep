@@ -168,6 +168,25 @@ US_ZONES = {
 }
 
 
+def _zone(tz: str):
+    """A tzinfo for an IANA name, or None when it is unknown or this computer has no zone data."""
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(tz)
+    except Exception:
+        return None
+
+
+def _no_zone_data() -> bool:
+    """True on a computer without the time zone database (Windows without the tzdata package)."""
+    return _zone("America/New_York") is None
+
+
+def _computer_clock(seconds: float) -> datetime:
+    """This computer's own clock at an instant."""
+    return datetime.fromtimestamp(seconds, tz=timezone.utc).astimezone()
+
+
 def zone_clock(ms: int, tz: str) -> Optional[tuple]:
     """The wall clock at an instant in a time zone: (year, month, day, hour, minute, offset
     in minutes), or None when the zone is unknown here. The instant counts to the minute."""
@@ -175,11 +194,18 @@ def zone_clock(ms: int, tz: str) -> Optional[tuple]:
     if not tz or tz == "UTC":
         d = E.utc_dt(t)
         return (d.year, d.month, d.day, d.hour, d.minute, 0)
-    try:
-        from zoneinfo import ZoneInfo
-        z = ZoneInfo(tz)
-    except Exception:  # unknown name, or no time zone data on this computer
-        return None
+    z = _zone(tz)
+    if z is None:
+        if not _no_zone_data():
+            return None  # an unknown zone name
+        # No zone data here (Windows without tzdata): the computer's own clock stands in, which
+        # is the reader's zone on a desktop. For a US zone it must match that zone's offsets.
+        d = _computer_clock(t / 1000)
+        off = int(round(d.utcoffset().total_seconds() / 60))
+        us = US_ZONES.get(tz)
+        if us and off not in ((us[0],) if us[1] == us[2] else (us[0], us[0] + 60)):
+            return None
+        return (d.year, d.month, d.day, d.hour, d.minute, off)
     d = datetime.fromtimestamp(t / 1000, tz=timezone.utc).astimezone(z)
     off = d.utcoffset()
     return (d.year, d.month, d.day, d.hour, d.minute, int(round(off.total_seconds() / 60)) if off is not None else 0)

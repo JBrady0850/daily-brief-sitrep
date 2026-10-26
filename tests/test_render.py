@@ -52,3 +52,16 @@ def test_css_comes_from_the_app_file():
     css = R.css()
     assert "header.mast" in css and "section.card" in css and len(css) > 3000
     assert "table" not in css, "a web page, not an email layout"
+
+
+def test_times_use_the_computer_clock_when_it_has_no_zone_data(monkeypatch):
+    """Windows without the tzdata package: the computer's own clock stands in for the reader's zone."""
+    from datetime import datetime, timedelta, timezone as tzone
+    from dailybrief import render as R
+    monkeypatch.setattr(R, "_zone", lambda tz: None)
+    central = tzone(timedelta(hours=-5))
+    monkeypatch.setattr(R, "_computer_clock", lambda s: datetime.fromtimestamp(s, tz=tzone.utc).astimezone(central))
+    assert R.built_label("2026-10-25T14:56:08Z", "America/Chicago") == "Sunday, October 25, 2026 at 9:56 AM CDT"
+    assert R.stamp("2026-10-25T14:56:08Z", "America/Los_Angeles") == "Oct 25, 2:56 PM UTC", "another US zone: UTC, never a wrong clock"
+    assert R.stamp("2026-10-25T14:56:08Z", "Europe/Paris") == "Oct 25, 9:56 AM UTC-5", "elsewhere: the computer's clock and its offset"
+    assert R.stamp("2026-10-25T14:56:08Z", "") == "Oct 25, 2:56 PM UTC"
