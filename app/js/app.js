@@ -663,13 +663,21 @@
 
   /* The countdown an idea replaced, so Undo can put it back. */
   let ideaUndo = null;
+  /* Ideas the reader picked from "More ideas" in this visit: [{id, from}]. */
+  const ideaExtras = [];
 
   /* Countdown ideas from the chosen categories, most important first: a fixed date
-     fills in at once, a personal one asks for its date first. */
+     fills in at once, a personal one asks for its date first. Ideas that fit only
+     some readers (Medicare) wait in the "More ideas" list until the reader picks them. */
   function countdownIdeas() {
+    if (!IDEAS) return null;
     const c = cfg();
-    const list = IDEAS ? IDEAS.ideasFor(c.categories.map(cat => ({ id: cat.id, name: E.resolveCategory(cat, c.reader).name })), today()) : [];
-    if (!list.length) return null;
+    const cats = c.categories.map(cat => ({ id: cat.id, name: E.resolveCategory(cat, c.reader).name }));
+    const list = IDEAS.ideasFor(cats, today(), c.reader);
+    for (const x of ideaExtras) {
+      if (!list.some(i => i.id === x.id)) { const card = IDEAS.ideaById(x.id, today(), x.from); if (card) list.push(card); }
+    }
+    const more = IDEAS.moreIdeas(cats, today(), c.reader, list.map(i => i.id));
     const box = h("div", { class: "ideas", id: "ideas" });
     const status = h("p", { class: "hint", id: "ideastatus", "aria-live": "polite" });
     function use(idea, target) {
@@ -686,10 +694,12 @@
       if (u) { try { u.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
     }
     add(box, h("h3", null, ico("calendar", "hi"), "Ideas from your categories"));
-    add(box, h("p", { class: "hint", text: "Pick one to fill in the countdown and its milestones; you can change any of it below. Check the dates that matter to you with the source." }));
+    add(box, h("p", { class: "hint", text: list.length
+      ? "Pick one to fill in the countdown and its milestones; you can change any of it below. Check the dates that matter to you with the source."
+      : "None of your categories has a suggestion. Pick one from More ideas below." }));
     const grid = h("div", { class: "ideagrid" });
     for (const idea of list) {
-      const item = h("div", { class: "idea" }, h("b", { text: idea.label }), h("p", { class: "hint", text: idea.about + " From " + idea.from + "." }));
+      const item = h("div", { class: "idea" }, h("b", { text: idea.label }), h("p", { class: "hint", text: idea.about + (idea.from ? " From " + idea.from + "." : "") }));
       if (idea.steps.length) item.append(h("ul", { class: "steps" }, idea.steps.map(s => h("li", { text: s }))));
       if (idea.fixed) {
         item.append(h("div", { class: "go" }, h("p", { class: "when", text: N.prettyDate(idea.date) }),
@@ -702,7 +712,21 @@
       }
       grid.append(item);
     }
-    add(box, grid);
+    if (list.length) add(box, grid);
+    if (more.length) {
+      const sel = h("select", { id: "moreideas", "aria-label": "More countdown ideas" }, h("option", { value: "", text: "More ideas..." }),
+        more.map(m => h("option", { value: m.id, text: m.label + (m.from ? " (fits " + m.from + ")" : "") })));
+      add(box, h("div", { class: "row moreideas" }, sel, h("button", { class: "btn ghost", id: "moreideas-show", onclick: () => {
+        const pick = more.filter(m => m.id === sel.value)[0];
+        if (!pick) { status.textContent = "Pick an idea from the list first."; return; }
+        ideaExtras.push({ id: pick.id, from: pick.from });
+        refresh();
+        const st = document.getElementById("ideastatus");
+        if (st) st.textContent = "Added " + pick.label + ". Use it below, or pick another.";
+        const b = document.getElementById("ideadate-" + pick.id) || document.getElementById("idea-" + pick.id);
+        if (b) { try { b.focus({ preventScroll: false }); } catch (e) { /* focus is a convenience */ } }
+      } }, "Show this idea")));
+    }
     const filled = ideaUndo && c.countdown.label === ideaUndo.label && c.countdown.date === ideaUndo.date;
     if (filled) {
       add(box, h("div", { class: "row" }, h("button", { class: "link", id: "ideaundo", onclick: () => {

@@ -917,8 +917,9 @@ def test_countdown_question_suggests_ideas_from_the_categories(browser, http_app
     page.click(".stepper button[aria-label*='countdown']")
     page.wait_for_selector("#ideas")
     names = page.locator("#ideas .idea b").all_inner_texts()
-    expect = page.evaluate("DB_IDEAS.ideasFor(DB_APP.state().config.categories, (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()))")
-    assert names == [i["label"] for i in expect] and [i["id"] for i in expect] == ["federal-retirement", "medicare", "election", "trip"]
+    expect = page.evaluate("DB_IDEAS.ideasFor(DB_APP.state().config.categories, (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()), DB_APP.state().config.reader)")
+    assert names == [i["label"] for i in expect] and [i["id"] for i in expect] == ["federal-retirement", "open-season", "election", "trip"]
+    assert page.locator("#idea-medicare").count() == 0, "Medicare is not suggested on its own"
     assert "From Federal Retirement" in page.inner_text("#ideas .idea >> nth=0"), "each idea names the category it came from"
     election = [i for i in expect if i["id"] == "election"][0]
     page.click("#idea-election")
@@ -942,5 +943,18 @@ def test_countdown_question_suggests_ideas_from_the_categories(browser, http_app
     assert all(m["date"] < target for m in cd["milestones"]) and len(cd["milestones"]) == 4, cd["milestones"]
     assert page.locator(".milestones .mrow").count() == 4, "the milestones show in the fields below, ready to change"
     assert page.evaluate("DB_ENGINE.validateConfig(DB_APP.state().config).errors") == []
+    # Medicare is one pick away in More ideas.
+    options = page.locator("#moreideas option").all_inner_texts()
+    assert any(o.startswith("Days left in Medicare Open Enrollment (fits Federal Retirement") or
+               o.startswith("Days to Medicare Open Enrollment (fits Federal Retirement") for o in options), options
+    page.click("#moreideas-show")
+    assert "Pick an idea from the list first" in page.inner_text("#ideastatus")
+    page.select_option("#moreideas", "medicare")
+    page.click("#moreideas-show")
+    assert page.locator("#idea-medicare").count() == 1 and page.evaluate("document.activeElement.id") == "idea-medicare"
+    assert "Added " in page.inner_text("#ideastatus")
+    assert page.locator("#moreideas option[value=medicare]").count() == 0, "a shown idea leaves the list"
+    page.click("#idea-medicare")
+    assert "Medicare Open Enrollment" in page.evaluate("DB_APP.state().config.countdown.label")
     assert errors == []
     ctx.close()

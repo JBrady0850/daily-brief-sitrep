@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.9.0";
+  const VERSION = "0.9.1";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;

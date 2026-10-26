@@ -3,9 +3,14 @@
 
    Two kinds:
    - fixed dates that follow a published rule (Election Day, Thanksgiving, Tax Day,
-     the Atlantic hurricane season, Medicare Open Enrollment), worked out here;
+     the Atlantic hurricane season, Federal Benefits Open Season, Medicare Open
+     Enrollment), worked out here;
    - personal dates (a retirement, a trip, a move), where the reader picks the day
      and the milestones are set back from it.
+
+   An idea that fits only some readers is never suggested on its own: Medicare Open
+   Enrollment (people on Medicare) always waits in the "More ideas" list, and the
+   hurricane season does too unless the reader's state is on the Atlantic or Gulf coast.
 
    Milestones are suggestions the reader can change or remove. Rules checked on
    2026-10-25: Election Day is the Tuesday after the first Monday in November in
@@ -15,7 +20,12 @@
    (April 16) (IRS); the Atlantic hurricane season runs June 1 to November 30
    (NOAA); Medicare Open Enrollment runs October 15 to December 7 (Medicare.gov);
    Social Security takes an application up to 4 months ahead (SSA); an agency
-   needs at least 60 days to process a federal retirement application (OPM). */
+   needs at least 60 days to process a federal retirement application (OPM).
+   Checked on 2026-10-26: Federal Benefits Open Season (FEHB, PSHB, FEDVIP,
+   FSAFEDS) runs from the Monday of the second full workweek in November through
+   the Monday of the second full workweek in December (5 CFR 890.301(f)), which is
+   the second Monday of each month (November 9 to December 14, 2026); FSAFEDS
+   elections do not carry over and must be made each year (FSAFEDS). */
 (function (root, factory) {
   const node = typeof module === "object" && module.exports;
   const api = factory(node ? require("./engine.js") : root.DB_ENGINE);
@@ -42,6 +52,13 @@
   function electionDay(y) { return shift(nthWeekday(y, 11, 1, 1), 1); }  // Tuesday after the first Monday
   function thanksgiving(y) { return nthWeekday(y, 11, 4, 4); }
 
+  /* Federal Benefits Open Season: [first day, last day]. The Monday of the second full
+     workweek is always the second Monday, since the first Monday falls by the 7th. */
+  function openSeason(y) { return [nthWeekday(y, 11, 1, 2), nthWeekday(y, 12, 1, 2)]; }
+
+  // States on the Atlantic or Gulf coast, where the hurricane season is everyone's business.
+  const STORM_COAST = ["TX", "LA", "MS", "AL", "FL", "GA", "SC", "NC", "VA", "MD", "DE", "NJ", "NY", "CT", "RI", "MA", "NH", "ME"];
+
   /* April 15, moved to the next business day past weekends and Emancipation Day. */
   function taxDay(y) {
     const em = ymd(y, 4, 16);
@@ -60,6 +77,7 @@
 
   // Each idea: id, label, about (one line), the category ids it fits, and either
   // fixed(today) -> {date, start, label?, milestones?} or offsets for a date the reader picks.
+  // optional(reader) -> true keeps an idea out of the suggestions (it stays in "More ideas").
   const IDEAS = [
     { id: "federal-retirement", label: "Days to retirement", about: "Your federal retirement date, with the paperwork on the way.",
       cats: ["federal-retirement", "federal-workforce", "federal-pay"],
@@ -70,6 +88,20 @@
       cats: ["retirement-planning"],
       offsets: [[-365, "Check the retirement budget and savings"], [-180, "Decide when to start Social Security and Medicare"],
         [-120, "Apply for Social Security if it starts then (up to 4 months ahead)"], [-60, "Give notice at work"]] },
+    { id: "open-season", label: "Days to Federal Benefits Open Season",
+      about: "FEHB, PSHB, FEDVIP and FSAFEDS: the second Monday of November to the second Monday of December.",
+      cats: ["federal-retirement", "federal-workforce", "federal-pay"],
+      fixed: t => {
+        const y = Number(t.slice(0, 4));
+        const [open, close] = openSeason(y);
+        if (t >= open && t < close) {
+          return { label: "Days left in Federal Benefits Open Season", date: close, start: open,
+            milestones: [[-14, "Compare health, dental and vision plans for next year"],
+              [-7, "Re-enroll in FSAFEDS if you use it (it does not carry over)"], [-2, "Make any change on your benefits site"]] };
+        }
+        const next = t < open ? open : openSeason(y + 1)[0];
+        return { date: next, start: t, milestones: [[-14, "Read next year's plan changes and premiums"]] };
+      } },
     { id: "election", label: "Days to Election Day", about: "The next federal general election.",
       cats: ["politics", "local-government", "us-news"],
       fixed: t => {
@@ -79,6 +111,7 @@
       } },
     { id: "hurricane", label: "Days to hurricane season", about: "The Atlantic and Gulf hurricane season, June 1 to November 30.",
       cats: ["local-weather", "severe-weather", "weather-outlook"],
+      optional: reader => STORM_COAST.indexOf(E.stateCode(reader && reader.region)) < 0,
       fixed: t => {
         const y = Number(t.slice(0, 4));
         if (t >= ymd(y, 6, 1) && t < ymd(y, 11, 30)) {
@@ -88,8 +121,10 @@
         return { date: open, start: ymd(Number(open.slice(0, 4)) - 1, 12, 1),
           milestones: [[-30, "Check the emergency kit and evacuation plan"], [-14, "Review home and flood insurance"]] };
       } },
-    { id: "medicare", label: "Days to Medicare Open Enrollment", about: "October 15 to December 7, when Medicare plans can change for next year.",
+    { id: "medicare", label: "Days to Medicare Open Enrollment",
+      about: "For people on Medicare: October 15 to December 7, when Medicare plans can change for next year.",
       cats: ["retirement-planning", "federal-retirement", "health-wellness"],
+      optional: () => true,
       fixed: t => {
         const y = Number(t.slice(0, 4));
         if (t >= ymd(y, 10, 15) && t < ymd(y, 12, 7)) {
@@ -146,27 +181,57 @@
     }).filter(m => E.isDateStr(m.date) && m.date > today && m.date < target);
   }
 
-  /* Up to MAX ideas for the chosen categories, in the order of the categories. Each
-     carries the name of the category it came from, and for a fixed idea its date. */
-  function ideasFor(categories, today) {
+  /* An idea as the page shows it: label, about, the category it came from (or ""),
+     whether its date is fixed, that date, and the milestone names. */
+  function card(idea, from, today) {
+    const o = { id: idea.id, label: idea.label, about: idea.about, from: from, fixed: !!idea.fixed };
+    if (idea.fixed) {
+      const f = idea.fixed(today);
+      o.label = f.label || idea.label;
+      o.date = f.date;
+      o.steps = milestones(f.milestones, f.date, today).map(m => m.label);
+    } else {
+      o.steps = idea.offsets.map(m => m[1]);
+    }
+    return o;
+  }
+
+  const optional = (idea, reader) => typeof idea.optional === "function" && idea.optional(reader || {});
+  const name = c => E.collapse(c && c.name) || (c && c.id) || "";
+
+  /* Up to MAX suggestions for the chosen categories, in the order of the categories.
+     Ideas that fit only some readers are left for moreIdeas. */
+  function ideasFor(categories, today, reader) {
     const out = [];
     for (const c of categories || []) {
       const id = c && c.id;
       for (const idea of IDEAS) {
-        if (out.length >= MAX || idea.cats.indexOf(id) < 0 || out.some(o => o.id === idea.id || o.label === idea.label)) continue;
-        const o = { id: idea.id, label: idea.label, about: idea.about, from: E.collapse(c.name) || id, fixed: !!idea.fixed };
-        if (idea.fixed) {
-          const f = idea.fixed(today);
-          o.label = f.label || idea.label;
-          o.date = f.date;
-          o.steps = milestones(f.milestones, f.date, today).map(m => m.label);
-        } else {
-          o.steps = idea.offsets.map(m => m[1]);
-        }
-        out.push(o);
+        if (out.length >= MAX || idea.cats.indexOf(id) < 0 || optional(idea, reader) ||
+          out.some(o => o.id === idea.id || o.label === idea.label)) continue;
+        out.push(card(idea, name(c), today));
       }
     }
     return out;
+  }
+
+  /* Every other idea, for the reader to pick from: first those that fit a chosen
+     category (in the order of the categories), then the rest. */
+  function moreIdeas(categories, today, reader, shown) {
+    const skip = (shown || []).slice();
+    const out = [];
+    const take = (idea, from) => {
+      if (skip.indexOf(idea.id) >= 0) return;
+      skip.push(idea.id);
+      out.push(card(idea, from, today));
+    };
+    for (const c of categories || []) for (const idea of IDEAS) if (idea.cats.indexOf(c && c.id) >= 0) take(idea, name(c));
+    for (const idea of IDEAS) take(idea, "");
+    return out;
+  }
+
+  function ideaById(id, today, from) {
+    const idea = IDEAS.filter(i => i.id === id)[0];
+    return idea ? card(idea, from || "", today) : null;
   }
 
   /* The countdown settings an idea fills in. `target` is the reader's own date for a
@@ -183,5 +248,5 @@
     return { enabled: true, label: idea.label, date: target, start: today, milestones: milestones(idea.offsets, target, today) };
   }
 
-  return { IDEAS, MAX, electionDay, thanksgiving, taxDay, ideasFor, fill };
+  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, fill };
 });

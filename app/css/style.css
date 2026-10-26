@@ -123,6 +123,8 @@ fieldset.group legend { font-weight: bold; padding: 0 6px; }
 .idea p.when { margin: 0; font-weight: 600; font-size: 14px; }
 .idea .row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; width: 100%; }
 .idea .row input { flex: 1 1 140px; width: auto; }
+.ideas .moreideas { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.ideas .moreideas select { flex: 1 1 200px; width: auto; min-width: 0; max-width: 100%; }
 .mrow { display: grid; grid-template-columns: 160px 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: center; }
 @media (max-width: 640px) { .mrow { grid-template-columns: 1fr; } }
 .ok { color: var(--ok); font-weight: 600; }

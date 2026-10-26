@@ -14,6 +14,10 @@ def test_date_rules_match_published_dates():
                    "2027-04-15", "2028-04-18"]
     assert [call("electionDay", y) for y in (2024, 2026, 2028)] == ["2024-11-05", "2026-11-03", "2028-11-07"]
     assert [call("thanksgiving", y) for y in (2025, 2026, 2027)] == ["2025-11-27", "2026-11-26", "2027-11-25"]
+    # Federal Benefits Open Season (5 CFR 890.301(f)), as OPM and Checkbook list it for 2022 to 2026.
+    got = js_calls([{"fn": "I.openSeason", "args": [y]} for y in (2022, 2023, 2024, 2025, 2026)])
+    assert got == [["2022-11-14", "2022-12-12"], ["2023-11-13", "2023-12-11"], ["2024-11-11", "2024-12-09"],
+                   ["2025-11-10", "2025-12-08"], ["2026-11-09", "2026-12-14"]]
 
 
 def cats(*ids):
@@ -21,15 +25,34 @@ def cats(*ids):
 
 
 def test_ideas_follow_the_category_order_and_stop_at_four():
-    got = call("ideasFor", cats("federal-retirement", "local-weather", "politics", "travel", "nfl"), "2026-10-25")
-    assert [i["id"] for i in got] == ["federal-retirement", "medicare", "hurricane", "election"]
+    got = call("ideasFor", cats("federal-retirement", "local-weather", "politics", "travel", "nfl"), "2026-10-25", {"region": "Florida"})
+    assert [i["id"] for i in got] == ["federal-retirement", "open-season", "hurricane", "election"]
     fed = got[0]
     assert fed["fixed"] is False and fed["from"] == "Federal Retirement" and "Give HR your retirement application" in fed["steps"][3]
+    assert got[1]["label"] == "Days to Federal Benefits Open Season" and got[1]["date"] == "2026-11-09"
     assert got[2]["label"] == "Days left in hurricane season" and got[2]["date"] == "2026-11-30"
     assert got[3]["date"] == "2026-11-03"
     # One retirement idea, even when two categories suggest it; nothing for unknown categories.
-    assert [i["id"] for i in call("ideasFor", cats("retirement-planning", "federal-retirement"), "2026-10-25")] == ["retirement", "medicare"]
-    assert call("ideasFor", cats("world-news"), "2026-10-25") == [] and call("ideasFor", [], "2026-10-25") == []
+    assert [i["id"] for i in call("ideasFor", cats("retirement-planning", "federal-retirement"), "2026-10-25", {})] == ["retirement", "open-season"]
+    assert call("ideasFor", cats("world-news"), "2026-10-25", {}) == [] and call("ideasFor", [], "2026-10-25", None) == []
+
+
+def test_ideas_for_some_readers_wait_in_more_ideas():
+    """Medicare is never suggested (most readers are not on Medicare); the hurricane season
+    only on the Atlantic and Gulf coasts. Both stay one pick away in More ideas."""
+    picked = cats("retirement-planning", "health-wellness", "local-weather")
+    inland = call("ideasFor", picked, "2026-10-25", {"region": "Illinois"})
+    assert "medicare" not in [i["id"] for i in inland] and "hurricane" not in [i["id"] for i in inland]
+    coast = call("ideasFor", picked, "2026-10-25", {"region": "FL"})
+    assert "hurricane" in [i["id"] for i in coast] and "medicare" not in [i["id"] for i in coast]
+    more = call("moreIdeas", picked, "2026-10-25", {"region": "Illinois"}, [i["id"] for i in inland])
+    ids = [m["id"] for m in more]
+    assert ids[:2] == ["medicare", "hurricane"], "ideas that fit a chosen category come first"
+    assert more[0]["from"] == "Retirement Planning" and more[0]["about"].startswith("For people on Medicare")
+    assert len(ids) == len(set(ids)) and not set(ids) & {i["id"] for i in inland}, "nothing twice, nothing already shown"
+    assert {"trip", "move", "season"} <= set(ids) and [m["from"] for m in more if m["id"] == "trip"] == [""]
+    assert call("ideaById", "medicare", "2026-10-25", "Retirement Planning")["label"] == "Days left in Medicare Open Enrollment"
+    assert call("ideaById", "nothing", "2026-10-25", "") is None
 
 
 def test_fixed_ideas_fill_in_the_next_date_and_future_milestones():
@@ -47,6 +70,12 @@ def test_fixed_ideas_fill_in_the_next_date_and_future_milestones():
     assert [m["date"] for m in storm["milestones"]] == ["2027-05-02", "2027-05-18"]
     assert call("fill", "election", "", "2026-11-04")["date"] == "2028-11-07", "after the vote, the next one"
     assert call("fill", "election", "", "2027-03-01")["date"] == "2028-11-07"
+    before = call("fill", "open-season", "", "2026-10-25")
+    assert (before["label"], before["date"], before["start"]) == ("Days to Federal Benefits Open Season", "2026-11-09", "2026-10-25")
+    during = call("fill", "open-season", "", "2026-11-20")
+    assert (during["label"], during["date"], during["start"]) == ("Days left in Federal Benefits Open Season", "2026-12-14", "2026-11-09")
+    assert [m["label"] for m in during["milestones"]][1] == "Re-enroll in FSAFEDS if you use it (it does not carry over)"
+    assert call("fill", "open-season", "", "2026-12-14")["date"] == "2027-11-08", "after the last day, next year's"
 
 
 def test_personal_ideas_count_back_from_the_readers_date():

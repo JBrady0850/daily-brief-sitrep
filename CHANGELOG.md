@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.9.1 (2026-10-25)
+
+- Medicare Open Enrollment is no longer suggested on its own, because most
+  readers are not on Medicare. It waits in a new **More ideas** list, where any
+  idea can be picked and shown.
+- The federal categories (Federal Retirement, Federal Workforce Actions, Federal
+  Pay) suggest **Federal Benefits Open Season** instead: FEHB, PSHB, FEDVIP and
+  FSAFEDS, from the second Monday of November to the second Monday of December
+  (5 CFR 890.301(f); November 9 to December 14 in 2026). During the season its
+  milestones include re-enrolling in FSAFEDS, which does not carry over.
+- The hurricane season is suggested only for states on the Atlantic or Gulf
+  coast; elsewhere it is in More ideas.
+
 ## 0.9.0 (2026-10-25)
 
 Countdown ideas from your categories.
