@@ -79,6 +79,9 @@ def route_world(page, calls, gdelt_status=200):
         if "api.open-meteo.com" in url:
             calls.append("forecast")
             return route.fulfill(status=200, body=json.dumps(FORECAST), headers=CORS)
+        if "portal.cityspark.com" in url:  # station event calendars: an empty week unless a test says otherwise
+            return route.fulfill(status=200, body=json.dumps({"Success": True, "Value": []}),
+                                 headers=dict(CORS, **{"content-type": "application/json", "access-control-allow-headers": "content-type"}))
         if "img.example.com" in url or "github.io" in url:
             svg = (ROOT / "app" / "img" / "sample" / "markets.svg").read_bytes()
             return route.fulfill(status=200, body=svg, headers={"content-type": "image/svg+xml"})
@@ -698,6 +701,72 @@ def test_town_categories_read_the_local_stations_of_your_state(browser, http_app
     page.click("button:has-text(\"Get today's brief\")")
     page.wait_for_selector("iframe.page", timeout=60000)
     assert asked == [] and errors == []
+    ctx.close()
+
+
+def calendar_week():
+    """A CitySpark answer for the next three days, made from invented events."""
+    day = datetime.now(timezone.utc).date() + timedelta(days=1)
+    rows = [[(101, "Harvest Night Market", 18, "Town Square", "https://events.example.com/market"),
+             (102, "Library Story Time", 10, "Main Library", "https://www.facebook.com/events/1")],
+            [(201, "Community Choir Rehearsal", 19, "Grace Hall", "https://choir.example.com")],
+            [(301, "Pumpkin Walk", None, "Riverside Park", "https://walk.example.com")]]
+    value = []
+    for k, evs in enumerate(rows):
+        d = day + timedelta(days=k)
+        out = []
+        for pid, name, hour, venue, url in evs:
+            local = "%sT%02d:00:00Z" % (d.isoformat(), hour or 0)
+            utc = None if hour is None else "%sT%02d:00:00Z" % (d.isoformat(), (hour + 5) % 24)
+            out.append({"PId": pid, "Name": name, "DateStart": local, "StartUTC": utc, "AllDay": hour is None, "HasTime": hour is not None,
+                        "Venue": venue, "CityState": "Example City, FL", "Summary": name + " for all ages.", "PrimaryUrl": url,
+                        "LargeImg": "", "MediumImg": ""})
+        value.append({"Date": d.isoformat(), "TotalCount": len(out), "Events": out})
+    return {"Success": True, "Value": value}
+
+
+def test_things_to_do_lists_the_week_from_the_nearest_station_calendar(browser, http_app):
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    cfg = {"version": 1, "reader": {"location": "Example City", "region": "Florida", "local_terms": []},
+           "categories": [pick["local-events"]], "delivery": {"time": "06:15", "timezone": "America/Chicago", "channels": ["issue"]},
+           "weather": {"enabled": False, "place": "Example City, Florida", "latitude": 30.25, "longitude": -85.65, "units": "fahrenheit"}}
+    state = {"version": 1, "tab": "brief", "setup_done": True, "config": cfg}
+    ctx, page, errors = open_page(browser, http_app, calls=[], gdelt_status=429, state=state)
+    page.route("**/data/calendars.js", lambda r: r.fulfill(status=200, body=(ROOT / "tests" / "fixtures" / "calendars.js").read_text(),
+                                                           headers={"content-type": "text/javascript"}))
+    page.reload()
+    asked = []
+    week = calendar_week()
+
+    def calendar(route):
+        req = route.request
+        if req.method == "OPTIONS":
+            return route.fulfill(status=204, headers=dict(CORS, **{"access-control-allow-headers": "content-type", "access-control-allow-methods": "POST"}))
+        asked.append((req.method, req.url.rsplit("/", 1)[1], json.loads(req.post_data)))
+        return route.fulfill(status=200, body=json.dumps(week), headers=dict(CORS, **{"content-type": "application/json"}))
+    page.route("https://portal.cityspark.com/**", calendar)
+    page.route("**/data/local/*.json", lambda r: r.fulfill(status=404, body=""))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    assert len(asked) == 1 and asked[0][:2] == ("POST", "ExampleTV"), "one question, to the nearest calendar only"
+    body = asked[0][2]
+    assert (body["lat"], body["lng"], body["distance"], body["daysToLoad"]) == (30.25, -85.65, 20, 7)
+    assert "Example City" not in json.dumps(body), "only the rounded map position leaves the browser"
+    items = page.evaluate("DB_APP.state().brief.categories[0].items")
+    assert [i["title"] for i in items] == ["Harvest Night Market", "Community Choir Rehearsal", "Pumpkin Walk", "Library Story Time"]
+    assert items[0]["url"] == "https://events.example.com/market", "the organizer's page"
+    assert items[3]["url"].startswith("https://www.example.com/events/#/details/library-story-time/102/"), "a social-only event opens on the calendar"
+    assert items[2]["event"]["all_day"] is True and items[0]["source"] == "WEXA community calendar"
+    health = page.evaluate("DB_APP.state().health")["local-events"]
+    assert health["events"]["calendars"] == ["WEXA"] and health["events"]["error"] == ""
+    frame = page.frame_locator("iframe.page")
+    assert frame.locator("ul.items span.pill.ev").count() == 4
+    assert "Town Square, Example City, FL" in frame.locator("main").inner_text()
+    assert "powered by CitySpark" in frame.locator("footer").inner_text()
+    page.click("#briefview summary:has-text('Sources and filters')")
+    assert "4 events from WEXA calendars" in page.inner_text("#briefview")
+    assert errors == []
     ctx.close()
 
 

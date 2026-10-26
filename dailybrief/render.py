@@ -22,6 +22,8 @@ MONTHS_LONG = ["January", "February", "March", "April", "May", "June", "July", "
                "September", "October", "November", "December"]
 DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 MIX_COLORS = {"news": "#1b6e3d", "backfill": "#6e5426", "reference": "#5b3485"}
+EVENT_NOTE = ("Events come from the community calendars of local TV stations, powered by CitySpark. "
+              "Check the details with the organizer before you go.")
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
 _CSS: Optional[str] = None
@@ -221,6 +223,31 @@ def built_label(iso: Any, tz: Any) -> str:
     return pretty_date(str(c[0]) + "-" + E.pad2(c[1]) + "-" + E.pad2(c[2])) + " at " + clock_time(c, lc[1])
 
 
+def event_when(ev: Any, tz: Any = None) -> str:
+    """When a calendar event happens, in the reader's zone: "Sun, Oct 25, 7:00 PM CDT"
+    or "Sat, Oct 31, all day". Empty for an unreadable event."""
+    e = E.clean_event(ev)
+    if not e:
+        return ""
+    date, time = e["start"], "all day"
+    if not e["all_day"]:
+        c, zone = local_clock(e["start"], tz)
+        date = str(c[0]) + "-" + E.pad2(c[1]) + "-" + E.pad2(c[2])
+        time = clock_time(c, zone)
+    d = datetime.strptime(date, "%Y-%m-%d")
+    return DAYS[(d.weekday() + 1) % 7][:3] + ", " + MONTHS[d.month - 1] + " " + E.pad2(d.day) + ", " + time
+
+
+def event_where(ev: Any) -> str:
+    e = E.clean_event(ev)
+    return ", ".join(x for x in (e["venue"], e["place"]) if x) if e else ""
+
+
+def has_events(brief: dict) -> bool:
+    return any(isinstance(c.get("items"), list) and any(isinstance(it, dict) and E.clean_event(it.get("event")) for it in c["items"])
+               for c in (brief.get("categories") or []) if isinstance(c, dict))
+
+
 def stamp(iso: Any, tz: Any = None) -> str:
     """A story's or the forecast's time, short: "Oct 25, 9:20 AM CDT"."""
     lc = local_clock(iso, tz)
@@ -391,13 +418,18 @@ def card_html(cat: dict, brief: dict, cfg: dict, index: int, win: Any) -> str:
         src = esc(E.collapse(it.get("source")))
         dv = cfg.get("delivery")
         tz = dv.get("timezone") if isinstance(dv, dict) else None
-        if it.get("published") and it.get("recency") != "reference" and stamp(it.get("published"), tz):
+        when = event_when(it.get("event"), tz)
+        if when:
+            if event_where(it.get("event")):
+                src += (" &middot; " if src else "") + esc(event_where(it.get("event")))
+        elif it.get("published") and it.get("recency") != "reference" and stamp(it.get("published"), tz):
             src += (" &middot; " if src else "") + stamp(it.get("published"), tz)
         summ = E.collapse(it.get("summary"))
         st = ""
         if cfg["brief"]["conversation_starters"] and E.collapse(it.get("starter")):
             st = '<p class="st">Ask: ' + esc(E.collapse(it.get("starter"))) + "</p>"
-        text = (head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src + "</span></div>"
+        badge = '<span class="pill ev">' + esc(when) + "</span>" if when else pill(it, age)
+        text = (head + '<div class="meta">' + badge + '<span class="src">' + src + "</span></div>"
                 + ('<p class="sum">' + esc(summ) + "</p>" if summ else "") + st)
         img = ('<img src="' + esc(it.get("image")) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'
                if E.valid_image(it.get("image")) else "")
@@ -470,6 +502,7 @@ def render(brief: dict, cfg: Any = None) -> dict:
     withheld = w if isinstance(w, (int, float)) and not isinstance(w, bool) else None
     dv = n.get("delivery")
     built = built_label(brief.get("generated_at"), dv.get("timezone") if isinstance(dv, dict) else None)
+    events = has_events(brief)
     W = _js_str(win)
     dek = (str(s["total"]) + " stories across " + str(s["cats"]) + " categories &middot; " + str(s["news"])
            + " published in the last " + W + " hours")
@@ -516,13 +549,15 @@ def render(brief: dict, cfg: Any = None) -> dict:
             + '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + W
             + '-hour window (under 6h, under 12h, under ' + W + 'h). <span class="pill old">OLDER</span> is beyond ' + W
             + 'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span>'
-            + ' is an undated authoritative page, never presented as an event.</div>'
+            + ' is an undated authoritative page, never presented as an event.'
+            + (' A <span class="pill ev">blue</span> pill gives the day and time of a coming event.' if events else "") + "</div>"
             + '</main><footer class="foot"><div class="in">'
             + ("Built " + esc(built) if built else "Generated " + esc(brief.get("generated_at") or ""))
             + " &middot; " + esc(source_label(brief))
             + " &middot; " + W + "-hour window &middot; summaries capped at " + esc(cap)
             + " characters &middot; Daily Brief " + E.VERSION
-            + "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story.</div></footer></body></html>")
+            + "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story."
+            + ("<br>" + EVENT_NOTE if events else "") + "</div></footer></body></html>")
     return {"subject": subject, "html": html,
             "text": plain_text(brief, n, s, cd, win, title, day, withheld, built)}
 
@@ -584,7 +619,10 @@ def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, titl
         for it in items:
             age = age_of(it, brief)
             r = it.get("recency")
-            label = ("REFERENCE, undated" if r == "reference" else "OLDER, " + E.humanize_age(age) if r == "backfill"
+            when = event_when(it.get("event"), n["delivery"]["timezone"])
+            where = event_where(it.get("event"))
+            label = ("EVENT, " + when + (", " + where if where else "") if when
+                     else "REFERENCE, undated" if r == "reference" else "OLDER, " + E.humanize_age(age) if r == "backfill"
                      else E.humanize_age(age))
             L.append("  * " + E.collapse(it.get("title")))
             src = E.collapse(it.get("source"))
@@ -596,4 +634,6 @@ def plain_text(brief: dict, n: dict, s: dict, cd: Optional[dict], win: Any, titl
                 L.append("    Ask: " + E.collapse(it.get("starter")))
     L += ["", rule, ("Built " + built if built else "Generated " + str(brief.get("generated_at") or ""))
           + " | " + source_label(brief) + " | Daily Brief " + E.VERSION]
+    if has_events(brief):
+        L.append(EVENT_NOTE)
     return "\n".join(L) + "\n"

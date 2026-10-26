@@ -111,7 +111,8 @@ download or copy; see [CHANGELOG.md](CHANGELOG.md).
 | 1 | Publisher feeds that allow web pages (The New York Times, Fox News, CNBC, ESPN, CBS Sports, Wired, NASA, Dark Reading, Industry Dive trade sites and others) | Every brief |
 | 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, published beside the app; recent stories from the last run stay, so a bad run cannot empty a category | When a category is still short |
 | 3 | Local news for your state: the news feeds of about 400 local TV stations, which the same GitHub workflow reads every four hours and publishes as one file per state | For the categories about your town |
-| 4 | The GDELT news index | Only for what is still short, mostly topics you typed |
+| 4 | Event calendars: the community calendar of the nearest local TV station (145 station calendars in 39 states run on CitySpark), asked by your browser for the week's events within 20 miles of your town | For Things to Do |
+| 5 | The GDELT news index | Only for what is still short, mostly topics you typed |
 
 Everything above is collected by this site and its GitHub workflow. Nothing has
 to run on your computer, and no account, key or token is needed.
@@ -127,6 +128,15 @@ example), with a **Check** button that says whether this page can read them.
 If no source answers on a given day, a town category says "Not checked today"
 instead of "No new items".
 
+**Things to do.** In the US, Things to Do lists the week's events within 20
+miles of your town from the community calendar of the nearest local TV station,
+one day at a time so the week shows, each with its day, time and place in a blue
+pill. Your browser asks the calendar directly with your town's rounded map
+position (from the forecast question, or a town search when the forecast is
+off); nothing is copied to GitHub. Each event opens on the station's calendar,
+or on the organizer's page. CitySpark runs these calendars and allows personal
+viewing; check an event's details with its organizer before you go.
+
 A category may also name **on-topic feeds**, such as a tennis feed for the
 tennis category; their stories count as on topic without a must-mention word.
 See [docs/CATEGORIES.md](docs/CATEGORIES.md).
@@ -137,7 +147,8 @@ No account of ours and no tracking. Settings and the no-repeat history stay in
 your browser. The page reads the publisher feeds your categories list and the
 backup collection and your state's local news file on its own site, sends the searches of categories still short
 to the GDELT news index, and, when the forecast is on,
-sends your town's rounded map position to Open-Meteo. Story photos load from
+sends your town's rounded map position to Open-Meteo. For Things to Do it sends
+the same rounded position to the nearest station's event calendar (CitySpark). Story photos load from
 the publishers' own sites. See [docs/PRIVACY.md](docs/PRIVACY.md) and
 [docs/LIMITS.md](docs/LIMITS.md).
 

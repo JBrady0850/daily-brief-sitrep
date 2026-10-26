@@ -6,7 +6,8 @@ import re
 from typing import Any
 
 from . import engine as E
-from .render import age_of, built_label, countdown_data, pretty_date, source_label, stats, subject_line, tag_of
+from .render import (EVENT_NOTE, age_of, built_label, countdown_data, event_when, event_where, has_events, pretty_date,
+                     source_label, stats, subject_line, tag_of)
 
 _MD_SPECIAL = re.compile(r"([\\`*_{}\[\]<>()#+!|~])")
 
@@ -79,7 +80,10 @@ def render_markdown(brief: dict, cfg: Any = None) -> str:
         for it in items:
             age = age_of(it, brief)
             r = it.get("recency")
-            label = "REFERENCE, undated" if r == "reference" else ("OLDER, " + E.humanize_age(age)) if r == "backfill" else ("NEWS, " + E.humanize_age(age))
+            when = event_when(it.get("event"), dv.get("timezone") if isinstance(dv, dict) else None)
+            where = event_where(it.get("event"))
+            label = ("EVENT, " + when + (", " + where if where else "") if when
+                     else "REFERENCE, undated" if r == "reference" else ("OLDER, " + E.humanize_age(age)) if r == "backfill" else ("NEWS, " + E.humanize_age(age)))
             href = _link(it.get("url"))
             head = "[" + md(it.get("title")) + "](" + href + ")" if href else md(it.get("title"))
             src = md(it.get("source"))
@@ -89,4 +93,6 @@ def render_markdown(brief: dict, cfg: Any = None) -> str:
         L.append("")
     L += ["---", "*" + md(subject_line(brief, n)) + ". " + ("Built " + md(built) if built else "Generated " + md(brief.get("generated_at") or "")) + ", "
           + md(source_label(brief)) + ". Daily Brief " + E.VERSION + ".*"]
+    if has_events(brief):
+        L += ["", "*" + md(EVENT_NOTE) + "*"]
     return "\n".join(L) + "\n"

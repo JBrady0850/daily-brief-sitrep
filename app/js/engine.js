@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.7.1";
+  const VERSION = "0.8.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_RECENT = 3000;
@@ -444,7 +444,9 @@
       kept.push(part);
     }
     kept.sort();
-    return host + path + (kept.length ? "?" + kept.join("&") : "");
+    // A "#/" or "#!/" fragment is a page of its own in a one-page site, such as one event on a calendar.
+    const route = m[5] && /^#!?\//.test(m[5]) ? m[5] : "";
+    return host + path + (kept.length ? "?" + kept.join("&") : "") + route;
   }
 
   function stripOutlet(title) {
@@ -609,6 +611,23 @@
     return null;
   }
 
+  /* An event from a community calendar: when it starts (a UTC time, or a date with
+     all_day) and where. Returns null when the start is unreadable. */
+  function cleanEvent(ev) {
+    if (!isObj(ev)) return null;
+    const allDay = ev.all_day === true;
+    const start = collapse(ev.start);
+    const ms = allDay ? null : parseIso(start);
+    if (allDay ? !isDateStr(start) : ms === null) return null;
+    return { start: allDay ? start : isoZ(ms), all_day: allDay, venue: noEmDash(cutSummary(ev.venue || "", 80)), place: noEmDash(cutSummary(ev.place || "", 80)) };
+  }
+
+  /* An event is over once its day has passed (all day) or it started over three hours ago. */
+  function eventPast(ev, nowMs) {
+    if (ev.all_day) return Date.parse(ev.start + "T00:00:00Z") + 2 * 86400000 <= nowMs;  // allows for any time zone
+    return parseIso(ev.start) < nowMs - 3 * 3600000;
+  }
+
   function cleanItem(raw, maxChars) {
     const it = {
       title: noEmDash(collapse(raw && raw.title)),
@@ -618,7 +637,8 @@
       published: null,
       summary: noEmDash(cutSummary((raw && raw.summary) || "", maxChars)),
       image: "",
-      on_topic: !!(raw && raw.on_topic === true)
+      on_topic: !!(raw && raw.on_topic === true),
+      event: cleanEvent(raw && raw.event)
     };
     const img = collapse(raw && raw.image);
     if (validImage(img)) it.image = img;
@@ -673,15 +693,26 @@
         const why = gateItem(it, cat, n);
         if (why) { bump(why); continue; }
         if (it.bad_date) { bump("unreadable date"); continue; }
-        const cls = classify(it.published_ms, nowMs, b);
-        if (cls.reject) { bump(cls.reject); continue; }
-        it.recency = cls.recency;
-        it.age = cls.age;
+        if (it.event) {
+          // A coming event is today's news whenever it was listed.
+          if (eventPast(it.event, nowMs)) { bump("past event"); continue; }
+          if (it.published_ms === null) { it.published_ms = nowMs; it.published = isoZ(nowMs); }
+          it.recency = "news";
+          it.age = 0;
+        } else {
+          const cls = classify(it.published_ms, nowMs, b);
+          if (cls.reject) { bump(cls.reject); continue; }
+          it.recency = cls.recency;
+          it.age = cls.age;
+        }
         if (ledger && ledgerHas(ledger, it, idx)) { bump("already sent"); withheld += 1; continue; }
         it.score = score(it, cat, b);
+        it.order = pool.length;
         pool.push(it);
       }
       pool.sort((x, y) => {
+        // Events lead, in the order the calendar listed them.
+        if (x.event || y.event) return x.event && y.event ? x.order - y.order : x.event ? -1 : 1;
         if (rank[x.recency] !== rank[y.recency]) return rank[x.recency] - rank[y.recency];
         if (x.score !== y.score) return y.score - x.score;
         const px = x.published_ms === null ? -Infinity : x.published_ms;
@@ -700,10 +731,12 @@
         takenUrls[nu] = true;
         takenTitles[nt] = true;
         takenToks.push(toks);
-        picked.push({
+        const p = {
           title: it.title, url: it.url, source: it.source, published: it.published,
           recency: it.recency, age_hours: it.age === null ? null : round1(it.age), summary: it.summary, image: it.image
-        });
+        };
+        if (it.event) p.event = it.event;
+        picked.push(p);
       }
       out.push({ id: cat.id, name: cat.name, color: cat.color, icon: cat.icon, items: picked, rejected: rejected });
     }
@@ -816,6 +849,7 @@
         }
         if ((it.recency === "news" || it.recency === "backfill") && pms === null) errors.push(w + ": " + it.recency + " items need a published time.");
         if (it.recency === "reference" && pms !== null) warnings.push(w + ": reference items should have no date.");
+        if (it.event !== undefined && it.event !== null && !cleanEvent(it.event)) errors.push(w + ": event needs a start time, or a date with all_day true.");
         if (it.image !== undefined && it.image !== null && it.image !== "" && !validImage(it.image)) warnings.push(w + ": image must be an https link to a picture; it will not be shown.");
         if (isStr(it.summary) && cpLen(it.summary) > maxChars) warnings.push(w + ": summary is longer than " + maxChars + " characters.");
         if (isStr(it.title)) {
@@ -928,6 +962,6 @@
     isAcronym, termHit, countHits, US_STATES, stateCode, isLocalCategory, areaTerms, areaQuery, resolveCategory, normalizeConfig, validateConfig,
     categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
     emptyLedger, cleanLedger, ledgerHas, ledgerAdd, ledgerSize, humanizeAge, classify, cutSummary,
-    gateItem, cleanItem, selectBrief, filterSeen, checkBrief, buildPrompt, extractJson, googleNewsUrl, cronLines
+    gateItem, cleanEvent, eventPast, cleanItem, selectBrief, filterSeen, checkBrief, buildPrompt, extractJson, googleNewsUrl, cronLines
   };
 });

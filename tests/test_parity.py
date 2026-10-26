@@ -27,7 +27,9 @@ TERMS = [("Pentagon expands AI pilots", "AI"), ("He said it", "AI"), ("Tariff ta
          ("The S&P 500 closes", "S&P 500"), ("IT budgets", "IT"), ("it budgets", "IT"), ("Zero-day in Chrome", "zero-day"),
          ("Résumé tips for engineers", "engineers"), ("A.I. policy", "A.I."), ("zerotrust", "zero trust"), ("x", "")]
 URLS = ["https://www.Example.com/a/b/?utm_source=x&id=3#f", "http://example.com", "https://example.com/?b=2&a=1&gclid=z",
-        "not a url", "https://user@host.example.com:8080/path/", "  https://EXAMPLE.org/A  "]
+        "not a url", "https://user@host.example.com:8080/path/", "  https://EXAMPLE.org/A  ",
+        "https://www.example.com/events/#/details/market/101/2026-10-25T18", "https://example.com/story#comments",
+        "https://example.com/calendar/#!/details/run/7/2026-10-27T17", "https://example.com/a#!x"]
 TITLES = ["Agencies weigh new buyout offers - Federal Daily", "Top 10 tools | Example", "Short - X", "  Mixed   CASE, punctuation!! ",
           "2026 budget: what changes in 2027 and 2028", "Café owners welcome tourists"]
 DATES = ["2026-10-23T08:15:00Z", "2026-10-23T08:15", "2026-10-23", "2026-02-30", "2026-10-23T24:00:00Z",
@@ -510,3 +512,82 @@ def test_story_and_forecast_times_use_the_reader_zone(sample_brief, sample_setti
     assert not re.search(r"[0-9]{2}:[0-9]{2}Z", p["html"]), "no Zulu time anywhere on the page"
     assert re.search(r"updated [A-Z][a-z]{2} [0-9]{2}, [0-9]{1,2}:[0-9]{2} [AP]M C[DS]T", p["html"]), "the forecast time is local"
     assert re.search(r"&middot; [A-Z][a-z]{2} [0-9]{2}, [0-9]{1,2}:[0-9]{2} [AP]M C[DS]T", p["html"]), "story times are local"
+
+
+def _event_config(sample_settings):
+    cfg = copy.deepcopy(sample_settings)
+    cfg["categories"] = [E.category_from_library(library(), "local-events"), E.category_from_library(library(), "us-news")]
+    cfg["reader"] = dict(cfg.get("reader") or {}, location="Example City", region="Florida", local_terms=[])
+    cfg["delivery"] = dict(cfg.get("delivery") or {}, timezone="America/Chicago")
+    return cfg
+
+
+def test_calendar_events_lead_things_to_do_in_both_engines(sample_settings):
+    """Events keep the calendar's order ahead of news, drop once over, and show their day and place."""
+    now = "2026-10-25T17:00:00Z"
+    week = json.loads((ROOT / "tests" / "fixtures" / "cityspark_week.json").read_text())
+    cal = {"slug": "ExampleTV", "station": "WEXA", "page": "https://www.example.com/events/", "links": "hash"}
+    events = js_calls([{"fn": "collect.eventsFrom", "args": [week, cal, now]}])[0]
+    assert [e["title"] for e in events] == ["Harvest Night Market", "Community Choir Rehearsal", "Tuesday Night Run",
+                                            "Pumpkin Walk", "Library Story Time"], "a day at a time, so the week shows"
+    assert events[0]["url"] == "https://events.example.com/market", "the organizer's own page first"
+    assert events[3]["url"] == "https://www.example.com/events/#/details/pumpkin-walk/102/2026-10-25T00", "a social link: the station calendar"
+    assert events[3]["event"] == {"start": "2026-10-25", "all_day": True, "venue": "Riverside Park", "place": "Example City, FL"}
+    assert events[0]["event"]["start"] == "2026-10-25T23:30:00Z" and events[0]["source"] == "WEXA community calendar"
+    plain = js_calls([{"fn": "collect.eventsFrom", "args": [week, dict(cal, links=""), now]},
+                      {"fn": "collect.eventsFrom", "args": [week, dict(cal, links="hashBang"), now]}])
+    assert plain[0][3]["url"] == "https://www.example.com/events/", "never a social site: the calendar page instead"
+    assert plain[1][3]["url"] == "https://www.example.com/events/#!/details/pumpkin-walk/102/2026-10-25T00"
+    news = {"title": "City council approves a new park", "url": "https://news.example.com/park", "source": "Example News",
+            "published": "2026-10-25T15:00:00Z", "summary": "The park opens next spring."}
+    over = dict(events[4], title="Breakfast Talk", url="https://breakfast.example.com",
+                event={"start": "2026-10-25T12:00:00Z", "all_day": False, "venue": "", "place": ""})
+    cands = {"local-events": [news] + [dict(e, on_topic=True) for e in events] + [dict(over, on_topic=True)], "us-news": []}
+    cfg = _event_config(sample_settings)
+    py = E.select_brief(cands, cfg, None, now, "2026-10-25", "web")
+    js = js_calls([{"fn": "selectBrief", "args": [cands, cfg, None, now, "2026-10-25", "web"]}])[0]
+    assert same(py, js)
+    items = py["categories"][0]["items"]
+    assert [i["title"] for i in items] == ["Harvest Night Market", "Community Choir Rehearsal", "Tuesday Night Run",
+                                           "Pumpkin Walk", "Library Story Time"], "events first, in calendar order"
+    assert py["categories"][0]["rejected"].get("past event") == 1
+    assert all(i["recency"] == "news" and i["event"] for i in items)
+    chk = E.check_brief(py, cfg, now)
+    assert chk["errors"] == [] and same(chk, js_calls([{"fn": "checkBrief", "args": [py, cfg, now]}])[0])
+    bad = copy.deepcopy(py)
+    bad["categories"][0]["items"][0]["event"] = {"start": "soon"}
+    assert any("event needs a start time" in e for e in E.check_brief(bad, cfg, now)["errors"])
+    j = js_calls([{"fn": "render", "args": [py, cfg]}])[0]
+    p = R.render(py, cfg)
+    for k in ("subject", "text", "html"):
+        assert p[k] == j[k], k
+    assert '<span class="pill ev">Sun, Oct 25, 6:30 PM CDT</span><span class="src">WEXA community calendar &middot; Town Square, Example City, FL</span>' in p["html"]
+    assert '<span class="pill ev">Sun, Oct 25, all day</span>' in p["html"]
+    assert "powered by CitySpark" in p["html"] and "powered by CitySpark" in p["text"]
+    assert "EVENT, Mon, Oct 26, 7:00 PM CDT, Grace Hall, Example City, FL" in p["text"]
+    from dailybrief.markdown import render_markdown
+    md = render_markdown(py, cfg)
+    assert "EVENT, Sun, Oct 25, 6:30 PM CDT, Town Square, Example City, FL" in md and "powered by CitySpark" in md
+    plain_brief = R.render(E.select_brief({"local-events": [news], "us-news": []}, cfg, None, now, "2026-10-25", "web"), cfg)
+    assert "CitySpark" not in plain_brief["html"] and "pill ev" not in plain_brief["html"], "no events, no credit line"
+
+
+def test_event_times_and_nearest_calendars_agree():
+    evs = [{"start": "2026-10-25T23:30:00Z", "all_day": False}, {"start": "2026-10-31", "all_day": True},
+           {"start": "2026-03-08T07:30:00Z", "all_day": False, "venue": "Hall", "place": "Town, ST"}, {"start": "bad"}, None, "x"]
+    zones = ["America/Chicago", "Asia/Kolkata", "", None]
+    pairs = [(e, z) for e in evs for z in zones]
+    got = js_calls([{"fn": "N.eventWhen", "args": [e, z]} for e, z in pairs])
+    for (e, z), j in zip(pairs, got):
+        assert R.event_when(e, z) == j, (e, z)
+    assert R.event_when(evs[0], "America/Chicago") == "Sun, Oct 25, 6:30 PM CDT"
+    assert R.event_when(evs[1], "America/Chicago") == "Sat, Oct 31, all day"
+    assert R.event_where(evs[2]) == "Hall, Town, ST" == js_calls([{"fn": "N.eventWhere", "args": [evs[2]]}])[0]
+    cals = json.loads((ROOT / "tests" / "fixtures" / "calendars.js").read_text().split("=", 1)[1].rstrip().rstrip(";"))
+    near = js_calls([{"fn": "collect.calendarsNear", "args": [cals, "FL", 30.25, -85.65]},
+                     {"fn": "collect.calendarsNear", "args": [cals, "FL", 25.8, -80.2]},
+                     {"fn": "collect.calendarsNear", "args": [cals, "GA", 30.25, -85.65]},
+                     {"fn": "collect.calendarsNear", "args": [None, "FL", 30.25, -85.65]}])
+    assert [c["slug"] for c in near[0]] == ["ExampleTV"], "only calendars whose area reaches the town"
+    assert [c["slug"] for c in near[1]] == ["FarAwayTV"]
+    assert near[2] == [] and near[3] == []

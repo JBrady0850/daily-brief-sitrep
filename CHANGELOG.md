@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.8.0 (2026-10-25)
+
+Things to Do lists real events near your town.
+
+- In the US, Things to Do now asks the community calendar of the nearest local
+  TV station for the week's events within 20 miles of your town. 145 station
+  calendars in 39 states run on CitySpark (`app/data/calendars.js`, rebuilt with
+  `python tools/calendars_source.py`). The calendar also carries the events that
+  visitor bureaus and venues submit.
+- Events lead the desk a day at a time, so the week shows rather than one
+  evening, and each has a blue pill with its day and time in your time zone and
+  its venue and town. Each opens on the organizer's page, or, for an event listed
+  only on a social site, on the station's calendar. A finished event drops out.
+- Your browser asks the calendar directly, for you alone, with your town's
+  rounded map position, never its name. Nothing is copied to GitHub: CitySpark's
+  terms allow personal, non-commercial viewing. The page credits the calendars
+  and asks you to check details with the organizer.
+- Sources and filters lists the events and the calendar they came from, and a
+  town desk whose calendar answered counts as checked.
+- Links that differ only after "#/" or "#!/" (one-page sites such as these
+  calendars) now count as different stories.
+
 ## 0.7.1 (2026-10-25)
 
 See when your brief was built, in your own time.

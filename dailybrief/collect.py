@@ -462,7 +462,9 @@ def mark_unchecked(brief: dict, health: dict) -> dict:
             continue
         tried = [q for q in h.get("queries") or [] if not q.get("note")]
         local = h.get("local")
+        events = h.get("events")
         stations = (isinstance(local, dict) and not local.get("error")) or \
+            (isinstance(events, dict) and not events.get("error")) or \
             any(f.get("station") and not f.get("error") for f in h.get("feeds") or [])
         backup = h.get("backup")
         covered = isinstance(backup, dict) and not backup.get("error") and backup.get("covered") is True

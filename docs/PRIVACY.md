@@ -14,6 +14,12 @@
   (api.gdeltproject.org). When the forecast is on, it sends your town's map position,
   rounded to about a kilometre, to Open-Meteo, and the town search sends the
   name you type. Requests carry no cookies and no referrer.
+- For Things to Do, the page asks the community calendar of the nearest local
+  TV station (portal.cityspark.com) for the week's events: the request carries
+  the same rounded map position, today's date and a 20-mile radius, never the
+  town's name. When the forecast was never set up, the page first looks the
+  town up with Open-Meteo's town search. The events go straight into your page
+  and are not copied anywhere else.
 - Local news feed links you add on the town question stay in this browser; the
   page reads those feeds directly, like any other feed.
 - Story photos load from the publishers' own sites when you view the brief,

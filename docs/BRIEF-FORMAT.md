@@ -22,7 +22,10 @@ Checked by `python -m dailybrief check`.
 
 Each item: `title`, `url` (http or https), `source`, `published` (UTC time, or
 null for REFERENCE), `recency` (`news`, `backfill` or `reference`), `summary`,
-optional `age_hours`, `starter` and `image`. `image` is an https link to the
+optional `age_hours`, `starter`, `image` and `event`. `event` marks a coming
+event from a community calendar: `start` (a UTC time, or a date when `all_day`
+is true), `all_day`, `venue` and `place`. The page shows its day, time and place
+in a blue pill instead of the story's age, and drops it once it is over. `image` is an https link to the
 story's photo; anything else is ignored with a warning, so the page never loads
 a picture over plain http.
 

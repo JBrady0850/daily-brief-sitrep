@@ -49,7 +49,7 @@ span.pill{display:inline-block;font-size:11px;font-weight:bold;color:#ffffff;pad
 span.ms-hot{background:#b03a2e;} span.ms-warm{background:#a04000;}
 span.ms-cool{background:#34495e;} span.ms-mark{background:#d4a017;color:#0f2744;}
 span.f1{background:#1b6e3d;} span.f2{background:#0f6e5c;} span.f3{background:#8a5a00;}
-span.old{background:#6e5426;} span.ref{background:#5b3485;}
+span.old{background:#6e5426;} span.ref{background:#5b3485;} span.ev{background:#1f4e99;}
 div.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:0 0 14px;}
 div.tile{background:#ffffff;border-top:3px solid #0f2744;padding:12px 8px;text-align:center;}
 div.tn{font-family:Georgia,serif;font-size:28px;font-weight:bold;color:#0f2744;line-height:1.1;}
@@ -128,6 +128,7 @@ p.wxs a{color:#2b6cc4;}
     "September", "October", "November", "December"];
   const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
   const MIX_COLORS = { news: "#1b6e3d", backfill: "#6e5426", reference: "#5b3485" };
+  const EVENT_NOTE = "Events come from the community calendars of local TV stations, powered by CitySpark. Check the details with the organizer before you go.";
 
   function esc(v) {
     return String(v == null ? "" : v).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -202,6 +203,30 @@ p.wxs a{color:#2b6cc4;}
     if (!lc) return "";
     const c = lc[0];
     return prettyDate(c[0] + "-" + E.pad2(c[1]) + "-" + E.pad2(c[2])) + " at " + clockTime(c, lc[1]);
+  }
+
+  /* When a calendar event happens, in the reader's zone: "Sun, Oct 25, 7:00 PM CDT"
+     or "Sat, Oct 31, all day". Empty for an unreadable event. */
+  function eventWhen(ev, tz) {
+    const e = E.cleanEvent(ev);
+    if (!e) return "";
+    let date = e.start, time = "all day";
+    if (!e.all_day) {
+      const lc = localClock(e.start, tz);
+      date = lc[0][0] + "-" + E.pad2(lc[0][1]) + "-" + E.pad2(lc[0][2]);
+      time = clockTime(lc[0], lc[1]);
+    }
+    const dt = new Date(date + "T00:00:00Z");
+    return DAYS[dt.getUTCDay()].slice(0, 3) + ", " + MONTHS[dt.getUTCMonth()] + " " + E.pad2(dt.getUTCDate()) + ", " + time;
+  }
+
+  function eventWhere(ev) {
+    const e = E.cleanEvent(ev);
+    return e ? [e.venue, e.place].filter(Boolean).join(", ") : "";
+  }
+
+  function hasEvents(brief) {
+    return (brief.categories || []).some(c => Array.isArray(c.items) && c.items.some(it => it && E.cleanEvent(it.event)));
   }
 
   /* A story's or the forecast's time, short: "Oct 25, 9:20 AM CDT". */
@@ -384,10 +409,13 @@ p.wxs a{color:#2b6cc4;}
       const head = href ? '<a class="hl" href="' + esc(href) + '">' + title + "</a>" : '<span class="hl">' + title + "</span>";
       let src = esc(E.collapse(it.source));
       const tz = cfg.delivery && cfg.delivery.timezone;
-      if (it.published && it.recency !== "reference" && stamp(it.published, tz)) src += (src ? " &middot; " : "") + stamp(it.published, tz);
+      const when = eventWhen(it.event, tz);
+      if (when) { if (eventWhere(it.event)) src += (src ? " &middot; " : "") + esc(eventWhere(it.event)); }
+      else if (it.published && it.recency !== "reference" && stamp(it.published, tz)) src += (src ? " &middot; " : "") + stamp(it.published, tz);
       const sum = E.collapse(it.summary);
       const st = cfg.brief.conversation_starters && E.collapse(it.starter) ? '<p class="st">Ask: ' + esc(E.collapse(it.starter)) + "</p>" : "";
-      const text = head + '<div class="meta">' + pill(it, age) + '<span class="src">' + src + "</span></div>" +
+      const badge = when ? '<span class="pill ev">' + esc(when) + "</span>" : pill(it, age);
+      const text = head + '<div class="meta">' + badge + '<span class="src">' + src + "</span></div>" +
         (sum ? '<p class="sum">' + esc(sum) + "</p>" : "") + st;
       const img = E.validImage(it.image) ? '<img src="' + esc(it.image) + '" alt="" loading="lazy" referrerpolicy="no-referrer">' : "";
       if (!img) return '<li class="it">' + text + "</li>";
@@ -434,6 +462,7 @@ p.wxs a{color:#2b6cc4;}
     const day = String(brief.date || "");
     const withheld = typeof brief.withheld === "number" ? brief.withheld : null;
     const built = builtLabel(brief.generated_at, n.delivery && n.delivery.timezone);
+    const events = hasEvents(brief);
     let dek = s.total + " stories across " + s.cats + " categories &middot; " + s.news + " published in the last " + win + " hours";
     if (brief.ledger_applied) dek += withheld ? " &middot; " + withheld + " withheld as already sent" : " &middot; nothing here has been sent to you before";
     const tiles = [[s.total, "stories"], [s.news, "fresh, under " + win + "h"], [s.filled + " of " + s.cats, "categories filled"],
@@ -464,11 +493,13 @@ p.wxs a{color:#2b6cc4;}
       sample + weatherHtml(brief.weather, day, n.delivery && n.delivery.timezone) + (cd ? countdownHtml(cd, day) : "") + tilesHtml + bar + analysisHtml(brief.analysis, n) + gap + '<div class="grid">' + cards + "</div>" +
       '<div class="legend"><b>Reading the pills.</b> Green, teal and amber pills give a story\'s age inside the ' + win +
       '-hour window (under 6h, under 12h, under ' + win + 'h). <span class="pill old">OLDER</span> is beyond ' + win +
-      'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span> is an undated authoritative page, never presented as an event.</div>' +
+      'h, used only where a category had no fresh material, and stamped with its true age. <span class="pill ref">REFERENCE</span> is an undated authoritative page, never presented as an event.' +
+      (events ? ' A <span class="pill ev">blue</span> pill gives the day and time of a coming event.' : "") + "</div>" +
       '</main><footer class="foot"><div class="in">' + (built ? "Built " + esc(built) : "Generated " + esc(brief.generated_at || "")) +
       " &middot; " + esc(sourceLabel(brief)) + " &middot; " + win +
       "-hour window &middot; summaries capped at " + esc(cap) + " characters &middot; Daily Brief " + E.VERSION +
-      "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story.</div></footer></body></html>";
+      "<br>Headlines, photos and summaries belong to their publishers; every link opens the original story." +
+      (events ? "<br>" + EVENT_NOTE : "") + "</div></footer></body></html>";
     return { subject: subject, html: html, text: plainText(brief, n, s, cd, win, title, day, withheld, built) };
   }
 
@@ -513,7 +544,9 @@ p.wxs a{color:#2b6cc4;}
         : "  No new items in the last " + win + " hours that you have not already been sent.");
       for (const it of items) {
         const age = ageOf(it, brief);
-        const label = it.recency === "reference" ? "REFERENCE, undated" : it.recency === "backfill" ? "OLDER, " + E.humanizeAge(age) : E.humanizeAge(age);
+        const when = eventWhen(it.event, n.delivery.timezone);
+        const label = when ? "EVENT, " + when + (eventWhere(it.event) ? ", " + eventWhere(it.event) : "")
+          : it.recency === "reference" ? "REFERENCE, undated" : it.recency === "backfill" ? "OLDER, " + E.humanizeAge(age) : E.humanizeAge(age);
         L.push("  * " + E.collapse(it.title));
         L.push("    " + (E.collapse(it.source) ? E.collapse(it.source) + " | " : "") + label);
         L.push("    " + E.collapse(it.url));
@@ -523,8 +556,9 @@ p.wxs a{color:#2b6cc4;}
     });
     L.push("", rule, (built ? "Built " + built : "Generated " + (brief.generated_at || "")) + " | " + sourceLabel(brief) +
       " | Daily Brief " + E.VERSION);
+    if (hasEvents(brief)) L.push(EVENT_NOTE);
     return L.join("\n") + "\n";
   }
 
-  return { CSS, ICONS, esc, prettyDate, builtLabel, stamp, stats, subjectLine, countdownData, iconSvg, wxKind, wxSvg, weatherHtml, render };
+  return { CSS, ICONS, esc, prettyDate, builtLabel, stamp, eventWhen, eventWhere, stats, subjectLine, countdownData, iconSvg, wxKind, wxSvg, weatherHtml, render };
 });

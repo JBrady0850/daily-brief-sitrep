@@ -34,6 +34,12 @@
   // Local TV station news by state, published beside the app by GitHub every four hours (dailybrief/localnews.py).
   const LOCAL_DIR = "data/local/";
   const LOCAL_SCHEMA = "daily-brief-local-news/1";
+  // Things to Do: events from the community calendars of local TV stations (CitySpark),
+  // read from this browser for this reader only. app/data/calendars.js lists the calendars.
+  const CALENDAR_API = "https://portal.cityspark.com/api/events/GetEventsByDay/";
+  const EVENT_MILES = 20;     // how far from the town an event may be
+  const EVENT_DAYS = 7;       // today and the next six days
+  const EVENT_CALENDARS = 2;  // the nearest calendars, the second only when the first is short
   const LANGS = { en: "english", es: "spanish", fr: "french", de: "german", it: "italian", pt: "portuguese", nl: "dutch" };
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -201,7 +207,14 @@
     const ctl = typeof AbortController === "function" ? new AbortController() : null;
     const timer = ctl ? setTimeout(() => ctl.abort(), (opts && opts.timeout) || TIMEOUT_MS) : null;
     try {
-      const r = await f(url, ctl ? { signal: ctl.signal, credentials: "omit", referrerPolicy: "no-referrer" } : undefined);
+      const init = { credentials: "omit", referrerPolicy: "no-referrer" };
+      if (ctl) init.signal = ctl.signal;
+      if (opts && typeof opts.body === "string") {
+        init.method = "POST";
+        init.headers = { "Content-Type": "application/json" };
+        init.body = opts.body;
+      }
+      const r = await f(url, init);
       if (!r.ok) throw new Error("the site answered " + r.status);
       return await r.text();
     } catch (e) {
@@ -271,6 +284,73 @@
       county: E.collapse(r.admin2),
       label: [r.name, r.admin1, r.country_code === "US" ? "" : r.country].map(E.collapse).filter(Boolean).join(", ")
     }));
+  }
+
+  // ------------------------------------------------------------ event calendars
+  function milesBetween(lat1, lng1, lat2, lng2) {
+    const r = Math.PI / 180;
+    const a = Math.pow(Math.sin((lat2 - lat1) * r / 2), 2) +
+      Math.cos(lat1 * r) * Math.cos(lat2 * r) * Math.pow(Math.sin((lng2 - lng1) * r / 2), 2);
+    return 3958.8 * 2 * Math.asin(Math.min(1, Math.sqrt(a)));
+  }
+
+  /* The station calendars in the state whose home area reaches the town, nearest first. */
+  function calendarsNear(list, code, lat, lng) {
+    const all = list && list.states && Array.isArray(list.states[code]) ? list.states[code] : [];
+    return all.filter(c => c && /^[A-Za-z0-9_-]+$/.test(String(c.slug)) && E.isNum(c.lat) && E.isNum(c.lng))
+      .map(c => ({ cal: c, miles: milesBetween(lat, lng, c.lat, c.lng) }))
+      .filter(x => x.miles <= (E.isNum(x.cal.miles) ? x.cal.miles : 50) + EVENT_MILES)
+      .sort((a, b) => a.miles - b.miles).map(x => x.cal);
+  }
+
+  function slugify(name) { return String(name).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""); }
+
+  /* One calendar event as a brief item. The link opens the organizer's own page; for an
+     event listed only on a social site, the event on the station's calendar page (when
+     that page takes direct links), else the calendar page itself. */
+  function eventItem(ev, cal, nowIso) {
+    if (!ev || typeof ev !== "object") return null;
+    const title = tidyTitle(htmlToText(ev.Name));
+    const allDay = ev.AllDay === true || ev.HasTime === false;
+    const local = String(ev.DateStart || "");  // the calendar's wall-clock time, marked Z
+    const start = allDay ? local.slice(0, 10) : String(ev.StartUTC || "");
+    if (!title || (allDay ? !E.isDateStr(start) : E.parseIso(start) === null)) return null;
+    const page = E.validUrl(cal.page) ? String(cal.page).replace(/#.*$/, "") : "";
+    const pid = /^[0-9]+$/.test(String(ev.PId)) ? String(ev.PId) : "";
+    const social = u => { const h = E.hostOf(u); return E.SOCIAL_HOSTS.some(s => h === s || h.slice(-(s.length + 1)) === "." + s); };
+    let url = page;
+    const mark = cal.links === "hash" ? "#/" : cal.links === "hashBang" ? "#!/" : "";
+    if (E.validUrl(ev.PrimaryUrl) && !social(ev.PrimaryUrl)) url = E.collapse(ev.PrimaryUrl);
+    else if (mark && page && pid && /^\d{4}-\d{2}-\d{2}T\d{2}/.test(local)) url = page + mark + "details/" + slugify(title) + "/" + pid + "/" + local.slice(0, 13);
+    if (!url) return null;
+    const img = [ev.LargeImg, ev.MediumImg].map(E.collapse).filter(E.validImage)[0] || "";
+    const text = htmlToText(ev.Summary) || firstSentences(htmlToText(ev.Description), 2);
+    return {
+      title: title, url: url, source: E.collapse(cal.station) ? E.collapse(cal.station) + " community calendar" : "Community calendar",
+      source_url: page, published: nowIso, summary: text, image: img,
+      event: { start: start, all_day: allDay, venue: htmlToText(ev.Venue), place: htmlToText(ev.CityState) }
+    };
+  }
+
+  /* A calendar's answer as brief items, taking each day's first event, then each
+     day's second, and so on, so the brief shows the week rather than one evening. */
+  function eventsFrom(data, cal, nowIso) {
+    if (!data || data.Success !== true || !Array.isArray(data.Value)) throw new Error("the calendar answered without events");
+    const days = data.Value.map(d => (d && Array.isArray(d.Events) ? d.Events : []).map(ev => eventItem(ev, cal, nowIso)).filter(Boolean));
+    const out = [];
+    for (let i = 0; days.some(d => d.length > i); i++) for (const d of days) if (d[i]) out.push(d[i]);
+    return out;
+  }
+
+  /* Asks one calendar for the week's events within EVENT_MILES of the town. Only the
+     town's rounded map position and the date are sent. */
+  async function calendarEvents(cal, lat, lng, startDate, nowIso, opts) {
+    const body = JSON.stringify({ start: startDate, daysToLoad: EVENT_DAYS, eventsPerDay: 3, lat: lat, lng: lng, distance: EVENT_MILES,
+      search: "", sort: "", category: [], labels: [], defFilter: "all" });
+    const text = await getText(CALENDAR_API + cal.slug, Object.assign({}, opts, { body: body }));
+    let data;
+    try { data = JSON.parse(text); } catch (e) { throw new Error("the calendar answered with something unreadable"); }
+    return eventsFrom(data, cal, nowIso);
   }
 
   // ------------------------------------------------------------ the run
@@ -368,6 +448,38 @@
         health[c.id].local = { state: code, items: near.length, added: add(c.id, near), error: file ? "" : err, collected_at: file ? file.generated_at : "" };
       }
     }
+    // Things to do: the week's events near the town, from the community calendar of the
+    // nearest local TV station, asked from this browser for this reader only.
+    const evCats = cats.filter((c, i) => n.categories[i].id === "local-events");
+    if (evCats.length && code && opts.events !== false) {
+      phase = "events";
+      progress("Event calendars", done, total, phase);
+      const w = n.weather;
+      let pos = E.isNum(w.latitude) && E.isNum(w.longitude) ? { lat: w.latitude, lng: w.longitude } : null;
+      let err = "";
+      if (!pos && E.collapse(n.reader.location)) {
+        try {
+          const f = (await geocode(n.reader.location, opts)).filter(r => r.country_code === "US" && E.stateCode(r.region) === code)[0];
+          if (f) pos = { lat: f.latitude, lng: f.longitude };
+        } catch (e) { err = "the town search did not answer (" + String(e.message || e) + ")"; }
+      }
+      const list = opts.calendars || (root && root.DB_CALENDARS) || null;
+      const near = pos ? calendarsNear(list, code, pos.lat, pos.lng).slice(0, EVENT_CALENDARS) : [];
+      const want = Math.max.apply(null, evCats.map(c => c.items || b.items_per_category));
+      const items = [], used = [];
+      for (const cal of near) {
+        if (items.length >= want * 2) break;
+        try {
+          const got = await calendarEvents(cal, pos.lat, pos.lng, opts.date || localDate(now), nowIso, opts);
+          for (const it of got) items.push(it);
+          used.push(E.collapse(cal.station) || cal.slug);
+        } catch (e) { err = err || String(e.message || e); }
+      }
+      if (!near.length && !err) err = pos ? "no station calendar covers your town" : "your town has no map position; find it under the forecast in setup";
+      for (const c of evCats) {
+        health[c.id].events = { calendars: used, items: items.length, added: add(c.id, items, true), error: used.length ? "" : err };
+      }
+    }
     phase = "search";
     progress("News search", done, total, phase);
     let first = true;
@@ -422,7 +534,7 @@
       const h = health && health[bc.id];
       if (!h || (bc.items && bc.items.length)) continue;
       const tried = (h.queries || []).filter(q => !q.note);
-      const stations = (h.local && !h.local.error) || (h.feeds || []).some(f => f.station && !f.error);
+      const stations = (h.local && !h.local.error) || (h.events && !h.events.error) || (h.feeds || []).some(f => f.station && !f.error);
       const backup = !!(h.backup && !h.backup.error && h.backup.covered);
       if (tried.length && tried.every(q => q.error) && !stations && !backup) bc.unchecked = true;
     }
@@ -458,6 +570,6 @@
     return { brief: brief, health: health };
   }
 
-  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
+  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, CALENDAR_API, EVENT_MILES, milesBetween, calendarsNear, eventItem, eventsFrom, calendarEvents, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
     weather, geocode, collect, runBrief, localDate, markUnchecked, checkFeed };
 });

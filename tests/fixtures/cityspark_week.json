@@ -1,0 +1,113 @@
+{
+ "Success": true,
+ "Value": [
+  {
+   "Date": "2026-10-25",
+   "TotalCount": 3,
+   "Events": [
+    {
+     "PId": 101,
+     "Name": "Harvest Night Market",
+     "DateStart": "2026-10-25T18:30:00Z",
+     "StartUTC": "2026-10-25T23:30:00Z",
+     "AllDay": false,
+     "HasTime": true,
+     "Venue": "Town Square",
+     "CityState": "Example City, FL",
+     "Summary": "Local growers, food trucks and live music downtown.",
+     "Description": "<p>Local growers, food trucks and live music downtown.</p>",
+     "PrimaryUrl": "https://events.example.com/market",
+     "LargeImg": "https://img.example.com/market.jpg",
+     "MediumImg": "",
+     "Distance": 3.2,
+     "Links": []
+    },
+    {
+     "PId": 102,
+     "Name": "Pumpkin Walk",
+     "DateStart": "2026-10-25T00:00:00Z",
+     "StartUTC": null,
+     "AllDay": true,
+     "HasTime": false,
+     "Venue": "Riverside Park",
+     "CityState": "Example City, FL",
+     "Summary": "Carved pumpkins line the riverside path all day.",
+     "Description": "<p>Carved pumpkins line the riverside path all day.</p>",
+     "PrimaryUrl": "https://www.facebook.com/events/1",
+     "LargeImg": "",
+     "MediumImg": "",
+     "Distance": 3.2,
+     "Links": []
+    },
+    {
+     "PId": 103,
+     "Name": "Library Story Time",
+     "DateStart": "2026-10-25T10:00:00Z",
+     "StartUTC": "2026-10-25T15:00:00Z",
+     "AllDay": false,
+     "HasTime": true,
+     "Venue": "Main Library",
+     "CityState": "Example City, FL",
+     "Summary": "",
+     "Description": "",
+     "PrimaryUrl": "https://library.example.com/story",
+     "LargeImg": "",
+     "MediumImg": "",
+     "Distance": 3.2,
+     "Links": []
+    }
+   ]
+  },
+  {
+   "Date": "2026-10-26",
+   "TotalCount": 1,
+   "Events": [
+    {
+     "PId": 201,
+     "Name": "Community Choir Rehearsal",
+     "DateStart": "2026-10-26T19:00:00Z",
+     "StartUTC": "2026-10-27T00:00:00Z",
+     "AllDay": false,
+     "HasTime": true,
+     "Venue": "Grace Hall",
+     "CityState": "Example City, FL",
+     "Summary": "",
+     "Description": "",
+     "PrimaryUrl": "https://choir.example.com",
+     "LargeImg": "",
+     "MediumImg": "",
+     "Distance": 3.2,
+     "Links": []
+    }
+   ]
+  },
+  {
+   "Date": "2026-10-27",
+   "TotalCount": 2,
+   "Events": [
+    {
+     "PId": 301,
+     "Name": "Tuesday Night Run",
+     "DateStart": "2026-10-27T17:30:00Z",
+     "StartUTC": "2026-10-27T22:30:00Z",
+     "AllDay": false,
+     "HasTime": true,
+     "Venue": "Run Shop",
+     "CityState": "Nearby Town, FL",
+     "Summary": "",
+     "Description": "",
+     "PrimaryUrl": "https://run.example.com",
+     "LargeImg": "",
+     "MediumImg": "",
+     "Distance": 3.2,
+     "Links": []
+    },
+    {
+     "PId": "x",
+     "Name": "",
+     "DateStart": "nonsense"
+    }
+   ]
+  }
+ ]
+}

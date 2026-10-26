@@ -576,7 +576,7 @@
       clear(status).append(h("ul", { class: "plain" }, out));
     }
     add(box, h("h3", null, ico("news", "hi"), "Your local news feed (optional)"));
-    add(box, h("p", { class: "hint", text: "Town news comes from the local TV stations in your state, whose feeds this site gathers on GitHub every four hours, and then from the GDELT news search. To add another source, such as your town's paper, paste up to five feed links, one per line, then press Check; the site has to let web pages read its feed, and many do not." }));
+    add(box, h("p", { class: "hint", text: "Town news comes from the local TV stations in your state, whose feeds this site gathers on GitHub every four hours, and then from the GDELT news search. Things to Do also lists the week's events from the nearest station's community calendar. To add another source, such as your town's paper, paste up to five feed links, one per line, then press Check; the site has to let web pages read its feed, and many do not." }));
     add(box, ta);
     add(box, h("div", { class: "row" }, h("button", { class: "btn ghost", onclick: check }, "Check")));
     add(box, status);
@@ -977,6 +977,7 @@
     ["feeds", "Publisher feeds", "Reading the news sites' own feeds"],
     ["backup", "Backup collection", "Stories this site gathers on GitHub every four hours"],
     ["local", "Local stations", "Your state's local TV news, gathered on GitHub every four hours"],
+    ["events", "Event calendars", "The week's events near your town, from the nearest station calendar"],
     ["search", "News search", "Searching the news index for whatever is still short"],
     ["layout", "Your page", "Picking the freshest stories and laying out the page"]
   ];
@@ -1207,10 +1208,12 @@
       // A missing backup file matters only on the published site; a downloaded copy never has one.
       if (hh.backup && hh.backup.error && location.protocol === "https:") errs.push({ url: "backup collection", error: hh.backup.error });
       if (hh.local && hh.local.error && location.protocol === "https:") errs.push({ url: "local stations (" + hh.local.state + ")", error: hh.local.error });
+      if (hh.events && hh.events.error) errs.push({ url: "event calendars", error: hh.events.error });
       const rej = Object.keys(cat.rejected || {}).map(k => k + " " + cat.rejected[k]).join(", ");
       const found = hh.queries.reduce((a, x) => a + x.items, 0) + " search results, " + hh.feeds.reduce((a, x) => a + x.items, 0) + " feed items" +
         (hh.backup && hh.backup.items ? ", " + hh.backup.items + " from the backup collection" : "") +
-        (hh.local && hh.local.items ? ", " + hh.local.items + " from local stations naming your area" : "");
+        (hh.local && hh.local.items ? ", " + hh.local.items + " from local stations naming your area" : "") +
+        (hh.events && hh.events.items ? ", " + hh.events.items + " events from " + hh.events.calendars.join(" and ") + " calendars" : "");
       rows.push(h("tr", null, h("th", { text: cat.name }), h("td", { text: found }),
         h("td", { text: rej || "none" }), h("td", { class: errs.length ? "badtext" : "", text: errs.length ? errs.map(x => (x.query || x.url) + ": " + x.error).join("; ") : "none" })));
     }
@@ -1253,7 +1256,7 @@
         h("li", null, h("b", { text: "Keep this page handy. " }), "Bookmark it, or add it to your home screen: on a phone, use Share, then Add to Home Screen; in Chrome or Edge on a computer, use the install button in the address bar. It then opens like an app."),
         h("li", null, h("b", { text: "Let it build by itself. " }), h("span", { class: "check inline" }, auto, h("label", { for: "autorun2", text: "Build it automatically when I open this page (once a day)" }))),
         h("li", null, h("b", { text: "Same browser, same device. " }), "Choices live in this browser only. To use another device, download the settings file (Settings) and import it there.")),
-      h("p", { class: "hint", text: "Nothing is sent anywhere except the searches themselves: your search words go to the GDELT news index, and the forecast request carries your town's map position to Open-Meteo." })));
+      h("p", { class: "hint", text: "Nothing is sent anywhere except the searches themselves: your search words go to the GDELT news index, and the forecast and event calendar requests carry your town's rounded map position to Open-Meteo and the station calendar." })));
     add(sec, h("div", { class: "card" }, h("h2", null, ico("megaphone", "hi"), "Share or keep a copy"),
       h("ol", { class: "ways" },
         h("li", null, h("b", { text: "Open as a full page or Download page. " }), "On Today's brief. The page is one HTML file that opens in any browser and can be printed."),
@@ -1460,7 +1463,7 @@
       proj ? h("p", null, "Project page and download: ", h("a", { href: proj, target: "_blank", rel: "noopener", text: proj.replace("https://", "") }), " | ",
         h("a", { href: proj + "/issues/new", target: "_blank", rel: "noopener", text: "report a problem or suggest an idea" })) : null,
       h("h2", { text: "Where the news comes from" }),
-      h("p", { text: "Browsers only let a page read another site when that site allows it. This page reads, in order: the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired); the backup collection, a file this site's GitHub project rebuilds every four hours from Google News and every library feed; for the categories about your town, the news of the local TV stations in your state, which the same GitHub project gathers every four hours into one file per state; and, only for what is still short, the GDELT news index, which watches news sites worldwide. The forecast comes from Open-Meteo. Everything is collected by this site and GitHub; nothing needs to run on your computer." }),
+      h("p", { text: "Browsers only let a page read another site when that site allows it. This page reads, in order: the publisher feeds that allow it (for example ESPN, CBS Sports, NASA, The New York Times, Fox News, CNBC and Wired); the backup collection, a file this site's GitHub project rebuilds every four hours from Google News and every library feed; for the categories about your town, the news of the local TV stations in your state, which the same GitHub project gathers every four hours into one file per state; for Things to Do, the week's events near your town from the community calendar of the nearest station (CitySpark), asked by this page for you alone; and, only for what is still short, the GDELT news index, which watches news sites worldwide. The forecast comes from Open-Meteo. Everything is collected by this site and GitHub; nothing needs to run on your computer." }),
       h("h2", { text: "How stories are picked" }),
       h("ol", null,
         h("li", { text: "Search each category, then keep a story only if it mentions a term from every must-mention line and none of the leave-out terms." }),
@@ -1471,7 +1474,7 @@
       h("h2", { text: "Reading the pills" }),
       h("p", { text: "Green, teal and amber pills give a story's age inside the window. OLDER is beyond the window, stamped with its true age. REFERENCE is an undated authoritative page, never presented as an event." }),
       h("h2", { text: "Privacy" }),
-      h("p", { text: "No account and no tracking. Settings and the history stay in this browser, or in your data folder when you use the desktop app. This page sends your search words to the GDELT news index, fetches the feeds you list, reads your state's local news file from this site (your town stays in the browser), and, if the forecast is on, sends your town's rounded map position to Open-Meteo. Story photos load from the publishers' own sites. The desktop app and the GitHub copy send your search words to Google News instead." }),
+      h("p", { text: "No account and no tracking. Settings and the history stay in this browser, or in your data folder when you use the desktop app. This page sends your search words to the GDELT news index, fetches the feeds you list, reads your state's local news file from this site (your town stays in the browser), and, if the forecast is on, sends your town's rounded map position to Open-Meteo. For Things to Do it sends the same rounded position, never the town's name, to the nearest station's event calendar. Story photos load from the publishers' own sites. The desktop app and the GitHub copy send your search words to Google News instead." }),
       h("h2", { text: "Limits" }),
       h("ul", null,
         h("li", { text: "Stories from the GDELT index and Google News come with a headline only; publisher feeds add a short summary and often a photo." }),

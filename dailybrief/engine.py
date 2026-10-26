@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.7.1"
+VERSION = "0.8.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_RECENT = 3000
@@ -594,7 +594,9 @@ def norm_url(u: Any) -> str:
             continue
         kept.append(part)
     kept.sort()
-    return host + path + ("?" + "&".join(kept) if kept else "")
+    # A "#/" or "#!/" fragment is a page of its own in a one-page site, such as one event on a calendar.
+    route = m.group(5) if m.group(5) and re.match(r"#!?/", m.group(5)) else ""
+    return host + path + ("?" + "&".join(kept) if kept else "") + route
 
 
 def strip_outlet(title: Any) -> str:
@@ -788,6 +790,28 @@ def gate_item(item: dict, cat: dict, cfg: dict) -> Optional[str]:
     return None
 
 
+def clean_event(ev: Any) -> Optional[dict]:
+    """An event from a community calendar: when it starts (a UTC time, or a date with
+    all_day) and where. None when the start is unreadable."""
+    if not is_obj(ev):
+        return None
+    all_day = ev.get("all_day") is True
+    start = collapse(ev.get("start"))
+    ms = None if all_day else parse_iso(start)
+    if (not is_date_str(start)) if all_day else ms is None:
+        return None
+    return {"start": start if all_day else iso_z(ms), "all_day": all_day,
+            "venue": no_em_dash(cut_summary(ev.get("venue") or "", 80)),
+            "place": no_em_dash(cut_summary(ev.get("place") or "", 80))}
+
+
+def event_past(ev: dict, now_ms: int) -> bool:
+    """An event is over once its day has passed (all day) or it started over three hours ago."""
+    if ev["all_day"]:
+        return parse_iso(ev["start"] + "T00:00:00Z") + 2 * 86400000 <= now_ms  # allows for any time zone
+    return parse_iso(ev["start"]) < now_ms - 3 * 3600000
+
+
 def clean_item(raw: Any, max_chars: int) -> dict:
     raw = raw if is_obj(raw) else {}
     it = {
@@ -799,6 +823,7 @@ def clean_item(raw: Any, max_chars: int) -> dict:
         "summary": no_em_dash(cut_summary(raw.get("summary") or "", max_chars)),
         "image": "",
         "on_topic": raw.get("on_topic") is True,
+        "event": clean_event(raw.get("event")),
     }
     img = collapse(raw.get("image"))
     if valid_image(img):
@@ -835,8 +860,11 @@ _RANK = {"news": 0, "backfill": 1, "reference": 2}
 
 
 def _sort_key(it: dict) -> tuple:
+    # Events lead, in the order the calendar listed them.
+    if it["event"]:
+        return (0, it["order"])
     p = it["published_ms"]
-    return (_RANK[it["recency"]], -it["score"], -(p if p is not None else -math.inf), _CodePointKey(it["title"]))
+    return (1, _RANK[it["recency"]], -it["score"], -(p if p is not None else -math.inf), _CodePointKey(it["title"]))
 
 
 class _CodePointKey:
@@ -889,17 +917,29 @@ def select_brief(candidates: dict, cfg: Any, ledger: Optional[dict], now_iso: st
             if it["bad_date"]:
                 bump("unreadable date")
                 continue
-            cls = classify(it["published_ms"], now_ms, b)
-            if "reject" in cls:
-                bump(cls["reject"])
-                continue
-            it["recency"] = cls["recency"]
-            it["age"] = cls["age"]
+            if it["event"]:
+                # A coming event is today's news whenever it was listed.
+                if event_past(it["event"], now_ms):
+                    bump("past event")
+                    continue
+                if it["published_ms"] is None:
+                    it["published_ms"] = now_ms
+                    it["published"] = iso_z(now_ms)
+                it["recency"] = "news"
+                it["age"] = 0
+            else:
+                cls = classify(it["published_ms"], now_ms, b)
+                if "reject" in cls:
+                    bump(cls["reject"])
+                    continue
+                it["recency"] = cls["recency"]
+                it["age"] = cls["age"]
             if ledger and ledger_has(ledger, it, idx):
                 bump("already sent")
                 withheld += 1
                 continue
             it["score"] = score(it, cat, b)
+            it["order"] = len(pool)
             pool.append(it)
         pool.sort(key=_sort_key)
         want = b["items_per_category"] if raw.get("items") is None else raw["items"]
@@ -916,11 +956,14 @@ def select_brief(candidates: dict, cfg: Any, ledger: Optional[dict], now_iso: st
             taken_urls.add(nu)
             taken_titles.add(nt)
             taken_toks.append(toks)
-            picked.append({
+            p = {
                 "title": it["title"], "url": it["url"], "source": it["source"], "published": it["published"],
                 "recency": it["recency"], "age_hours": None if it["age"] is None else round1(it["age"]),
                 "summary": it["summary"], "image": it["image"],
-            })
+            }
+            if it["event"]:
+                p["event"] = it["event"]
+            picked.append(p)
         out.append({"id": cat["id"], "name": cat["name"], "color": cat["color"], "icon": cat["icon"],
                     "items": picked, "rejected": rejected})
     total = sum(len(c["items"]) for c in out)
@@ -1065,6 +1108,8 @@ def check_brief(brief: Any, cfg: Any = None, now_iso: Optional[str] = None) -> d
                 errors.append(w + ": " + it["recency"] + " items need a published time.")
             if it.get("recency") == "reference" and pms is not None:
                 warnings.append(w + ": reference items should have no date.")
+            if it.get("event") is not None and not clean_event(it.get("event")):
+                errors.append(w + ": event needs a start time, or a date with all_day true.")
             if it.get("image") not in (None, "") and not valid_image(it.get("image")):
                 warnings.append(w + ": image must be an https link to a picture; it will not be shown.")
             if is_str(it.get("summary")) and len(it["summary"]) > max_chars:

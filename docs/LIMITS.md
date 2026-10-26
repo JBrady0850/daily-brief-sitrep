@@ -27,6 +27,18 @@
   testing it refused one home connection for hours, and at 02:20 UTC on
   2026-10-24 it refused the first request from two unrelated networks). Categories
   you type yourself depend on it.
+- Things to Do events come from the community calendars that local TV stations
+  run on CitySpark: 145 calendars in 39 states on 2026-10-25
+  (`app/data/calendars.js`, rebuilt by hand with `python tools/calendars_source.py`).
+  The page asks the nearest calendar whose home area reaches the town, and a
+  second one only when the first is short. States without one (Alaska, Arizona,
+  Connecticut, DC, Delaware, Hawaii, Maryland, Massachusetts, New Jersey, Oregon,
+  Rhode Island, Washington) get their events from the local station news and the
+  news search only. CitySpark's calendar interface is not documented and its
+  terms allow personal, non-commercial viewing, so each reader's browser asks for
+  that reader alone and nothing is stored on GitHub; CitySpark may change or
+  close it. Calendars list what organizers submit: check details with the
+  organizer. The desktop app and the GitHub copy do not read these calendars.
 - Town news comes from local TV stations. Their sites do not let web pages read
   their feeds (of 18 local feeds tried in one region on 2026-10-24, none did
   dependably), so the GitHub workflow reads them every four hours and writes one

@@ -8,7 +8,7 @@ public project better. Items are ranked by value to a reader, then by effort.
 
 | Stage | What happens | Where |
 |---|---|---|
-| Collect | At the web address: the publisher feeds that allow web pages, then the backup collection GitHub rebuilds every four hours, then (for town categories) the local TV station news of the reader's state that GitHub gathers every four hours, then a GDELT news search for whatever is still short, and an Open-Meteo forecast. On a computer or GitHub: Google News RSS searches, every listed feed and the same forecast | `app/js/collect.js` in the browser; `dailybrief/collect.py` in the desktop app and the GitHub copy; or an AI assistant's web search |
+| Collect | At the web address: the publisher feeds that allow web pages, then the backup collection GitHub rebuilds every four hours, then (for town categories) the local TV station news of the reader's state that GitHub gathers every four hours, then (for Things to Do) the week's events from the nearest station calendar, then a GDELT news search for whatever is still short, and an Open-Meteo forecast. On a computer or GitHub: Google News RSS searches, every listed feed and the same forecast | `app/js/collect.js` in the browser; `dailybrief/collect.py` in the desktop app and the GitHub copy; or an AI assistant's web search |
 | Filter | Keep a story only if it mentions a term from every "must mention" group and no "leave out" term; drop social media, paperwork notices and, if asked, list articles | `selectBrief` / `select_brief` |
 | Date | NEWS inside the freshness window; OLDER (labelled, true age) only when a category is short; undated REFERENCE pages only when allowed and still short | `classify` |
 | No repeats | Leave out anything already sent (link, headline, or the same story from another outlet) and anything already used in another category | `ledgerHas`, `nearDup` |
@@ -69,6 +69,7 @@ Needs a decision.
 | R26 | Backup collection on GitHub | GitHub rebuilds a file of stories for every library category every four hours from Google News and every feed; the page reads it before GDELT | M | Done in 0.4.0 |
 | R27 | Town news without GDELT | The five town categories depended on GDELT | M | Replaced by R28 |
 | R28 | Local news by state on GitHub | GitHub reads the news feeds of about 400 local TV stations every four hours and publishes one file per state; the page reads its reader's state file and keeps the stories that name the town or a nearby place. Nothing runs on the reader's computer and the town never leaves the browser | M | Done in 0.6.0 |
+| R30 | Events for Things to Do | The nearest station's community calendar (CitySpark), asked from the reader's browser for the week's events within 20 miles of the town; nothing stored on GitHub | M | Done in 0.8.0 |
 | R29 | More local stations | Station groups whose lists are not machine-readable (Sinclair, Allen Media, independents) and local papers with feeds, for thin states such as Delaware and Wyoming | M | Idea |
 | R1 | Cloud schedule with GitHub Actions in your own private copy | A brief with no computer left on | M | Done in 0.1.0 |
 | R19 | Save settings to your GitHub copy from the app | Skip the download and upload step with a fine-grained token kept in the browser | M | Idea |

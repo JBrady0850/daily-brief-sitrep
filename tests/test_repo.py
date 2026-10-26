@@ -147,3 +147,20 @@ def test_install_identity_is_this_app_only():
     app installed from that site ("already installed")."""
     m = json.loads((APP / "manifest.webmanifest").read_text())
     assert m["id"] == "/daily-brief-sitrep/" and m["start_url"] == "./" and m["scope"] == "./"
+
+
+def test_event_calendar_list_is_well_formed():
+    """app/data/calendars.js: station calendars by state, addresses only, no event copied."""
+    text = (APP / "data" / "calendars.js").read_text(encoding="utf-8")
+    data = json.loads(text.split("window.DB_CALENDARS = ", 1)[1].rstrip().rstrip(";"))
+    assert data["schema"] == "daily-brief-calendars/1"
+    total = 0
+    for code, cals in data["states"].items():
+        assert code in E.US_STATES.values(), code
+        for c in cals:
+            total += 1
+            assert set(c) == {"slug", "station", "page", "lat", "lng", "miles", "links"}, c
+            assert re.fullmatch(r"[A-Za-z0-9_-]+", c["slug"]) and c["page"].startswith("https://"), c
+            assert 17 < c["lat"] < 72 and -180 < c["lng"] < -64 and 0 < c["miles"] <= 200, c
+            assert c["links"] in ("", "hash", "hashBang"), c
+    assert total >= 100
