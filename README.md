@@ -56,6 +56,18 @@ one higher on the list. **Your choices** has a Change link for the order too.
 
 ![Putting the categories in order](docs/images/10-order.png)
 
+**Countdown ideas.** The countdown question suggests countdowns that fit your
+categories, most important first: dates that follow a published rule (Election
+Day, Thanksgiving, Tax Day, the Atlantic hurricane season, Medicare Open
+Enrollment) fill in with one tap, and personal ones (a retirement, a trip, a
+move, a launch, an exam, the first day of school, race day, draft day or a
+season opener) ask for your date and set the milestones back from it. Federal
+retirement, for example, lists the HR estimate, TSP and FEHB choices, Social
+Security (up to 4 months ahead) and the retirement application (agencies need
+at least 60 days). Change or remove anything, or press Undo.
+
+![Countdown ideas from your categories](docs/images/11-countdown-ideas.png)
+
 ## Set up once, then read it every day
 
 The app has two modes, so you always know where you are.

@@ -9,6 +9,7 @@
   const PROMPTS = window.DB_PROMPTS;
   const SAMPLE = window.DB_SAMPLE;
   const C = window.DB_COLLECT;
+  const IDEAS = window.DB_IDEAS;
   const ICONS = window.DB_ICONS || { icons: {}, art: {} };
 
   const TABS = ["setup", "categories", "brief", "daily", "ai", "settings", "help"];
@@ -660,10 +661,76 @@
     add(card, h("div", { class: "check" }, st, h("label", { for: "starters" }, "Add a one-line conversation starter under each story (AI briefs)")));
   }
 
+  /* The countdown an idea replaced, so Undo can put it back. */
+  let ideaUndo = null;
+
+  /* Countdown ideas from the chosen categories, most important first: a fixed date
+     fills in at once, a personal one asks for its date first. */
+  function countdownIdeas() {
+    const c = cfg();
+    const list = IDEAS ? IDEAS.ideasFor(c.categories.map(cat => ({ id: cat.id, name: E.resolveCategory(cat, c.reader).name })), today()) : [];
+    if (!list.length) return null;
+    const box = h("div", { class: "ideas", id: "ideas" });
+    const status = h("p", { class: "hint", id: "ideastatus", "aria-live": "polite" });
+    function use(idea, target) {
+      const got = IDEAS.fill(idea.id, target, today());
+      if (!got) { status.textContent = "Pick a date after today for " + idea.label.toLowerCase() + "."; return; }
+      ideaUndo = { before: E.clone(c.countdown), label: got.label, date: got.date };
+      c.countdown = Object.assign(c.countdown, got);
+      save();
+      refresh();
+      const st = document.getElementById("ideastatus");
+      if (st) st.textContent = "Filled in: " + got.label + ", " + N.prettyDate(got.date) + ", with " + got.milestones.length +
+        (got.milestones.length === 1 ? " milestone" : " milestones") + ". Change anything below.";
+      const u = document.getElementById("ideaundo");
+      if (u) { try { u.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
+    }
+    add(box, h("h3", null, ico("calendar", "hi"), "Ideas from your categories"));
+    add(box, h("p", { class: "hint", text: "Pick one to fill in the countdown and its milestones; you can change any of it below. Check the dates that matter to you with the source." }));
+    const grid = h("div", { class: "ideagrid" });
+    for (const idea of list) {
+      const item = h("div", { class: "idea" }, h("b", { text: idea.label }), h("p", { class: "hint", text: idea.about + " From " + idea.from + "." }));
+      if (idea.steps.length) item.append(h("ul", { class: "steps" }, idea.steps.map(s => h("li", { text: s }))));
+      if (idea.fixed) {
+        item.append(h("div", { class: "go" }, h("p", { class: "when", text: N.prettyDate(idea.date) }),
+          h("button", { class: "btn ghost", id: "idea-" + idea.id, "aria-label": "Use " + idea.label + ", " + N.prettyDate(idea.date),
+            onclick: () => use(idea, "") }, "Use this countdown")));
+      } else {
+        const when = h("input", { type: "date", id: "ideadate-" + idea.id, min: tomorrow(), "aria-label": "Date for " + idea.label });
+        item.append(h("div", { class: "go" }, h("div", { class: "row" }, when,
+          h("button", { class: "btn ghost", id: "idea-" + idea.id, onclick: () => use(idea, when.value) }, "Use this date"))));
+      }
+      grid.append(item);
+    }
+    add(box, grid);
+    const filled = ideaUndo && c.countdown.label === ideaUndo.label && c.countdown.date === ideaUndo.date;
+    if (filled) {
+      add(box, h("div", { class: "row" }, h("button", { class: "link", id: "ideaundo", onclick: () => {
+        c.countdown = ideaUndo.before;
+        ideaUndo = null;
+        save();
+        refresh();
+        const st = document.getElementById("ideastatus");
+        if (st) st.textContent = "Put back the countdown you had.";
+        const first = document.querySelector("#ideas button");
+        if (first) { try { first.focus({ preventScroll: true }); } catch (e) { /* focus is a convenience */ } }
+      } }, "Undo")));
+    }
+    add(box, status);
+    return box;
+  }
+
+  function tomorrow() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.getFullYear() + "-" + E.pad2(d.getMonth() + 1) + "-" + E.pad2(d.getDate());
+  }
+
   function stepCountdown(card) {
     const cd = cfg().countdown;
     const on = h("input", { type: "checkbox", id: "cdon", checked: cd.enabled, onchange: e => { cd.enabled = e.target.checked; save(); refresh(); } });
     add(card, h("p", { text: "A countdown card at the top of the newsletter, with milestones on the way. Good for a move, a launch, a trip or a retirement date." }));
+    add(card, countdownIdeas());
     add(card, h("div", { class: "check" }, on, h("label", { for: "cdon" }, "Show a countdown")));
     if (!cd.enabled) return;
     add(card, field("Label", h("input", { type: "text", value: cd.label, placeholder: "Days to the spring trip", oninput: e => { cd.label = e.target.value; save(); } })));

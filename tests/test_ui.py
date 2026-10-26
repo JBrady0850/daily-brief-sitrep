@@ -901,3 +901,46 @@ def test_the_brief_says_when_it_was_built(browser):
     assert frame.locator("p.built").inner_text() == "Built " + when
     assert errors == []
     ctx.close()
+
+
+def test_countdown_question_suggests_ideas_from_the_categories(browser, http_app):
+    """The countdown question offers ideas from the chosen categories: a fixed date fills in
+    at once, a personal one after its date is picked, and Undo puts the old countdown back."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    state = {"version": 1, "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
+                                      "categories": [pick["federal-retirement"], pick["politics"], pick["travel"]],
+                                      "countdown": {"enabled": True, "label": "Days to the reunion", "date": "2099-07-04", "start": "",
+                                                    "milestones": []}}}
+    ctx, page, errors = open_page(browser, http_app, state=state)
+    page.wait_for_selector(".stepper")
+    page.click(".stepper button[aria-label*='countdown']")
+    page.wait_for_selector("#ideas")
+    names = page.locator("#ideas .idea b").all_inner_texts()
+    expect = page.evaluate("DB_IDEAS.ideasFor(DB_APP.state().config.categories, (d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'))(new Date()))")
+    assert names == [i["label"] for i in expect] and [i["id"] for i in expect] == ["federal-retirement", "medicare", "election", "trip"]
+    assert "From Federal Retirement" in page.inner_text("#ideas .idea >> nth=0"), "each idea names the category it came from"
+    election = [i for i in expect if i["id"] == "election"][0]
+    page.click("#idea-election")
+    cd = page.evaluate("DB_APP.state().config.countdown")
+    assert (cd["enabled"], cd["label"], cd["date"]) == (True, "Days to Election Day", election["date"])
+    assert "Filled in: Days to Election Day" in page.inner_text("#ideastatus")
+    assert page.evaluate("document.activeElement.id") == "ideaundo"
+    page.keyboard.press("Enter")  # Undo
+    cd = page.evaluate("DB_APP.state().config.countdown")
+    assert (cd["label"], cd["date"]) == ("Days to the reunion", "2099-07-04"), "Undo puts the old countdown back"
+    assert "Put back" in page.inner_text("#ideastatus")
+    # A personal idea asks for its date first.
+    page.click("#idea-federal-retirement")
+    assert "Pick a date after today" in page.inner_text("#ideastatus")
+    target = (datetime.now() + timedelta(days=300)).strftime("%Y-%m-%d")
+    page.fill("#ideadate-federal-retirement", target)
+    page.click("#idea-federal-retirement")
+    cd = page.evaluate("DB_APP.state().config.countdown")
+    assert (cd["label"], cd["date"]) == ("Days to retirement", target)
+    assert [m["label"] for m in cd["milestones"]][-1] == "Check final leave and the last paycheck"
+    assert all(m["date"] < target for m in cd["milestones"]) and len(cd["milestones"]) == 4, cd["milestones"]
+    assert page.locator(".milestones .mrow").count() == 4, "the milestones show in the fields below, ready to change"
+    assert page.evaluate("DB_ENGINE.validateConfig(DB_APP.state().config).errors") == []
+    assert errors == []
+    ctx.close()

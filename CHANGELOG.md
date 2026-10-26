@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.9.0 (2026-10-25)
+
+Countdown ideas from your categories.
+
+- The countdown question now suggests up to four countdowns that fit the
+  categories you picked, in your order. Dates that follow a published rule fill
+  in with one tap: Election Day (2 U.S.C. 7), Thanksgiving, Tax Day (April 15,
+  or the next business day past a weekend or Emancipation Day), the Atlantic
+  hurricane season (June 1 to November 30) and Medicare Open Enrollment
+  (October 15 to December 7). Personal countdowns (retirement, federal
+  retirement, a trip, a move, a launch, an exam, the first day of school, race
+  day, draft day, a season opener) ask for your date and set their milestones
+  back from it; milestones already past drop out.
+- Each idea names the category it came from. Filling one in says what it set
+  and offers Undo, which puts your earlier countdown back.
+- New file `app/js/ideas.js` holds the ideas and the date rules, with tests
+  against published dates.
+
 ## 0.8.1 (2026-10-25)
 
 - On a Windows computer without Python's time zone data (the `tzdata`

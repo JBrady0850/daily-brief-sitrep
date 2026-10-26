@@ -57,7 +57,11 @@ def main() -> int:
         page.click(".wxpick .chip >> text=Springfield, Illinois")
         page.locator(".wxpick:not(.localfeeds)").scroll_into_view_if_needed()
         page.screenshot(path=str(OUT / "04-town-and-weather.png"))
-        for _ in range(5):
+        for _ in range(3):  # amount, focus, countdown
+            page.click("button:has-text('Next question')")
+        page.locator("#ideas").scroll_into_view_if_needed()
+        page.screenshot(path=str(OUT / "11-countdown-ideas.png"))
+        for _ in range(2):
             page.click("button:has-text('Next question')")
         page.click("button:has-text('Save and build my brief')")
         page.wait_for_selector("iframe.page", timeout=30000)

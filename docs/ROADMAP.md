@@ -69,6 +69,7 @@ Needs a decision.
 | R26 | Backup collection on GitHub | GitHub rebuilds a file of stories for every library category every four hours from Google News and every feed; the page reads it before GDELT | M | Done in 0.4.0 |
 | R27 | Town news without GDELT | The five town categories depended on GDELT | M | Replaced by R28 |
 | R28 | Local news by state on GitHub | GitHub reads the news feeds of about 400 local TV stations every four hours and publishes one file per state; the page reads its reader's state file and keeps the stories that name the town or a nearby place. Nothing runs on the reader's computer and the town never leaves the browser | M | Done in 0.6.0 |
+| R31 | Countdown ideas | Suggestions from the chosen categories: rule-based dates (Election Day, Thanksgiving, Tax Day, hurricane season, Medicare Open Enrollment) and personal countdowns with milestones set back from the reader's date | S | Done in 0.9.0 |
 | R30 | Events for Things to Do | The nearest station's community calendar (CitySpark), asked from the reader's browser for the week's events within 20 miles of the town; nothing stored on GitHub | M | Done in 0.8.0 |
 | R29 | More local stations | Station groups whose lists are not machine-readable (Sinclair, Allen Media, independents) and local papers with feeds, for thin states such as Delaware and Wyoming | M | Idea |
 | R1 | Cloud schedule with GitHub Actions in your own private copy | A brief with no computer left on | M | Done in 0.1.0 |

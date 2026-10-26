@@ -8,7 +8,9 @@
      once;
    - publisher feeds that allow web pages to read them (most do not; those
      simply report "not readable from a web page");
-   - Open-Meteo (open-meteo.com) for the forecast and for finding your town.
+   - Open-Meteo (open-meteo.com) for the forecast and for finding your town;
+   - for Things to Do, the community calendar of the nearest local TV station
+     (CitySpark), asked for the week's events near the town.
 
    The engine (engine.js) then picks the brief exactly as the desktop app does. */
 (function (root, factory) {
@@ -510,7 +512,7 @@
       if (!qs.length) continue;
       if (freshShort(c)) await search(c, qs[0], b.window_hours);
       else {
-        health[c.id].queries.push({ query: qs[0], hours: b.window_hours, items: 0, added: 0, error: "", note: "not needed: the feeds filled this category" });
+        health[c.id].queries.push({ query: qs[0], hours: b.window_hours, items: 0, added: 0, error: "", note: "not needed: the earlier sources filled this category" });
         tick(c.name);
       }
     }

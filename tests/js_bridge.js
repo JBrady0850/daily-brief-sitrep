@@ -5,6 +5,7 @@
 const E = require("../app/js/engine.js");
 const N = require("../app/js/newsletter.js");
 const C = require("../app/js/collect.js");
+const I = require("../app/js/ideas.js");
 let input = "";
 process.stdin.setEncoding("utf8");
 process.stdin.on("data", d => { input += d; });
@@ -12,7 +13,8 @@ process.stdin.on("end", () => {
   const reqs = JSON.parse(input);
   const out = (Array.isArray(reqs) ? reqs : [reqs]).map(req => {
     const fn = req.fn === "render" ? N.render : req.fn === "subjectLine" ? N.subjectLine
-      : req.fn.indexOf("collect.") === 0 ? C[req.fn.slice(8)] : req.fn.indexOf("N.") === 0 ? N[req.fn.slice(2)] : E[req.fn];
+      : req.fn.indexOf("collect.") === 0 ? C[req.fn.slice(8)] : req.fn.indexOf("N.") === 0 ? N[req.fn.slice(2)]
+        : req.fn.indexOf("I.") === 0 ? I[req.fn.slice(2)] : E[req.fn];
     if (typeof fn !== "function") return { error: "no function " + req.fn };
     try {
       const v = fn.apply(null, req.args || []);
