@@ -66,7 +66,9 @@ Season) fill in as soon as you tick them; personal ones (a retirement, a trip, a
 move, a launch, an exam, the first day of school, race day, draft day or a
 season opener) ask for your date and set the milestones back from it. Federal
 retirement, for example, lists the HR estimate, TSP and FEHB choices and the
-retirement application (agencies need at least 60 days). Ideas that fit only
+retirement application (agencies need at least 60 days), plus the federal dates
+on the way: the next FEHB and FEDVIP Open Season, the end and start of the leave
+year, and your final Open Season as an employee. Ideas that fit only
 some readers (Medicare Open Enrollment,
 and the hurricane season outside the Atlantic and Gulf coast states) are never
 in the first group. **Your countdowns** below the ideas holds each countdown's

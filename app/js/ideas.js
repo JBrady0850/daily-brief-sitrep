@@ -28,7 +28,12 @@
    FSAFEDS) runs from the Monday of the second full workweek in November through
    the Monday of the second full workweek in December (5 CFR 890.301(f)), which is
    the second Monday of each month (November 9 to December 14, 2026); FSAFEDS
-   elections do not carry over and must be made each year (FSAFEDS). */
+   elections do not carry over and must be made each year (FSAFEDS).
+   Checked on 2026-10-26: a leave year begins on the first day of the first full
+   biweekly pay period in a calendar year and ends the day before the next one
+   begins; OPM's table lists January 11, 2026 to January 9, 2027, then January 10,
+   2027, January 9, 2028, January 7, 2029 and January 6, 2030, for most employees
+   (some agency payroll systems differ) (OPM, leave year beginning and ending dates). */
 (function (root, factory) {
   const node = typeof module === "object" && module.exports;
   const api = factory(node ? require("./engine.js") : root.DB_ENGINE);
@@ -59,6 +64,41 @@
      workweek is always the second Monday, since the first Monday falls by the 7th. */
   function openSeason(y) { return [nthWeekday(y, 11, 1, 2), nthWeekday(y, 12, 1, 2)]; }
 
+  /* The first day of leave year y: the one start of a biweekly pay period that falls on
+     January 1 to 14. Pay periods start every 14 days, as on January 10, 2027 (OPM). */
+  const PAY_PERIOD_START = "2027-01-10";
+  function leaveYear(y) {
+    const k = Math.ceil((ms(ymd(y, 1, 1)) - ms(PAY_PERIOD_START)) / (14 * DAY));
+    return shift(PAY_PERIOD_START, 14 * k);
+  }
+
+  const OPEN_SEASON_NOTE = "5 CFR 890.301(f)";
+  const LEAVE_NOTE = "OPM leave-year table";
+
+  /* The federal dates on the way to a federal retirement date: the next Federal Benefits
+     Open Season, the final one as an employee (the last to open before the date), and
+     the next change of leave year. Each is [date, label, note]; milestones() keeps those
+     after today and before the date. */
+  function federalDates(target, today) {
+    const out = [];
+    const seasons = [];
+    for (let y = Number(today.slice(0, 4)); y <= Number(target.slice(0, 4)); y++) {
+      const [open, close] = openSeason(y);
+      if (close > today && open < target) seasons.push([y, open, close]);
+    }
+    seasons.forEach((s, i) => {
+      if (i !== 0 && i !== seasons.length - 1) return;
+      const last = i === seasons.length - 1;
+      out.push([s[1], (last ? "Final Open Season as an employee opens" : "FEHB and FEDVIP Open Season opens") + ", plan year " + (s[0] + 1), OPEN_SEASON_NOTE]);
+      out.push([s[2], last ? "Final Open Season as an employee closes" : "Open Season closes", OPEN_SEASON_NOTE]);
+    });
+    let y = Number(today.slice(0, 4));
+    while (leaveYear(y) <= today) y += 1;
+    out.push([shift(leaveYear(y), -1), "Leave year " + (y - 1) + " ends", LEAVE_NOTE]);
+    out.push([leaveYear(y), "Leave year " + y + " begins", LEAVE_NOTE]);
+    return out;
+  }
+
   // States on the Atlantic or Gulf coast, where the hurricane season is everyone's business.
   const STORM_COAST = ["TX", "LA", "MS", "AL", "FL", "GA", "SC", "NC", "VA", "MD", "DE", "NJ", "NY", "CT", "RI", "MA", "NH", "ME"];
 
@@ -80,6 +120,8 @@
 
   // Each idea: id, label, about (one line), the category ids it fits, and either
   // fixed(today) -> {date, start, label?, milestones?} or offsets for a date the reader picks.
+  // dates(target, today) -> [[date, label, note]] adds dates that follow a rule to a personal
+  // idea, and dateSteps names them before the reader picks a date.
   // optional(reader) -> true keeps an idea out of the suggestions (it stays in "More ideas").
   const IDEAS = [
     { id: "retirement", label: "Days to retirement", about: "Your retirement date, with the decisions on the way.",
@@ -88,7 +130,9 @@
     { id: "federal-retirement", label: "Days to retirement", about: "Your federal retirement date, with the paperwork on the way.",
       cats: ["federal-retirement", "federal-workforce", "federal-pay"],
       offsets: [[-365, "Ask HR for a retirement estimate"], [-180, "Review TSP withdrawals and FEHB choices"],
-        [-90, "Give HR your retirement application (agencies need at least 60 days)"], [-14, "Check final leave and the last paycheck"]] },
+        [-90, "Give HR your retirement application (agencies need at least 60 days)"], [-14, "Check final leave and the last paycheck"]],
+      dates: federalDates,
+      dateSteps: ["FEHB and FEDVIP Open Season: the next one and your final one as an employee", "The end of this leave year and the start of the next"] },
     { id: "open-season", label: "Days to Federal Benefits Open Season",
       about: "FEHB, PSHB, FEDVIP and FSAFEDS: the second Monday of November to the second Monday of December.",
       aliases: ["Days left in Federal Benefits Open Season"],
@@ -194,12 +238,19 @@
     return n;
   }
 
-  /* Milestone dates for a target: kept only when they fall after today and before the target. */
+  /* Milestone dates for a target: kept only when they fall after today and before the
+     target. Each entry is [days before the target, or "MM-DD", or a full date; label; note]. */
   function milestones(list, target, today) {
     return (list || []).map(m => {
-      const date = typeof m[0] === "number" ? shift(target, m[0]) : target.slice(0, 4) + "-" + m[0];
-      return { date: date, label: m[1], note: "" };
+      const date = typeof m[0] === "number" ? shift(target, m[0]) : E.isDateStr(m[0]) ? m[0] : target.slice(0, 4) + "-" + m[0];
+      return { date: date, label: m[1], note: m[2] || "" };
     }).filter(m => E.isDateStr(m.date) && m.date > today && m.date < target);
+  }
+
+  /* A personal idea's milestones for the reader's date: its steps and its rule dates, by date. */
+  function personal(idea, target, today) {
+    const all = milestones(idea.offsets, target, today).concat(idea.dates ? milestones(idea.dates(target, today), target, today) : []);
+    return all.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
   }
 
   /* An idea as the page shows it: label, about, the category it came from (or ""),
@@ -212,7 +263,7 @@
       o.date = f.date;
       o.steps = milestones(f.milestones, f.date, today).map(m => m.label);
     } else {
-      o.steps = idea.offsets.map(m => m[1]);
+      o.steps = idea.offsets.map(m => m[1]).concat(idea.dateSteps || []);
     }
     return o;
   }
@@ -287,8 +338,34 @@
         milestones: milestones(f.milestones, f.date, today), idea: id };
     }
     if (!E.isDateStr(target) || target <= today) return null;
-    return { label: idea.label, date: target, start: today, milestones: milestones(idea.offsets, target, today), idea: id };
+    const out = { label: idea.label, date: target, start: today, milestones: personal(idea, target, today), idea: id };
+    if (idea.dates) out.dates_added = true;
+    return out;
   }
 
-  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, ideasFor, moreIdeas, ideaById, belongsTo, fill, RETIRED_STEPS, dropRetiredSteps };
+  const FEDERAL_CATS = ["federal-retirement", "federal-workforce", "federal-pay"];
+
+  /* Adds the federal dates (Open Season, the leave year change) to a federal retirement
+     countdown saved before 0.13.0, once: dates_added marks it, so a date the reader removes
+     stays removed. A countdown saved without an idea counts when the reader follows a
+     federal category. Changes the settings in place and returns how many dates it added. */
+  function addRuleDates(cfg, today) {
+    if (!cfg || typeof cfg !== "object" || !Array.isArray(cfg.countdowns) || !E.isDateStr(today)) return 0;
+    const idea = IDEAS.filter(i => i.id === "federal-retirement")[0];
+    const federal = (Array.isArray(cfg.categories) ? cfg.categories : []).some(c => c && FEDERAL_CATS.indexOf(c.id) >= 0);
+    let n = 0;
+    for (const cd of cfg.countdowns) {
+      if (!cd || typeof cd !== "object" || cd.dates_added || !E.isDateStr(cd.date) || cd.date <= today) continue;
+      if (!(cd.idea === idea.id || (!cd.idea && federal && belongsTo(cd, idea.id)))) continue;
+      const list = Array.isArray(cd.milestones) ? cd.milestones : [];
+      const have = list.filter(m => m && typeof m === "object").map(m => key(m.label));
+      const add = milestones(idea.dates(cd.date, today), cd.date, today).filter(m => have.indexOf(key(m.label)) < 0);
+      cd.milestones = list.concat(add);
+      cd.dates_added = true;
+      n += add.length;
+    }
+    return n;
+  }
+
+  return { IDEAS, MAX, STORM_COAST, electionDay, thanksgiving, taxDay, openSeason, leaveYear, federalDates, addRuleDates, ideasFor, moreIdeas, ideaById, belongsTo, fill, RETIRED_STEPS, dropRetiredSteps };
 });

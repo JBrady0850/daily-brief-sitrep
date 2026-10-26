@@ -4,13 +4,13 @@ import json
 import time
 
 import pytest
-from conftest import feed_bytes
+from conftest import fresh_feed_bytes
 
 from dailybrief import server, store
 
 
 def fetcher(url):
-    return feed_bytes("google_news.xml" if "news.google.com" in url else "rss_feed.xml")
+    return fresh_feed_bytes("google_news.xml" if "news.google.com" in url else "rss_feed.xml")
 
 
 @pytest.fixture

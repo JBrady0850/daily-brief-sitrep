@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.12.0"
+VERSION = "0.13.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_COUNTDOWNS = 4

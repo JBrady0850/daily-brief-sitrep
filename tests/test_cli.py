@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from conftest import ROOT, feed_bytes
+from conftest import ROOT, fresh_feed_bytes
 
 from dailybrief import cli, collect, github_issue, store
 
@@ -62,7 +62,7 @@ def test_email_commands_are_gone(capsys):
 
 
 def _fake_news(monkeypatch):
-    monkeypatch.setattr(collect, "fetch", lambda url, **kw: feed_bytes("google_news.xml" if "google" in url else "rss_feed.xml"))
+    monkeypatch.setattr(collect, "fetch", lambda url, **kw: fresh_feed_bytes("google_news.xml" if "google" in url else "rss_feed.xml"))
     monkeypatch.setattr(collect, "GOOGLE_PAUSE", 0)
     store.save_config({"version": 1, "categories": [{"id": "net", "name": "Network", "queries": ['"zero trust"'],
                                                      "require": [["zero trust", "VPN"]]}]})

@@ -1013,7 +1013,8 @@ def test_countdown_question_takes_several_ideas_as_tick_boxes(browser, http_app)
     page.fill("#ideadate-federal-retirement", target)
     page.dispatch_event("#ideadate-federal-retirement", "change")
     fed = [c for c in cds() if c.get("idea") == "federal-retirement"][0]
-    assert (fed["label"], fed["date"]) == ("Days to retirement", target) and len(fed["milestones"]) == 3
+    assert (fed["label"], fed["date"]) == ("Days to retirement", target) and len([m for m in fed["milestones"] if not m["note"]]) == 3
+    assert fed["dates_added"] is True, "the federal dates come along"
     # Four is the limit: the rest of the boxes cannot be ticked until one goes.
     assert len(cds()) == 4 and page.is_disabled("#ideachk-trip") and not page.is_disabled("#ideachk-election")
     page.uncheck("#ideachk-election")
@@ -1137,6 +1138,33 @@ def test_mail_draft_builds_an_email_link_without_attachments(browser):
     ctx.close()
 
 
+def test_a_saved_federal_retirement_countdown_gets_the_federal_dates_once(browser, http_app):
+    """A federal retirement countdown saved before 0.13.0 gains the Open Season and leave
+    year dates when the page opens, once: a date the reader then removes stays removed."""
+    target = (datetime.now() + timedelta(days=500)).strftime("%Y-%m-%d")
+    state = {"version": 1, "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
+                                      "countdowns": [{"label": "Days to retirement", "date": target, "idea": "federal-retirement",
+                                                      "milestones": [{"date": target[:4] + "-01-01", "label": "My own step", "note": ""}]}]}}
+    ctx, page, errors = open_page(browser, http_app, state=state)
+    page.wait_for_selector(".stepper")
+    got = page.evaluate("DB_APP.state().config.countdowns[0]")
+    labels = [m["label"] for m in got["milestones"]]
+    assert labels[0] == "My own step" and got["dates_added"] is True
+    assert any(l.startswith("Final Open Season as an employee opens") for l in labels), labels
+    assert any(l.startswith("Leave year") for l in labels), labels
+    assert all(m["note"] for m in got["milestones"][1:]), "each date names its rule"
+    page.evaluate("""() => { const st = JSON.parse(localStorage.getItem('db.state.v1'));
+        st.config.countdowns[0].milestones = st.config.countdowns[0].milestones.filter(m => !/^Leave year/.test(m.label));
+        localStorage.setItem('db.state.v1', JSON.stringify(st)); }""")
+    page.reload()
+    page.wait_for_selector(".stepper")
+    after = page.evaluate("DB_APP.state().config.countdowns[0].milestones.map(m => m.label)")
+    assert not any(l.startswith("Leave year") for l in after)
+    assert len(after) == len(labels) - len([l for l in labels if l.startswith("Leave year")])
+    assert errors == []
+    ctx.close()
+
+
 def test_saved_countdowns_lose_steps_that_assumed_eligibility(browser, http_app):
     """A countdown saved with the old Social Security or FSAFEDS steps loads without them;
     the reader's own steps stay."""
@@ -1145,7 +1173,7 @@ def test_saved_countdowns_lose_steps_that_assumed_eligibility(browser, http_app)
              {"date": "2099-10-01", "label": "My own step", "note": ""}]
     state = {"version": 1, "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
                                       "countdowns": [{"label": "Days to retirement", "date": "2099-12-31", "idea": "federal-retirement",
-                                                      "milestones": steps}]}}
+                                                      "dates_added": True, "milestones": steps}]}}
     ctx, page, errors = open_page(browser, http_app, state=state)
     page.wait_for_selector(".stepper")
     got = page.evaluate("DB_APP.state().config.countdowns[0].milestones.map(m => m.label)")

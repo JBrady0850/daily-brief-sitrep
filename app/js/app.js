@@ -53,11 +53,13 @@
     }
     st.config = dropEmail(E.merge(E.DEFAULTS, E.upgradeCountdown(st.config)));
     if (IDEAS) IDEAS.dropRetiredSteps(st.config);  // steps that assumed eligibility (0.11.1)
+    if (IDEAS) IDEAS.addRuleDates(st.config, today());  // federal dates on a federal retirement countdown, once (0.13.0)
     if (!st.config.delivery.timezone) st.config.delivery.timezone = browserZone();
     // Unsaved changes to saved choices survive a reload; anything else is dropped.
     if (st.setup_done && st.editing && st.draft && typeof st.draft === "object") {
       st.draft = dropEmail(E.merge(E.DEFAULTS, E.upgradeCountdown(st.draft)));
       if (IDEAS) IDEAS.dropRetiredSteps(st.draft);
+      if (IDEAS) IDEAS.addRuleDates(st.draft, today());
     } else {
       st.editing = false;
       st.draft = null;
@@ -1611,6 +1613,7 @@
     for (const k of Object.keys(st)) if (k in obj.state && k !== "version") st[k] = obj.state[k];
     st.config = dropEmail(E.merge(E.DEFAULTS, E.upgradeCountdown(obj.state.config)));
     if (IDEAS) IDEAS.dropRetiredSteps(st.config);
+    if (IDEAS) IDEAS.addRuleDates(st.config, today());
     if (st.tab === "email" || st.tab === "deliver") st.tab = "daily";
     if (st.brief && (typeof st.brief !== "object" || !Array.isArray(st.brief.categories))) st.brief = null;
     st.editing = false;

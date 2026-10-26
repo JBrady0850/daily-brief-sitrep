@@ -55,3 +55,16 @@ def js_calls(requests):
 
 def feed_bytes(name):
     return (FIX / name).read_bytes()
+
+
+def fresh_feed_bytes(name):
+    """A recorded RSS feed with every date moved by the same amount, so the newest story
+    is an hour old. Tests that need fresh stories use it, so they do not age out."""
+    import re
+    from datetime import datetime, timedelta, timezone
+    from email.utils import format_datetime, parsedate_to_datetime
+    text = feed_bytes(name).decode("utf-8")
+    pat = re.compile(r"<pubDate>([^<]+)</pubDate>")
+    newest = max(parsedate_to_datetime(d) for d in pat.findall(text))
+    shift = datetime.now(timezone.utc) - timedelta(hours=1) - newest
+    return pat.sub(lambda m: "<pubDate>" + format_datetime(parsedate_to_datetime(m.group(1)) + shift) + "</pubDate>", text).encode("utf-8")

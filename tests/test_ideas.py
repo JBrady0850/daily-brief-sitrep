@@ -18,6 +18,10 @@ def test_date_rules_match_published_dates():
     got = js_calls([{"fn": "I.openSeason", "args": [y]} for y in (2022, 2023, 2024, 2025, 2026)])
     assert got == [["2022-11-14", "2022-12-12"], ["2023-11-13", "2023-12-11"], ["2024-11-11", "2024-12-09"],
                    ["2025-11-10", "2025-12-08"], ["2026-11-09", "2026-12-14"]]
+    # Leave years as OPM's table lists them (2023 had 27 pay periods, so it began January 1).
+    got = js_calls([{"fn": "I.leaveYear", "args": [y]} for y in range(2022, 2031)])
+    assert got == ["2022-01-02", "2023-01-01", "2024-01-14", "2025-01-12", "2026-01-11", "2027-01-10", "2028-01-09",
+                   "2029-01-07", "2030-01-06"]
 
 
 def cats(*ids):
@@ -83,9 +87,12 @@ def test_fixed_ideas_fill_in_the_next_date_and_future_milestones():
 
 
 def test_personal_ideas_count_back_from_the_readers_date():
-    got = call("fill", "federal-retirement", "2027-06-30", "2026-10-25")
+    got = call("fill", "retirement", "2027-06-30", "2026-10-25")
     assert (got["label"], got["date"], got["start"]) == ("Days to retirement", "2027-06-30", "2026-10-25")
-    assert [m["date"] for m in got["milestones"]] == ["2027-01-01", "2027-04-01", "2027-06-16"], "past steps drop out"
+    assert [m["date"] for m in got["milestones"]] == ["2027-05-01"], "past steps drop out"
+    got = call("fill", "federal-retirement", "2027-06-30", "2026-10-25")
+    steps = [m for m in got["milestones"] if not m["note"]]
+    assert [m["date"] for m in steps] == ["2027-01-01", "2027-04-01", "2027-06-16"], "past steps drop out"
     # No idea adds a dated step that only some readers qualify for or use, at any time of year.
     every = [i["id"] for i in call("moreIdeas", [], "2026-10-25", {}, [])]
     for d in ("2026-01-15", "2026-06-15", "2026-10-25", "2026-11-20"):
@@ -97,6 +104,55 @@ def test_personal_ideas_count_back_from_the_readers_date():
     assert call("fill", "trip", "2026-10-25", "2026-10-25") is None, "the date has to be after today"
     assert call("fill", "trip", "", "2026-10-25") is None and call("fill", "nothing", "2027-01-01", "2026-10-25") is None
     assert call("fill", "season", "2027-09-09", "2026-10-25")["milestones"] == []
+
+
+def test_federal_retirement_brings_the_federal_dates_on_the_way():
+    """The dates from the reader's own federal brief (2026-10-26): this Open Season, the
+    leave year change, and the final Open Season as an employee, in date order among
+    the steps."""
+    got = call("fill", "federal-retirement", "2027-12-31", "2026-10-26")
+    rule = [(m["date"], m["label"], m["note"]) for m in got["milestones"] if m["note"]]
+    assert rule == [("2026-11-09", "FEHB and FEDVIP Open Season opens, plan year 2027", "5 CFR 890.301(f)"),
+                    ("2026-12-14", "Open Season closes", "5 CFR 890.301(f)"),
+                    ("2027-01-09", "Leave year 2026 ends", "OPM leave-year table"),
+                    ("2027-01-10", "Leave year 2027 begins", "OPM leave-year table"),
+                    ("2027-11-08", "Final Open Season as an employee opens, plan year 2028", "5 CFR 890.301(f)"),
+                    ("2027-12-13", "Final Open Season as an employee closes", "5 CFR 890.301(f)")]
+    dates = [m["date"] for m in got["milestones"]]
+    assert dates == sorted(dates) and len(got["milestones"]) == 10 and got["dates_added"] is True
+    # During Open Season: only its last day is ahead. A date before the next season: no season at all.
+    mid = [m["label"] for m in call("fill", "federal-retirement", "2028-06-30", "2026-11-20")["milestones"] if m["note"]]
+    assert mid == ["Open Season closes", "Leave year 2026 ends", "Leave year 2027 begins",
+                   "Final Open Season as an employee opens, plan year 2028", "Final Open Season as an employee closes"]
+    soon = [m["label"] for m in call("fill", "federal-retirement", "2026-11-05", "2026-10-26")["milestones"]]
+    assert not any("Open Season" in s or "Leave year" in s for s in soon)
+    # Retiring inside an Open Season: that season is the final one, and its closing comes after the date.
+    inside = [m["label"] for m in call("fill", "federal-retirement", "2027-11-30", "2026-10-26")["milestones"] if m["note"]]
+    assert inside[-1] == "Final Open Season as an employee opens, plan year 2028"
+    assert "Final Open Season as an employee closes" not in inside
+    # The idea says what it adds before the reader picks a date; the general retirement idea adds none.
+    steps = call("ideaById", "federal-retirement", "2026-10-26", "")["steps"]
+    assert any("Open Season" in s for s in steps) and any("leave year" in s for s in steps)
+    assert not [m for m in call("fill", "retirement", "2027-12-31", "2026-10-26")["milestones"] if m["note"]]
+
+
+def test_saved_federal_retirement_countdowns_get_the_dates_once():
+    saved = {"categories": [{"id": "federal-workforce"}], "countdowns": [
+        {"label": "Days to retirement", "date": "2027-12-31", "idea": "federal-retirement", "milestones": [
+            {"date": "2026-12-31", "label": "Ask HR for a retirement estimate"},
+            {"date": "2026-12-14", "label": "open season closes", "note": "my own note"}]},
+        {"label": "Days to retirement", "date": "2028-06-30", "milestones": []},
+        {"label": "Days to retirement", "date": "2027-12-31", "idea": "retirement", "milestones": []},
+        {"label": "Days to retirement", "date": "2026-01-01", "idea": "federal-retirement", "milestones": []},
+        {"label": "Days to the trip", "date": "2027-03-01", "idea": "trip", "milestones": []}, "x"]}
+    got = js_calls([{"fn": "I.addRuleDates", "args": [saved, "2026-10-26"]}])[0]
+    assert got == 5 + 6, "five new dates on the first (one it had), six on the one saved without an idea"
+    plain = dict(saved, categories=[{"id": "travel"}])
+    assert js_calls([{"fn": "I.addRuleDates", "args": [plain, "2026-10-26"]}])[0] == 5, "no federal category: only the federal idea's"
+    once = {"categories": [], "countdowns": [{"label": "Days to retirement", "date": "2027-12-31", "idea": "federal-retirement",
+                                              "dates_added": True, "milestones": []}]}
+    assert js_calls([{"fn": "I.addRuleDates", "args": [once, "2026-10-26"]}])[0] == 0, "a date the reader removed stays removed"
+    assert js_calls([{"fn": "I.addRuleDates", "args": [None, "2026-10-26"]}, {"fn": "I.addRuleDates", "args": [saved, "bad"]}]) == [0, 0]
 
 
 def test_no_idea_shows_twice():

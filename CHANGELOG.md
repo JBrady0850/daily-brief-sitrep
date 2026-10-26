@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.13.0 (2026-10-26)
+
+Federal dates on the way to a federal retirement.
+
+- The federal **Days to retirement** idea now adds the federal dates between
+  today and your retirement date, each with its source:
+  - the next FEHB and FEDVIP Open Season, when it opens (with the plan year) and
+    when it closes (5 CFR 890.301(f): the second Monday of November to the second
+    Monday of December);
+  - the end of this leave year and the start of the next (OPM's leave-year table:
+    a leave year starts on the first day of the first full pay period in January,
+    such as January 10, 2027);
+  - your final Open Season as an employee, the last one to open before your
+    date, when it opens and closes.
+  They sit among the other steps in date order.
+- A federal retirement countdown saved before this version gets these dates
+  once, when the page opens. A date you remove afterwards stays removed. A
+  countdown saved without its idea gets them when you follow a federal
+  category.
+- Two desktop-app tests read recorded stories dated October 23, 2026 and failed
+  once those were three days old. Their recorded feeds now move with the clock.
+
 ## 0.12.0 (2026-10-26)
 
 Your own town's events first, and a brief that fits a phone.
