@@ -1273,6 +1273,7 @@
       h("div", { class: "actions" },
         h("button", { class: "btn", onclick: () => S.openPage(out.html) }, "Open as a full page"),
         h("button", { class: "btn ghost", onclick: () => S.download(fileStem() + ".html", out.html, "text/html") }, "Download page"),
+        h("button", { class: "btn ghost", id: "emailbrief", onclick: () => emailBrief(out) }, ico("mail", "bi"), "Email this brief"),
         h("button", { class: "btn ghost", onclick: async () => {
           const how = await S.copyRich(out.html, out.text);
           toast(how === "rich" ? "Copied. Paste it where you want it." : how === "text"
@@ -1287,6 +1288,32 @@
   }
 
   function fileStem() { return "daily-brief-" + (state.brief && state.brief.date ? state.brief.date : today()); }
+
+  /* The text of an email that carries the brief: a line about the attachment, then the
+     brief as plain text, cut at a line end when it must stay short (email links). */
+  function emailText(out, name, most) {
+    const head = "Today's Daily Brief is attached as " + name + ". Open it in any web browser for the full page.\n\n";
+    let body = head + out.text;
+    if (most && body.length > most) {
+      const cut = body.lastIndexOf("\n", most - 40);
+      body = body.slice(0, cut > head.length ? cut : most - 40) + "\n\n(The rest is in the attached page.)";
+    }
+    return body;
+  }
+
+  /* Email this brief: the device's share menu with the page attached, so the reader
+     picks Gmail, Outlook or Mail and presses Send. Where a browser cannot share files,
+     the page is saved and a new message opens with the subject and the start of the
+     brief; the reader attaches the saved page. Nothing is sent from this page. */
+  async function emailBrief(out) {
+    const name = fileStem() + ".html";
+    const how = await S.shareFile(name, out.html, out.subject, emailText(out, name, 0));
+    if (how === "shared") { toast("Handed to your app. Check the message and press Send."); return; }
+    if (how === "cancelled") return;
+    S.download(name, out.html, "text/html");
+    S.mailDraft(out.subject, emailText(out, name, 1800));
+    toast("Saved " + name + " and opened a new email. This browser cannot attach files by itself, so attach the saved page to the message.");
+  }
 
   async function markRead() {
     if (desktop) {
@@ -1403,7 +1430,8 @@
     add(sec, h("div", { class: "card" }, h("h2", null, ico("megaphone", "hi"), "Share or keep a copy"),
       h("ol", { class: "ways" },
         h("li", null, h("b", { text: "Open as a full page or Download page. " }), "On Today's brief. The page is one HTML file that opens in any browser and can be printed."),
-        h("li", null, h("b", { text: "Copy newsletter. " }), "Copies the formatted page, ready to paste into a document or a message."))));
+        h("li", null, h("b", { text: "Copy newsletter. " }), "Copies the formatted page, ready to paste into a document or a message."),
+        h("li", null, h("b", { text: "Email this brief. " }), "Opens your phone's or computer's share menu with the page attached: pick Gmail, Outlook or Mail and press Send. Where a browser cannot share files, the page is saved and a new email opens for you to attach it. This page never sends mail itself."))));
     add(sec, cloudCard());
     if (desktop) add(sec, scheduleCard());
   }

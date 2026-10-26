@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.11.0 (2026-10-26)
+
+Email this brief.
+
+- Today's brief has an **Email this brief** button. It opens the phone's or
+  computer's share menu with the brief attached as a page and its text as the
+  message, so you pick Gmail, Outlook, Mail or another app and press Send
+  (Android, iPhone, and Edge, Chrome or Safari on a computer). Where a browser
+  cannot share files, it saves the page and opens a new email in your mail app
+  with the subject and the start of the brief, for you to attach the page.
+  Nothing is sent by the page, and no account or address is stored; this is not
+  the email sending that 0.2.0 removed.
+- Retirement countdown ideas no longer include Social Security or Medicare
+  steps. Retiring does not make anyone eligible for either, and their timing
+  depends on age, not on the retirement date. A countdown you already saved
+  keeps its milestones; remove that one under Your countdowns.
+
 ## 0.10.1 (2026-10-26)
 
 No idea or countdown shows twice.

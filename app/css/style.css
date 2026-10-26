@@ -189,6 +189,8 @@ pre.code { background: var(--soft); border: 1px solid var(--line); border-radius
 .ic.qi { width: 48px; height: 48px; border-radius: 12px; background: var(--soft); color: var(--accent); }
 .ic.qi svg { width: 26px; height: 26px; }
 .ic.hi { margin-right: 8px; color: var(--accent); vertical-align: -4px; }
+.ic.bi { margin-right: 6px; vertical-align: -4px; }
+.ic.bi svg { width: 18px; height: 18px; }
 .card h2 .ic.hi, .card h3 .ic.hi { display: inline-flex; }
 .packicons { display: flex; gap: 4px; margin-bottom: 6px; color: var(--accent); }
 .packicons .ic { width: 28px; height: 28px; border-radius: 50%; background: var(--paper); border: 1px solid var(--line); }

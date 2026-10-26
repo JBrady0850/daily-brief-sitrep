@@ -937,7 +937,7 @@ def test_countdown_question_takes_several_ideas_as_tick_boxes(browser, http_app)
     page.fill("#ideadate-federal-retirement", target)
     page.dispatch_event("#ideadate-federal-retirement", "change")
     fed = [c for c in cds() if c.get("idea") == "federal-retirement"][0]
-    assert (fed["label"], fed["date"]) == ("Days to retirement", target) and len(fed["milestones"]) == 4
+    assert (fed["label"], fed["date"]) == ("Days to retirement", target) and len(fed["milestones"]) == 3
     # Four is the limit: the rest of the boxes cannot be ticked until one goes.
     assert len(cds()) == 4 and page.is_disabled("#ideachk-trip") and not page.is_disabled("#ideachk-election")
     page.uncheck("#ideachk-election")
@@ -982,5 +982,80 @@ def test_countdown_ideas_and_saved_countdowns_never_double_up(browser, http_app)
     page.fill("#ideadate-federal-retirement", "2099-12-31")
     page.dispatch_event("#ideadate-federal-retirement", "change")
     assert sorted(cds()) == ["Days to Federal Benefits Open Season", "Days to retirement"], cds()
+    assert errors == []
+    ctx.close()
+
+
+SHARE_STUB = """
+window.__shared = [];
+window.__shareMode = 'ok';
+Object.defineProperty(navigator, 'canShare', { configurable: true, value: d => !!(d && d.files && d.files.length) });
+Object.defineProperty(navigator, 'share', { configurable: true, value: d => {
+  if (window.__shareMode === 'cancel') return Promise.reject(new DOMException('cancelled', 'AbortError'));
+  return Promise.all(d.files.map(f => f.text())).then(texts => {
+    window.__shared.push({ title: d.title, text: d.text, files: d.files.map((f, i) => ({ name: f.name, type: f.type, html: texts[i] })) });
+  });
+} });
+"""
+
+
+def test_email_this_brief_hands_the_page_to_the_mail_app(browser, http_app):
+    """Email this brief opens the device's share menu with the page attached and the brief
+    as the message; cancelling does nothing; without file sharing the page is saved and a
+    new email opens with the subject and the start of the brief. Nothing is sent from here."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    state = {"version": 1, "tab": "brief", "setup_done": True,
+             "config": {"version": 1, "reader": {"location": "Springfield", "region": "Illinois"},
+                        "categories": [pick["world-news"], pick["markets-economy"]]}}
+    p, b = browser
+    ctx = b.new_context(viewport={"width": 1100, "height": 900})
+    ctx.add_init_script("window.DB_COLLECT_GAP = 0;")
+    ctx.add_init_script("if (window.top === window && !localStorage.getItem('db.state.v1')) localStorage.setItem('db.state.v1', %s);" % json.dumps(json.dumps(state)))
+    ctx.add_init_script("if (window.top === window) {" + SHARE_STUB + "}")
+    page = ctx.new_page()
+    errors = []
+    page.on("pageerror", lambda e: errors.append(str(e)))
+    route_world(page, [], 200)
+    page.route("**/data/local/*.json", lambda r: r.fulfill(status=404, body=""))
+    page.goto(http_app)
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    date = page.evaluate("DB_APP.state().brief.date")
+    subject = page.inner_text("#briefview h2")
+    page.click("#emailbrief")
+    page.wait_for_function("window.__shared.length === 1")
+    got = page.evaluate("window.__shared[0]")
+    assert got["title"] == subject and got["text"].startswith("Today's Daily Brief is attached as daily-brief-%s.html" % date)
+    f = got["files"][0]
+    assert (f["name"], f["type"]) == ("daily-brief-%s.html" % date, "text/html") and "<html" in f["html"] and subject in f["html"]
+    assert "Handed to your app" in page.inner_text("#toast")
+    # Cancelling the share menu does nothing else.
+    page.evaluate("window.__shareMode = 'cancel'; window.__mail = []; DB_SERVICES.mailDraft = (s, t) => window.__mail.push([s, t]); true")
+    page.click("#emailbrief")
+    page.wait_for_timeout(300)
+    assert page.evaluate("window.__mail.length") == 0 and page.evaluate("window.__shared.length") == 1
+    # No file sharing (Firefox on a computer): the page is saved and a new email opens.
+    page.evaluate("delete navigator.share; delete navigator.canShare; Object.defineProperty(navigator, 'share', { configurable: true, value: undefined }); true")
+    with page.expect_download() as dl:
+        page.click("#emailbrief")
+    assert dl.value.suggested_filename == "daily-brief-%s.html" % date
+    mail = page.evaluate("window.__mail")
+    assert len(mail) == 1 and mail[0][0] == subject and len(mail[0][1]) <= 1800
+    assert mail[0][1].startswith("Today's Daily Brief is attached as daily-brief-%s.html" % date)
+    assert "attach the saved page" in page.inner_text("#toast")
+    assert errors == []
+    ctx.close()
+
+
+def test_mail_draft_builds_an_email_link_without_attachments(browser):
+    ctx, page, errors = open_page(browser, APP)
+    page.wait_for_selector(".hero")
+    href = page.evaluate("""(() => { let h = ''; const c = HTMLAnchorElement.prototype.click;
+        HTMLAnchorElement.prototype.click = function () { h = this.href; };
+        try { DB_SERVICES.mailDraft('Daily Brief - 3-Item SITREP | 2026-10-25', 'Line one\\nLine & two'); } finally { HTMLAnchorElement.prototype.click = c; }
+        return h; })()""")
+    assert href == "mailto:?subject=Daily%20Brief%20-%203-Item%20SITREP%20%7C%202026-10-25&body=Line%20one%0ALine%20%26%20two"
+    assert page.evaluate("typeof DB_SERVICES.shareFile") == "function"
     assert errors == []
     ctx.close()

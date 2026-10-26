@@ -28,7 +28,7 @@ def test_ideas_follow_the_category_order_and_stop_at_four():
     got = call("ideasFor", cats("federal-retirement", "local-weather", "politics", "travel", "nfl"), "2026-10-25", {"region": "Florida"})
     assert [i["id"] for i in got] == ["federal-retirement", "open-season", "hurricane", "election"]
     fed = got[0]
-    assert fed["fixed"] is False and fed["from"] == "Federal Retirement" and "Give HR your retirement application" in fed["steps"][3]
+    assert fed["fixed"] is False and fed["from"] == "Federal Retirement" and "Give HR your retirement application" in fed["steps"][2]
     assert got[1]["label"] == "Days to Federal Benefits Open Season" and got[1]["date"] == "2026-11-09"
     assert got[2]["label"] == "Days left in hurricane season" and got[2]["date"] == "2026-11-30"
     assert got[3]["date"] == "2026-11-03"
@@ -84,7 +84,11 @@ def test_fixed_ideas_fill_in_the_next_date_and_future_milestones():
 def test_personal_ideas_count_back_from_the_readers_date():
     got = call("fill", "federal-retirement", "2027-06-30", "2026-10-25")
     assert (got["label"], got["date"], got["start"]) == ("Days to retirement", "2027-06-30", "2026-10-25")
-    assert [m["date"] for m in got["milestones"]] == ["2027-01-01", "2027-03-02", "2027-04-01", "2027-06-16"], "past steps drop out"
+    assert [m["date"] for m in got["milestones"]] == ["2027-01-01", "2027-04-01", "2027-06-16"], "past steps drop out"
+    # Retiring does not make a reader eligible for Social Security or Medicare: no idea assumes it.
+    for idea in ("retirement", "federal-retirement"):
+        steps = call("ideaById", idea, "2026-10-25", "")["steps"]
+        assert not any("Social Security" in s or "Medicare" in s for s in steps), (idea, steps)
     assert call("fill", "trip", "2026-10-25", "2026-10-25") is None, "the date has to be after today"
     assert call("fill", "trip", "", "2026-10-25") is None and call("fill", "nothing", "2027-01-01", "2026-10-25") is None
     assert call("fill", "season", "2027-09-09", "2026-10-25")["milestones"] == []

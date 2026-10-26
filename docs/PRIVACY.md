@@ -22,6 +22,9 @@
   and are not copied anywhere else.
 - Local news feed links you add on the town question stay in this browser; the
   page reads those feeds directly, like any other feed.
+- Email this brief hands the page to the app you pick in your device's share
+  menu, or opens a new message in your email app; the page itself sends nothing
+  and stores no address.
 - Story photos load from the publishers' own sites when you view the brief,
   without a referrer. Downloaded pages load them the same way when opened.
 - The desktop app keeps its copy in a `.daily-brief` folder in your home folder

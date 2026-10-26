@@ -65,15 +65,24 @@ published rule (Election Day, Thanksgiving, Tax Day, Federal Benefits Open
 Season) fill in as soon as you tick them; personal ones (a retirement, a trip, a
 move, a launch, an exam, the first day of school, race day, draft day or a
 season opener) ask for your date and set the milestones back from it. Federal
-retirement, for example, lists the HR estimate, TSP and FEHB choices, Social
-Security (up to 4 months ahead) and the retirement application (agencies need
-at least 60 days). Ideas that fit only some readers (Medicare Open Enrollment,
+retirement, for example, lists the HR estimate, TSP and FEHB choices and the
+retirement application (agencies need at least 60 days). Ideas that fit only
+some readers (Medicare Open Enrollment,
 and the hurricane season outside the Atlantic and Gulf coast states) are never
 in the first group. **Your countdowns** below the ideas holds each countdown's
 fields to change, with Remove and **Add your own countdown**. A countdown
 disappears from the brief once its date has passed.
 
 ![Countdown ideas as tick boxes](docs/images/11-countdown-ideas.png)
+
+**Email this brief.** On Today's brief, **Email this brief** opens your phone's
+or computer's share menu with the page attached and the brief as the message:
+pick Gmail, Outlook, Mail or any other app and press Send. It works on Android
+and iPhone and in Edge, Chrome and Safari on a computer. Where a browser cannot
+share files (Firefox on a computer, or a downloaded copy opened as a file), the
+page is saved and a new email opens with the subject and the start of the
+brief; attach the saved page yourself, since email links cannot carry
+attachments. The page never sends mail itself and needs no account.
 
 ## Set up once, then read it every day
 
@@ -88,7 +97,7 @@ After setup the tabs are:
 
 | Tab | What you do there |
 |---|---|
-| Today's brief | See whether today's brief is ready, build it, open it full screen, download it or copy it |
+| Today's brief | See whether today's brief is ready, build it, open it full screen, download it, copy it or email it |
 | Your choices | Your saved answers, with a Change link for each one. Changes take effect only when you press **Save changes**; **Cancel changes** keeps the old ones. **Fine-tune categories** edits searches and filters. |
 | Every day | Keep the page handy, turn on the once-a-day automatic build, or set up a GitHub copy |
 | AI assistants | Copy the prompt for Claude, ChatGPT, Gemini or Grok, and paste the assistant's brief |
@@ -120,8 +129,9 @@ every rule, and the ranked list of improvements.
 | A GitHub copy (optional) | GitHub's servers collect the brief from Google News each morning and post it as an issue in your private copy, with no browser open. See [docs/GITHUB-CLOUD.md](docs/GITHUB-CLOUD.md). |
 | The desktop app | The same app on your own computer, reading Google News and every publisher feed: install Python 3.9 or newer from python.org, download this project (**Code**, **Download ZIP**), and double-click `Start-Windows.bat`, `Start-Mac.command` or `start-linux.sh`. On a Mac, the first time, right-click `Start-Mac.command` and choose **Open**, and run **Install Certificates.command** from the Python folder in Applications. |
 
-Email sending was removed in version 0.2.0. The brief is a web page you open,
-download or copy; see [CHANGELOG.md](CHANGELOG.md).
+The page never sends email itself (sending from the app was removed in version
+0.2.0). The brief is a web page you open, download, copy, or hand to your own
+email app with Email this brief; see [CHANGELOG.md](CHANGELOG.md).
 
 ## Where the news comes from
 

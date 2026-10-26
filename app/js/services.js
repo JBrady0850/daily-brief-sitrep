@@ -124,6 +124,40 @@
     return (await copyText(text)) ? "text" : "";
   }
 
+  /* Hands a page to the device's share menu (Gmail, Outlook, Mail and the rest) as an
+     attached file, with a title and a message. The reader picks the app and presses Send;
+     nothing is sent from here. Returns "shared", "cancelled", or "" when this browser
+     cannot share files (Firefox on a computer, a downloaded copy opened as a file). */
+  async function shareFile(name, html, title, text) {
+    if (!navigator.share || !navigator.canShare || typeof File !== "function") return "";
+    let file;
+    try { file = new File([html], name, { type: "text/html" }); } catch (e) { return ""; }
+    let data = { files: [file], title: title, text: text };
+    try {
+      if (!navigator.canShare(data)) {
+        data = { files: [file], title: title };
+        if (!navigator.canShare(data)) return "";
+      }
+    } catch (e) { return ""; }
+    try {
+      await navigator.share(data);
+      return "shared";
+    } catch (e) {
+      return e && e.name === "AbortError" ? "cancelled" : "";
+    }
+  }
+
+  /* Opens a new message in the device's email app with a subject and a short text.
+     Email links cannot carry attachments, so the caller saves the page first. */
+  function mailDraft(subject, body) {
+    const a = document.createElement("a");
+    a.href = "mailto:?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => a.remove(), 1000);
+  }
+
   /* On GitHub Pages the address names the project, so feedback links can
      point at its issues page without hard-coding an account name. */
   function projectUrl() {
@@ -135,6 +169,6 @@
 
   root.DB_SERVICES = {
     STORE_KEY, LEDGER_KEY, key, api, detectDesktop, readStore, writeStore, removeStore, storageBytes,
-    download, openPage, copyText, copyRich, projectUrl
+    download, openPage, copyText, copyRich, shareFile, mailDraft, projectUrl
   };
 })(typeof self !== "undefined" ? self : this);

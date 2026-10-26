@@ -19,8 +19,10 @@
    that is a weekend or a District of Columbia holiday such as Emancipation Day
    (April 16) (IRS); the Atlantic hurricane season runs June 1 to November 30
    (NOAA); Medicare Open Enrollment runs October 15 to December 7 (Medicare.gov);
-   Social Security takes an application up to 4 months ahead (SSA); an agency
-   needs at least 60 days to process a federal retirement application (OPM).
+   an agency needs at least 60 days to process a federal retirement application
+   (OPM). Retirement ideas name no Social Security or Medicare step: retiring does
+   not make a reader eligible for either, and their dates depend on age, not on the
+   retirement date.
    Checked on 2026-10-26: Federal Benefits Open Season (FEHB, PSHB, FEDVIP,
    FSAFEDS) runs from the Monday of the second full workweek in November through
    the Monday of the second full workweek in December (5 CFR 890.301(f)), which is
@@ -81,12 +83,10 @@
   const IDEAS = [
     { id: "retirement", label: "Days to retirement", about: "Your retirement date, with the decisions on the way.",
       cats: ["retirement-planning"],
-      offsets: [[-365, "Check the retirement budget and savings"], [-180, "Decide when to start Social Security and Medicare"],
-        [-120, "Apply for Social Security if it starts then (up to 4 months ahead)"], [-60, "Give notice at work"]] },
+      offsets: [[-365, "Check the retirement budget and savings"], [-60, "Give notice at work"]] },
     { id: "federal-retirement", label: "Days to retirement", about: "Your federal retirement date, with the paperwork on the way.",
       cats: ["federal-retirement", "federal-workforce", "federal-pay"],
       offsets: [[-365, "Ask HR for a retirement estimate"], [-180, "Review TSP withdrawals and FEHB choices"],
-        [-120, "Apply for Social Security if it starts then (up to 4 months ahead)"],
         [-90, "Give HR your retirement application (agencies need at least 60 days)"], [-14, "Check final leave and the last paycheck"]] },
     { id: "open-season", label: "Days to Federal Benefits Open Season",
       about: "FEHB, PSHB, FEDVIP and FSAFEDS: the second Monday of November to the second Monday of December.",
