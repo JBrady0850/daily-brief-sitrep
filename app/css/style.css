@@ -225,6 +225,8 @@ details.more > summary { display: flex; align-items: center; }
 iframe.page { display: block; width: 100%; min-height: 600px; height: 1400px; border: 0; border-radius: var(--radius); background: #eef1f5; margin-top: 12px; box-shadow: 0 2px 14px rgba(15, 39, 68, .12); }
 #briefview { padding: 16px 0 0; background: transparent; border: 0; }
 #briefview > h2, #briefview > .hint, #briefview > .actions, #briefview > details { margin-left: 4px; margin-right: 4px; }
+/* On a phone the brief runs from edge to edge: the page keeps its own narrow margins. */
+@media (max-width: 640px) { iframe.page { width: calc(100% + 32px); margin-left: -16px; margin-right: -16px; border-radius: 0; box-shadow: none; } }
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; padding: 20px; }
   .hero h1 { font-size: 26px; }

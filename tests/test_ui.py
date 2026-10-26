@@ -302,6 +302,44 @@ def test_phone_layout_never_scrolls_sideways(browser):
     ctx.close()
 
 
+BRIEF_FIT = """(doc) => {
+  const main = doc.querySelector('main.in');
+  return { w: doc.documentElement.clientWidth, sw: doc.documentElement.scrollWidth,
+           pad: main ? parseFloat(getComputedStyle(main).paddingLeft) : null,
+           pills: [...doc.querySelectorAll('ul.ms span.pill')].map(p => Math.round(p.getBoundingClientRect().height)) }; }"""
+
+
+def test_the_brief_fills_a_phone_screen(browser):
+    """On a phone the brief runs from edge to edge with narrow margins, never scrolls
+    sideways, and keeps the milestone tags one line tall."""
+    for device in ("iPhone SE", "iPhone 13", "Pixel 7"):
+        ctx, page, errors = open_page(browser, APP, device=device, state=ready_state(welcome="2099-01-01"))
+        page.click("button:has-text(\"Get today's brief\")")
+        page.wait_for_selector("iframe.page", timeout=60000)
+        left, width, screen = page.evaluate("(() => { const r = document.querySelector('iframe.page').getBoundingClientRect(); return [r.left, r.width, window.innerWidth]; })()")
+        assert (left, width) == (0, screen), (device, left, width, screen)
+        fit = page.evaluate("() => (" + BRIEF_FIT + ")(document.querySelector('iframe.page').contentDocument)")
+        assert fit["sw"] <= fit["w"], (device, fit)
+        assert fit["pad"] <= 10, (device, fit)
+        assert fit["pills"] and max(fit["pills"]) <= 24, (device, fit)
+        assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth"), device
+        assert errors == []
+        ctx.close()
+
+
+def test_the_brief_page_fits_a_narrow_window(browser):
+    """The page itself, opened alone or from an email, fits a 280-pixel window."""
+    from dailybrief import render
+    brief = json.loads((ROOT / "examples" / "sample-brief.json").read_text(encoding="utf-8"))
+    settings = json.loads((ROOT / "examples" / "sample-settings.json").read_text(encoding="utf-8"))
+    p, b = browser
+    page = b.new_page(viewport={"width": 280, "height": 700})
+    page.set_content(render.render(brief, settings)["html"])
+    fit = page.evaluate("() => (" + BRIEF_FIT + ")(document)")
+    assert fit["sw"] <= fit["w"], fit
+    page.close()
+
+
 def test_desktop_app_collects_and_shows_the_page(browser):
     app = server.DesktopApp(port=0, fetcher=lambda u: feed_bytes("google_news.xml" if "google" in u else "rss_feed.xml"), pause=0)
     app.start_background()
@@ -704,13 +742,16 @@ def test_town_categories_read_the_local_stations_of_your_state(browser, http_app
     ctx.close()
 
 
-def calendar_week():
-    """A CitySpark answer for the next three days, made from invented events."""
+CALENDAR_ROWS = [[(101, "Harvest Night Market", 18, "Town Square", "https://events.example.com/market"),
+                  (102, "Library Story Time", 10, "Main Library", "https://www.facebook.com/events/1")],
+                 [(201, "Community Choir Rehearsal", 19, "Grace Hall", "https://choir.example.com")],
+                 [(301, "Pumpkin Walk", None, "Riverside Park", "https://walk.example.com")]]
+
+
+def calendar_week(rows=None, town="Example City, FL"):
+    """A CitySpark answer for the next days, one list of events per day, made from invented events."""
+    rows = CALENDAR_ROWS if rows is None else rows
     day = datetime.now(timezone.utc).date() + timedelta(days=1)
-    rows = [[(101, "Harvest Night Market", 18, "Town Square", "https://events.example.com/market"),
-             (102, "Library Story Time", 10, "Main Library", "https://www.facebook.com/events/1")],
-            [(201, "Community Choir Rehearsal", 19, "Grace Hall", "https://choir.example.com")],
-            [(301, "Pumpkin Walk", None, "Riverside Park", "https://walk.example.com")]]
     value = []
     for k, evs in enumerate(rows):
         d = day + timedelta(days=k)
@@ -719,13 +760,15 @@ def calendar_week():
             local = "%sT%02d:00:00Z" % (d.isoformat(), hour or 0)
             utc = None if hour is None else "%sT%02d:00:00Z" % (d.isoformat(), (hour + 5) % 24)
             out.append({"PId": pid, "Name": name, "DateStart": local, "StartUTC": utc, "AllDay": hour is None, "HasTime": hour is not None,
-                        "Venue": venue, "CityState": "Example City, FL", "Summary": name + " for all ages.", "PrimaryUrl": url,
+                        "Venue": venue, "CityState": town, "Summary": name + " for all ages.", "PrimaryUrl": url,
                         "LargeImg": "", "MediumImg": ""})
         value.append({"Date": d.isoformat(), "TotalCount": len(out), "Events": out})
     return {"Success": True, "Value": value}
 
 
-def test_things_to_do_lists_the_week_from_the_nearest_station_calendar(browser, http_app):
+def events_brief(browser, http_app, answer):
+    """Builds a Things to Do brief for Example City, Florida, with every calendar question
+    answered by answer(body). Returns (ctx, page, errors, asked)."""
     lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
     pick = {c["id"]: c for c in lib["categories"]}
     cfg = {"version": 1, "reader": {"location": "Example City", "region": "Florida", "local_terms": []},
@@ -737,22 +780,29 @@ def test_things_to_do_lists_the_week_from_the_nearest_station_calendar(browser, 
                                                            headers={"content-type": "text/javascript"}))
     page.reload()
     asked = []
-    week = calendar_week()
 
     def calendar(route):
         req = route.request
         if req.method == "OPTIONS":
             return route.fulfill(status=204, headers=dict(CORS, **{"access-control-allow-headers": "content-type", "access-control-allow-methods": "POST"}))
-        asked.append((req.method, req.url.rsplit("/", 1)[1], json.loads(req.post_data)))
-        return route.fulfill(status=200, body=json.dumps(week), headers=dict(CORS, **{"content-type": "application/json"}))
+        body = json.loads(req.post_data)
+        asked.append((req.method, req.url.rsplit("/", 1)[1], body))
+        return route.fulfill(status=200, body=json.dumps(answer(body)), headers=dict(CORS, **{"content-type": "application/json"}))
     page.route("https://portal.cityspark.com/**", calendar)
     page.route("**/data/local/*.json", lambda r: r.fulfill(status=404, body=""))
     page.click("button:has-text(\"Get today's brief\")")
     page.wait_for_selector("iframe.page", timeout=60000)
-    assert len(asked) == 1 and asked[0][:2] == ("POST", "ExampleTV"), "one question, to the nearest calendar only"
-    body = asked[0][2]
+    return ctx, page, errors, asked
+
+
+def test_things_to_do_lists_the_week_from_the_nearest_station_calendar(browser, http_app):
+    week = calendar_week()
+    ctx, page, errors, asked = events_brief(browser, http_app, lambda body: week)
+    assert [a[:2] for a in asked] == [("POST", "ExampleTV")] * 2, "the nearest calendar only: the town, then the area around it"
+    assert [a[2]["distance"] for a in asked] == [5, 20]
+    body = asked[1][2]
     assert (body["lat"], body["lng"], body["distance"], body["daysToLoad"]) == (30.25, -85.65, 20, 7)
-    assert "Example City" not in json.dumps(body), "only the rounded map position leaves the browser"
+    assert "Example City" not in json.dumps(asked), "only the rounded map position leaves the browser"
     items = page.evaluate("DB_APP.state().brief.categories[0].items")
     assert [i["title"] for i in items] == ["Harvest Night Market", "Community Choir Rehearsal", "Pumpkin Walk", "Library Story Time"]
     assert items[0]["url"] == "https://events.example.com/market", "the organizer's page"
@@ -766,6 +816,32 @@ def test_things_to_do_lists_the_week_from_the_nearest_station_calendar(browser, 
     assert "powered by CitySpark" in frame.locator("footer").inner_text()
     page.click("#briefview summary:has-text('Sources and filters')")
     assert "4 events from WEXA calendars" in page.inner_text("#briefview")
+    assert errors == []
+    ctx.close()
+
+
+def test_the_towns_own_events_lead_things_to_do(browser, http_app):
+    """A busy calendar in a bigger town nearby cannot crowd out the reader's own town: the
+    calendar is asked for the town first, and the wider area only fills what is left."""
+    town = calendar_week([[(501, "Chamber Mentorship Mixer", 17, "Chamber Office", "https://chamber.example.com/mixer")],
+                          [(502, "Saturday Farmers Market", 8, "High School", "https://market.example.com")]])
+    area = calendar_week([[(601, "Theatre Matinee", 14, "Bay Theatre", "https://theatre.example.com/matinee"),
+                           (501, "Chamber Mentorship Mixer", 17, "Chamber Office", "https://chamber.example.com/mixer")],
+                          [(602, "Harbor Boat Parade", 18, "City Harbor", "https://parade.example.com")]], town="Bigger Town, FL")
+    ctx, page, errors, asked = events_brief(browser, http_app, lambda body: town if body["distance"] == 5 else area)
+    assert [a[2]["distance"] for a in asked] == [5, 20]
+    titles = [i["title"] for i in page.evaluate("DB_APP.state().brief.categories[0].items")]
+    assert titles == ["Chamber Mentorship Mixer", "Saturday Farmers Market", "Theatre Matinee", "Harbor Boat Parade"], titles
+    assert errors == []
+    ctx.close()
+
+
+def test_a_town_with_a_full_week_asks_once(browser, http_app):
+    week = calendar_week([[(700 + 10 * d + k, "Town Event %d-%d" % (d, k), 9 + k, "Town Hall", "https://town.example.com/e%d%d" % (d, k))
+                           for k in range(3)] for d in range(4)])
+    ctx, page, errors, asked = events_brief(browser, http_app, lambda body: week)
+    assert [a[2]["distance"] for a in asked] == [5], "twelve events in the town already fill the brief"
+    assert len(page.evaluate("DB_APP.state().brief.categories[0].items")) == 5
     assert errors == []
     ctx.close()
 

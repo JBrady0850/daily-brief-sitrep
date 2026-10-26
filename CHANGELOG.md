@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.12.0 (2026-10-26)
+
+Your own town's events first, and a brief that fits a phone.
+
+- Things to Do asks the station calendar for events in your town itself (within
+  5 miles of it) before the wider area (within 20 miles). A bigger town nearby
+  with a busy calendar no longer pushes your own town's events out: in a test
+  around a small Florida city, the 20-mile list held only its neighbors' events
+  while the city's chamber, library and market events sat on the same calendar.
+  When your town fills the brief, the page asks only once; the same event is
+  never listed twice.
+- On a phone, today's brief runs from edge to edge of the screen, and the page
+  keeps narrower margins (10 pixels at the sides, 12 inside each box), so
+  stories, the forecast and countdowns get more of the width.
+- Countdown milestone tags stay one line tall and the same width, so the steps
+  line up, and several countdowns side by side fit any window, even under 300
+  pixels. Very long words or web addresses wrap instead of pushing the page
+  sideways.
+
 ## 0.11.1 (2026-10-26)
 
 - Countdowns saved before 0.11.0 lose the steps that assumed the reader

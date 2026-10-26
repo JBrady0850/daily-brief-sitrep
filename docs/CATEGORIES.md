@@ -38,8 +38,9 @@ words your own category. Each category has:
   every four hours; see `dailybrief/local_stations.json`) and the local news
   feeds you add on the town question. Their stories still need to name your
   town or a nearby place, and the desk's topic words still apply.
-- Things to Do (`local-events`) also reads the week's events within 20 miles of
-  the town from the nearest station calendar (see `app/data/calendars.js`).
+- Things to Do (`local-events`) also reads the week's events from the nearest
+  station calendar (see `app/data/calendars.js`): first those within 5 miles of
+  the town, so its own events lead, then those within 20 miles.
   Events lead the desk, a day at a time, and carry an `event` with their start
   and place; the desk's excluded words still apply.
 

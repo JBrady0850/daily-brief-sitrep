@@ -40,6 +40,7 @@
   // read from this browser for this reader only. app/data/calendars.js lists the calendars.
   const CALENDAR_API = "https://portal.cityspark.com/api/events/GetEventsByDay/";
   const EVENT_MILES = 20;     // how far from the town an event may be
+  const EVENT_TOWN_MILES = 5; // the town itself, asked first so its own events lead
   const EVENT_DAYS = 7;       // today and the next six days
   const EVENT_CALENDARS = 2;  // the nearest calendars, the second only when the first is short
   const LANGS = { en: "english", es: "spanish", fr: "french", de: "german", it: "italian", pt: "portuguese", nl: "dutch" };
@@ -344,10 +345,11 @@
     return out;
   }
 
-  /* Asks one calendar for the week's events within EVENT_MILES of the town. Only the
-     town's rounded map position and the date are sent. */
-  async function calendarEvents(cal, lat, lng, startDate, nowIso, opts) {
-    const body = JSON.stringify({ start: startDate, daysToLoad: EVENT_DAYS, eventsPerDay: 3, lat: lat, lng: lng, distance: EVENT_MILES,
+  /* Asks one calendar for the week's events within `miles` (EVENT_MILES unless given) of
+     the town. Only the town's rounded map position and the date are sent. */
+  async function calendarEvents(cal, lat, lng, startDate, nowIso, opts, miles) {
+    const body = JSON.stringify({ start: startDate, daysToLoad: EVENT_DAYS, eventsPerDay: 3, lat: lat, lng: lng,
+      distance: E.isNum(miles) ? miles : EVENT_MILES,
       search: "", sort: "", category: [], labels: [], defFilter: "all" });
     const text = await getText(CALENDAR_API + cal.slug, Object.assign({}, opts, { body: body }));
     let data;
@@ -468,14 +470,22 @@
       const list = opts.calendars || (root && root.DB_CALENDARS) || null;
       const near = pos ? calendarsNear(list, code, pos.lat, pos.lng).slice(0, EVENT_CALENDARS) : [];
       const want = Math.max.apply(null, evCats.map(c => c.items || b.items_per_category));
-      const items = [], used = [];
+      const items = [], used = [], have = {};
+      // The town's own events first, so the busier calendar of a bigger town nearby cannot
+      // crowd them out; then the area around it while the brief is still short.
       for (const cal of near) {
-        if (items.length >= want * 2) break;
-        try {
-          const got = await calendarEvents(cal, pos.lat, pos.lng, opts.date || localDate(now), nowIso, opts);
-          for (const it of got) items.push(it);
-          used.push(E.collapse(cal.station) || cal.slug);
-        } catch (e) { err = err || String(e.message || e); }
+        for (const miles of [EVENT_TOWN_MILES, EVENT_MILES]) {
+          if (items.length >= want * 2) break;
+          try {
+            const got = await calendarEvents(cal, pos.lat, pos.lng, opts.date || localDate(now), nowIso, opts, miles);
+            for (const it of got) {
+              const k = E.normUrl(it.url) + " " + it.event.start;
+              if (!have[k]) { have[k] = true; items.push(it); }
+            }
+            const name = E.collapse(cal.station) || cal.slug;
+            if (used.indexOf(name) < 0) used.push(name);
+          } catch (e) { err = err || String(e.message || e); }
+        }
       }
       if (!near.length && !err) err = pos ? "no station calendar covers your town" : "your town has no map position; find it under the forecast in setup";
       for (const c of evCats) {
@@ -572,6 +582,6 @@
     return { brief: brief, health: health };
   }
 
-  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, CALENDAR_API, EVENT_MILES, milesBetween, calendarsNear, eventItem, eventsFrom, calendarEvents, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
+  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, CALENDAR_API, EVENT_MILES, EVENT_TOWN_MILES, milesBetween, calendarsNear, eventItem, eventsFrom, calendarEvents, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
     weather, geocode, collect, runBrief, localDate, markUnchecked, checkFeed };
 });
