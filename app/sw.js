@@ -3,12 +3,12 @@
    when offline. Every request asks the server whether the file changed
    ("no-cache"), because GitHub Pages lets browsers keep files for 10 minutes.
    Bump VERSION when the file list changes. */
-const VERSION = "db-v0.13.0";
-const FILES = ["./", "index.html", "css/style.css", "js/engine.js", "js/newsletter.js", "js/collect.js", "js/ideas.js", "js/services.js", "js/app.js",
+const VERSION = "db-v0.14.0"; // standalone: only caches named db-* are ever deleted
+const FILES = ["./", "index.html", "css/style.css", "js/engine.js", "js/newsletter.js", "js/collect.js", "js/ideas.js", "js/services.js", "js/app.js", "js/theme.js",
   "data/library.js", "data/prompts.js", "data/sample.js", "data/icons.js", "data/calendars.js", "manifest.webmanifest", "icon.svg", "icon-180.png",
   "icon-192.png", "icon-512.png", "icon-maskable-512.png"];
 self.addEventListener("install", e => e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES)).then(() => self.skipWaiting())));
-self.addEventListener("activate", e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));
+self.addEventListener("activate", e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("db-") && k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())));
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin || url.pathname.indexOf("/api/") >= 0) return;

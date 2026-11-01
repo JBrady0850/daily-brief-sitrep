@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.14.0 (2026-11-01)
+
+- Softer light theme: the page is #dfe4ea and cards #f3f5f8 instead of pure white.
+- A theme switch in the header: Auto follows the device; Light and Dark are saved in this browser (`db.theme.v1`) and applied before the page draws.
+- Phones: the switch, chips and step buttons are at least 44 px.
+- The offline worker deletes only its own caches (names starting `db-`), so other apps on the same github.io address keep their offline copies.
+
 ## 0.13.0 (2026-10-26)
 
 Federal dates on the way to a federal retirement.

@@ -3,22 +3,21 @@
 :root {
   --ink: #16202b;
   --muted: #55606c;
-  --paper: #ffffff;
-  --page: #eef1f5;
-  --line: #d9dfe6;
+  --paper: #f3f5f8;
+  --page: #dfe4ea;
+  --line: #cdd6e0;
   --navy: #0f2744;
   --gold: #d4a017;
   --accent: #0b5e8f;
   --ok: #1b6e3d;
   --warn: #8a5a00;
   --bad: #a32d22;
-  --soft: #f4f6f9;
+  --soft: #e8ecf1;
   --radius: 10px;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #e7ebf0;
+  :root:not([data-theme="light"]) {--ink: #e7ebf0;
     --muted: #a8b2bd;
     --paper: #18212b;
     --page: #0e151c;
@@ -27,9 +26,19 @@
     --ok: #6fcf97;
     --warn: #e0b43a;
     --bad: #ff8a7a;
-    --soft: #202b36;
-  }
+    --soft: #202b36;}
 }
+:root[data-theme="dark"] {--ink: #e7ebf0;
+    --muted: #a8b2bd;
+    --paper: #18212b;
+    --page: #0e151c;
+    --line: #2d3a47;
+    --accent: #6cb6e6;
+    --ok: #6fcf97;
+    --warn: #e0b43a;
+    --bad: #ff8a7a;
+    --soft: #202b36;}
+
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.5 "Segoe UI", Roboto, Arial, Helvetica, sans-serif; }
@@ -71,7 +80,11 @@ textarea { resize: vertical; }
 input:focus, select:focus, textarea:focus, button:focus-visible { outline: 3px solid var(--gold); outline-offset: 1px; }
 input[type=color] { width: 44px; height: 40px; padding: 2px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); }
 .btn { font: inherit; font-weight: 600; background: var(--navy); color: #fff; border: 1px solid var(--navy); border-radius: 8px; padding: 10px 16px; min-height: 44px; cursor: pointer; }
-@media (prefers-color-scheme: dark) { .btn { background: #2b5a86; border-color: #2b5a86; } }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn {background: #2b5a86; border-color: #2b5a86;}
+}
+:root[data-theme="dark"] .btn {background: #2b5a86; border-color: #2b5a86;}
+
 .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
 .btn.danger { background: var(--bad); border-color: var(--bad); }
 .btn.big { font-size: 18px; padding: 12px 22px; }
@@ -304,3 +317,14 @@ ol.order { list-style: none; margin: 12px 0 0; padding: 0; }
 .obtn:focus-visible { outline: 3px solid var(--accent, #2b6cb0); outline-offset: 2px; }
 .obtn .ic svg { width: 20px; height: 20px; }
 @media (max-width: 420px) { .orow { gap: 6px; padding: 6px 8px; } .obtn { width: 40px; height: 40px; } }
+
+/* Theme switch (0.14.0): Auto follows the device; Light and Dark are saved in db.theme.v1 */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+.theme-sel { margin-left: auto; font: 600 14px/1 "Segoe UI", Roboto, Arial, sans-serif; color: #fff; background: transparent;
+  border: 1px solid rgba(255,255,255,.45); border-radius: 999px; padding: 6px 10px; min-height: 36px; cursor: pointer; }
+.theme-sel option { color: #16202b; background: #fff; }
+@media (max-width: 640px) {
+  .theme-sel, .chip, .dots button { min-height: 44px; }
+  .dots button { width: 44px; height: 44px; }
+}
