@@ -77,6 +77,7 @@ def test_each_feed_is_read_once_one_search_per_category_and_a_time_budget():
 
 
 def test_build_cache_command_writes_the_file(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_now_iso", lambda: NOW)  # the fixtures are dated; a real clock ages them out after 96 hours
     monkeypatch.setattr(NC, "quick_fetch", fake_fetcher([]))
     monkeypatch.setattr(NC, "library", lambda: LIB)
     out = tmp_path / "data" / "news-cache.json"
@@ -150,6 +151,7 @@ def test_new_stories_come_first_and_a_category_without_time_keeps_its_earlier_st
 
 
 def test_build_cache_command_keeps_the_previous_file_and_survives_a_missing_one(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(cli, "_now_iso", lambda: NOW)  # the fixtures are dated; a real clock ages them out after 96 hours
     monkeypatch.setattr(NC, "quick_fetch", lambda url: (_ for _ in ()).throw(C.FetchError("Service Unavailable")))
     monkeypatch.setattr(NC, "library", lambda: LIB)
     prev = tmp_path / "previous.json"

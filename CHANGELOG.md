@@ -6,6 +6,7 @@
 - A theme switch in the header: Auto follows the device; Light and Dark are saved in this browser (`db.theme.v1`) and applied before the page draws.
 - Phones: the switch, chips and step buttons are at least 44 px.
 - The offline worker deletes only its own caches (names starting `db-`), so other apps on the same github.io address keep their offline copies.
+- Tests: the two build-cache command tests pin the clock to their fixtures' date; with the real clock they began failing four days after the fixtures were written.
 
 ## 0.13.0 (2026-10-26)
 
