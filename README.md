@@ -157,7 +157,8 @@ the stories that name your town or a nearby place, so your town never leaves
 your browser. The question also takes extra news feeds (your town's paper, for
 example), with a **Check** button that says whether this page can read them.
 If no source answers on a given day, a town category says "Not checked today"
-instead of "No new items".
+instead of "No new items". On a phone, a brief still being built when the screen
+goes dark waits and finishes when you come back to the page.
 
 **Things to do.** In the US, Things to Do lists the week's events within 20
 miles of your town from the community calendar of the nearest local TV station,

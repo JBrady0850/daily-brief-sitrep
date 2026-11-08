@@ -69,11 +69,43 @@
     return { generated_at: typeof d.generated_at === "string" ? d.generated_at : "", categories: cats };
   }
 
+  // GDELT refuses a search with any word or quoted phrase shorter than three characters
+  // ("Your search contained a keyword that was too short", "The specified phrase is too
+  // short"; checked 2026-11-08). Short words the library uses are spelled out for it;
+  // any other short word is left out of the GDELT search only.
+  const GDELT_LONG = { AI: "artificial intelligence", EV: "electric vehicle", GM: "General Motors", IT: "information technology",
+    ML: "machine learning", US: "United States", UK: "United Kingdom", EU: "European Union", VA: "Veterans Affairs" };
+  function gdeltWords(q) {
+    let toks = (String(q).match(/"[^"]*"|\(|\)|[^\s()"]+/g) || []).map(m => {
+      if (m === "(" || m === ")" || m === "OR" || m === "AND") return m;
+      const quoted = m.charAt(0) === '"';
+      const neg = !quoted && m.charAt(0) === "-" ? "-" : "";
+      const core = quoted ? m.slice(1, -1).trim() : m.slice(neg.length);
+      if (core.replace(/[^\p{L}\p{N}]/gu, "").length >= 3) return m;
+      const long = GDELT_LONG[core.toUpperCase()];
+      return long ? neg + '"' + long + '"' : null;
+    }).filter(t => t !== null);
+    // Tidy what a dropped word leaves: a dangling OR, an empty group, a group of one.
+    const word = t => t !== "(" && t !== ")" && t !== "OR" && t !== "AND";
+    for (let changed = true; changed;) {
+      changed = false;
+      for (let i = 0; i < toks.length; i++) {
+        const t = toks[i], a = toks[i - 1], b = toks[i + 1];
+        if (t === "OR" && (a === undefined || a === "(" || a === "OR" || b === undefined || b === ")" || b === "OR")) {
+          toks.splice(i, 1); changed = true; break;
+        }
+        if (t === "(" && b === ")") { toks.splice(i, 2); changed = true; break; }
+        if (t === "(" && b !== undefined && word(b) && toks[i + 2] === ")") { toks.splice(i + 2, 1); toks.splice(i, 1); changed = true; break; }
+      }
+    }
+    return toks.join(" ").replace(/\( /g, "(").replace(/ \)/g, ")");
+  }
+
   /* GDELT reads the same query language as Google News for what the library
      uses: quoted phrases, OR inside parentheses, AND by spaces. */
   function gdeltQuery(q, cfg) {
     const n = E.normalizeConfig(cfg || {});
-    let s = E.collapse(q).replace(/\bwhen:\S+/g, "");
+    let s = gdeltWords(E.collapse(q).replace(/\bwhen:\S+/g, ""));
     const lang = LANGS[n.brief.language];
     if (lang) s += " sourcelang:" + lang;
     return E.collapse(s);
@@ -205,7 +237,42 @@
   }
 
   // ------------------------------------------------------------ fetching
-  async function getText(url, opts) {
+  /* A phone stops a page's network while the page is out of view (screen off, another
+     app in front) or the connection is down. Every request waits here until the page is
+     in view and online, so a brief started just before the screen went dark finishes
+     when it comes back, instead of marking every later source as failed. Without a
+     page (Node, the tests' bridge) nothing waits. */
+  const DOC = root && root.document && typeof root.document.addEventListener === "function" ? root.document : null;
+  let pausedMs = 0;   // time spent waiting, so the news search's time limit counts only working time
+  let hiddenCount = 0;
+  if (DOC) DOC.addEventListener("visibilitychange", () => { if (DOC.visibilityState === "hidden") hiddenCount += 1; });
+  function usable() {
+    const hidden = !!DOC && DOC.visibilityState === "hidden";
+    const offline = !!(root && root.navigator && root.navigator.onLine === false);
+    return !hidden && !offline;
+  }
+  function whenUsable(opts) {
+    if (!DOC || usable()) return Promise.resolve();
+    const t0 = Date.now();
+    const note = opts && typeof opts.waiting === "function" ? opts.waiting : () => {};
+    note(true);
+    return new Promise(resolve => {
+      const check = () => {
+        if (!usable()) return;
+        DOC.removeEventListener("visibilitychange", check);
+        if (typeof root.removeEventListener === "function") root.removeEventListener("online", check);
+        clearInterval(poll);
+        pausedMs += Date.now() - t0;
+        note(false);
+        resolve();
+      };
+      DOC.addEventListener("visibilitychange", check);
+      if (typeof root.addEventListener === "function") root.addEventListener("online", check);
+      const poll = setInterval(check, 2000);
+    });
+  }
+
+  async function getOnce(url, opts) {
     const f = (opts && opts.fetch) || (typeof fetch === "function" ? fetch.bind(root || null) : null);
     const ctl = typeof AbortController === "function" ? new AbortController() : null;
     const timer = ctl ? setTimeout(() => ctl.abort(), (opts && opts.timeout) || TIMEOUT_MS) : null;
@@ -221,11 +288,26 @@
       if (!r.ok) throw new Error("the site answered " + r.status);
       return await r.text();
     } catch (e) {
-      if (e && e.name === "AbortError") throw new Error("no answer in time");
-      if (e instanceof TypeError) throw new Error("not readable from a web page (the site blocks it, or it is offline)");
+      if (e && e.name === "AbortError") throw Object.assign(new Error("no answer in time"), { network: true });
+      if (e instanceof TypeError) throw Object.assign(new Error("not readable from a web page (the site blocks it, or it is offline)"), { network: true });
       throw e;
     } finally {
       if (timer) clearTimeout(timer);
+    }
+  }
+
+  /* One request. When the page went out of view or offline while it was under way and it
+     failed for want of a connection, it is asked again once the page is back (twice at most). */
+  async function getText(url, opts) {
+    for (let attempt = 0; ; attempt++) {
+      await whenUsable(opts);
+      const seen = hiddenCount;
+      try {
+        return await getOnce(url, opts);
+      } catch (e) {
+        if (attempt < 2 && e && e.network && (hiddenCount !== seen || !usable())) continue;
+        throw e;
+      }
     }
   }
 
@@ -496,7 +578,8 @@
     progress("News search", done, total, phase);
     let first = true;
     let failures = 0;  // searches in a row that failed even after the retry
-    const deadline = Date.now() + (typeof opts.searchBudget === "number" ? opts.searchBudget : SEARCH_BUDGET_MS);
+    // Time spent waiting for the page to come back into view does not count.
+    const deadline = Date.now() - pausedMs + (typeof opts.searchBudget === "number" ? opts.searchBudget : SEARCH_BUDGET_MS);
     async function search(c, q, hours) {
       if (opts.cancelled && opts.cancelled()) throw new Error("cancelled");
       if (failures >= 3) {
@@ -504,7 +587,7 @@
         tick(c.name);
         return;
       }
-      if (Date.now() >= deadline) {
+      if (Date.now() - pausedMs >= deadline) {
         health[c.id].queries.push({ query: q, hours: hours, items: 0, added: 0, error: "skipped: the news index was slow, so this brief uses what it has" });
         tick(c.name);
         return;
@@ -512,7 +595,7 @@
       if (!first) await wait(failures ? gap * 2 : gap);
       first = false;
       let items = [], err = "";
-      try { items = await gdelt(q, hours, n, { fetch: opts.fetch, sleep: wait, gap: gap, timeout: opts.timeout }); } catch (e) { err = String(e.message || e); }
+      try { items = await gdelt(q, hours, n, { fetch: opts.fetch, sleep: wait, gap: gap, timeout: opts.timeout, waiting: opts.waiting }); } catch (e) { err = String(e.message || e); }
       failures = err ? failures + 1 : 0;
       health[c.id].queries.push({ query: q, hours: hours, items: items.length, added: add(c.id, items), error: err });
       tick(c.name);
@@ -582,6 +665,6 @@
     return { brief: brief, health: health };
   }
 
-  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, CALENDAR_API, EVENT_MILES, EVENT_TOWN_MILES, milesBetween, calendarsNear, eventItem, eventsFrom, calendarEvents, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
+  return { GDELT, GAP_MS, BACKUP_URL, parseBackup, LOCAL_DIR, parseLocal, CALENDAR_API, EVENT_MILES, EVENT_TOWN_MILES, milesBetween, calendarsNear, eventItem, eventsFrom, calendarEvents, gdeltWords, gdeltQuery, gdeltUrl, tidyTitle, gdeltDate, parseGdelt, parseFeed, imageOf, forecastUrl, weatherFrom,
     weather, geocode, collect, runBrief, localDate, markUnchecked, checkFeed };
 });

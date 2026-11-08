@@ -26,7 +26,15 @@
   asks too often (HTTP 503 and 429, seen on 2026-10-23; after a day of heavy
   testing it refused one home connection for hours, and at 02:20 UTC on
   2026-10-24 it refused the first request from two unrelated networks). Categories
-  you type yourself depend on it.
+  you type yourself depend on it. It also refuses any search word or quoted
+  phrase shorter than three characters, so the page spells out the short words
+  the library uses (AI becomes "artificial intelligence") and leaves out any
+  other short word, for this index only.
+- A phone stops a web page's connection while the page is out of view (screen
+  off, another app in front) or the phone is offline. A brief being built then
+  waits, and finishes when the page is back in view and online; a request the
+  phone broke is asked again (from 0.14.1). Leaving the page out of view does
+  not lose the brief, but it does not finish until you come back.
 - Times show in your time zone. The desktop app on Windows needs Python's time
   zone data for that (`py -m pip install tzdata`); without it, it uses the
   computer's own clock, and a US zone that does not match that clock shows UTC.

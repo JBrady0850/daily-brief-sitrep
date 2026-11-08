@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.14.1 (2026-11-08)
+
+- A brief no longer fails when the phone's screen goes dark while it is being
+  built. On 2026-11-07 and 08 a phone read the publisher feeds, then lost the
+  page's connection: the backup collection gave "no answer in time", the local
+  stations, the event calendar and the news index all failed, and every desk said
+  "Not checked today, because the news search did not answer". Each request now
+  waits while the page is out of view or the device is offline, and a request
+  broken that way is asked again (twice at most) once the page is back. The time
+  spent waiting does not count against the news search's time limit. While the
+  page is in view but offline, the progress card says it is waiting for a
+  connection.
+- The GDELT news index refuses any word or quoted phrase shorter than three
+  characters, which failed Defense Enterprise AI's searches every day ("Your
+  search contained a keyword that was too short"). The page now spells out the
+  short words the library uses for this index (AI, GM, IT and a few others) and
+  leaves out any other short word; Google News searches are unchanged.
+
 ## 0.14.0 (2026-11-01)
 
 - Softer light theme: the page is #dfe4ea and cards #f3f5f8 instead of pure white.

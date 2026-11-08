@@ -632,6 +632,64 @@ def test_the_backup_collection_fills_categories_when_the_news_index_refuses(brow
     ctx.close()
 
 
+# The screen goes dark (or the connection drops) while the backup file is on its way.
+PAGE_GOES_AWAY = """(() => {
+  window.__vis = 'visible';
+  window.__online = true;
+  Object.defineProperty(Document.prototype, 'visibilityState', { configurable: true, get: () => window.__vis });
+  Object.defineProperty(Document.prototype, 'hidden', { configurable: true, get: () => window.__vis === 'hidden' });
+  Object.defineProperty(Navigator.prototype, 'onLine', { configurable: true, get: () => window.__online });
+  const real = window.fetch.bind(window);
+  window.__broken = 0;
+  window.fetch = (url, init) => {
+    if (String(url).indexOf('news-cache.json') >= 0 && !window.__broken) {
+      window.__broken = 1;
+      if (window.__how === 'offline') window.__online = false;
+      else {
+        window.__vis = 'hidden';
+        document.dispatchEvent(new Event('visibilitychange'));
+        setTimeout(() => { window.__vis = 'visible'; document.dispatchEvent(new Event('visibilitychange')); }, 1500);
+      }
+      // 'stall': the request hangs until its time runs out, as on the phone ("no answer in time").
+      if (window.__how === 'stall') return new Promise((ok, bad) => setTimeout(() => bad(new DOMException('aborted', 'AbortError')), 800));
+      return Promise.reject(new TypeError('Failed to fetch'));
+    }
+    return real(url, init);
+  };
+})();"""
+
+
+def test_a_brief_broken_by_the_screen_going_dark_finishes_when_the_page_is_back(browser, http_app):
+    """John's phone, 2026-11-07 and 08: the feeds answered, then the backup collection
+    gave "no answer in time" and every later source failed, so every desk read "Not
+    checked today". A request broken while the page is out of view (or offline) now
+    waits for the page to come back and is asked again."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    cats = [dict(pick["defense-ai"], feeds=[], topic_feeds=[]), dict(pick["nhl"], feeds=[], topic_feeds=[])]
+    state = {"version": 1, "tab": "brief", "config": {"version": 1, "categories": cats}, "setup_done": True}
+    for how in ("hidden", "stall", "offline"):
+        ctx, page, errors = open_page(browser, http_app, calls=[], gdelt_status=429, state=state)
+        page.add_init_script(PAGE_GOES_AWAY + ";window.__how = %s;" % json.dumps(how))
+        page.reload()
+        page.route("**/data/news-cache.json", lambda r: r.fulfill(status=200, body=json.dumps(backup_file(["defense-ai", "nhl"])),
+                                                                headers={"content-type": "application/json"}))
+        page.click("button:has-text(\"Get today's brief\")")
+        if how == "offline":
+            page.wait_for_selector("#progress :text('Waiting for a connection')", timeout=30000)
+            page.evaluate("window.__online = true; window.dispatchEvent(new Event('online'))")
+        page.wait_for_selector("iframe.page", timeout=60000)
+        assert page.evaluate("window.__broken") == 1, how
+        by = {c["id"]: c for c in page.evaluate("DB_APP.state().brief.categories")}
+        health = page.evaluate("DB_APP.state().health")
+        assert health["defense-ai"]["backup"]["error"] == "" and health["nhl"]["backup"]["added"] == 6, (how, health["nhl"]["backup"])
+        assert len(by["defense-ai"]["items"]) == 5 and len(by["nhl"]["items"]) == 5, how
+        assert not any(c.get("unchecked") for c in by.values()), how
+        assert "Not checked today" not in page.frame_locator("iframe.page").locator("main").inner_text()
+        assert errors == []
+        ctx.close()
+
+
 def local_feed():
     now = datetime.now(timezone.utc)
     titles = ["Springfield council approves new park", "Sangamon County fair opens Friday", "State budget talks continue"]

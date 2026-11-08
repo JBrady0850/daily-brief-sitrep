@@ -164,3 +164,28 @@ def test_event_calendar_list_is_well_formed():
             assert 17 < c["lat"] < 72 and -180 < c["lng"] < -64 and 0 < c["miles"] <= 200, c
             assert c["links"] in ("", "hash", "hashBang"), c
     assert total >= 100
+
+
+def test_news_index_searches_have_no_word_too_short_for_it():
+    """GDELT refuses a search holding any word or quoted phrase under three characters
+    ("Your search contained a keyword that was too short"; checked 2026-11-08), which
+    failed Defense Enterprise AI's searches every day. Short library words are spelled
+    out for it; other short words are left out of its search."""
+    from conftest import js_calls
+    queries = sorted({q for c in library()["categories"] for q in c.get("queries", []) if q.strip()})
+    got = js_calls([{"fn": "collect.gdeltQuery", "args": [q, {}]} for q in queries])
+    for q, out in zip(queries, got):
+        for m in re.finditer(r'"([^"]*)"|([^\s()"]+)', out):
+            word = m.group(1) if m.group(1) is not None else m.group(2)
+            if word in ("OR", "AND") or word.startswith("sourcelang:"):
+                continue
+            assert len(re.sub(r"[^\w]", "", word.lstrip("-"))) >= 3, (q, out, word)
+        assert out.count("(") == out.count(")"), (q, out)
+    cases = [("(CDAO OR DISA OR DARPA OR Pentagon) AI strategy networks",
+              '(CDAO OR DISA OR DARPA OR Pentagon) "artificial intelligence" strategy networks'),
+             ("(modernization OR cloud OR AI)", '(modernization OR cloud OR "artificial intelligence")'),
+             ('("401(k)" OR IRA OR Roth) (rules OR limits)', '("401(k)" OR IRA OR Roth) (rules OR limits)'),
+             ("(xy OR word) go -US news", 'word -"United States" news'),
+             ("(ab OR cd) zero", "zero")]
+    got = js_calls([{"fn": "collect.gdeltWords", "args": [q]} for q, _ in cases])
+    assert got == [want for _, want in cases]

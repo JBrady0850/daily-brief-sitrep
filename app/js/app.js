@@ -1196,7 +1196,9 @@
           if (phase) webRun.phase = phase;
           paintProgress();
         },
-        cancelled: () => !!(webRun && webRun.cancelled)
+        cancelled: () => !!(webRun && webRun.cancelled),
+        // Requests wait while the page is out of view or offline; say so while it is in view.
+        waiting: on => { if (webRun) { webRun.waiting = on; paintProgress(); } }
       });
       webRun = null;
       // Everything shown counts as seen, so tomorrow's brief has only new stories.
@@ -1363,7 +1365,8 @@
     const phase = job ? "sources" : (run.phase || "feeds");
     const at = Math.max(1, stages.findIndex(s => s[0] === phase));
     const pct = phase === "layout" ? 100 : run.total ? Math.round(100 * run.done / run.total) : 3;
-    const detail = run.step && phase !== "layout" && run.total ? run.step + ": " + run.done + " of " + run.total + " sources checked" : "";
+    const detail = run.waiting ? "Waiting for a connection; it carries on by itself when this device is back online."
+      : run.step && phase !== "layout" && run.total ? run.step + ": " + run.done + " of " + run.total + " sources checked" : "";
     clear(p).append(
       h("ol", { class: "stages" }, stages.map((s, k) => h("li", { class: k < at ? "done" : k === at ? "now" : "" },
         h("span", { class: "sm" }, k < at ? ico("check") : h("span", { text: String(k + 1) })),
