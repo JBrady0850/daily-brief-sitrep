@@ -492,7 +492,7 @@ def test_changes_to_saved_choices_apply_only_on_save(browser, http_app):
     # Elsewhere in the app the saved choices stay in use, with a reminder.
     page.click('#tabs button[data-tab="brief"]')
     assert "unsaved changes to your choices" in page.inner_text("#modebar")
-    assert page.locator(".notice").count() == 0
+    assert page.locator(".notice:not(#feednotice)").count() == 0, "no rebuild reminder (the sample's categories may lack newer library feeds)"
     # Unsaved changes survive a reload.
     page.reload()
     page.wait_for_selector("#modebar.edit")
@@ -513,7 +513,7 @@ def test_changes_to_saved_choices_apply_only_on_save(browser, http_app):
     page.click("button:has-text('Rebuild with my new choices')")
     page.wait_for_function("DB_APP.state().brief.categories.some(c => c.id === 'nfl')", timeout=30000)
     page.wait_for_selector("#status.good")
-    assert page.locator(".notice").count() == 0
+    assert page.locator(".notice:not(#feednotice)").count() == 0
     assert errors == []
     ctx.close()
 
@@ -688,6 +688,48 @@ def test_a_brief_broken_by_the_screen_going_dark_finishes_when_the_page_is_back(
         assert "Not checked today" not in page.frame_locator("iframe.page").locator("main").inner_text()
         assert errors == []
         ctx.close()
+
+
+def test_saved_categories_can_take_the_librarys_newer_feeds(browser, http_app):
+    """A reader's AI Tools copy, saved before the library listed its feeds, read nothing
+    from feeds (2026-11-08). The brief offers the newer feeds; adding keeps the reader's
+    own feeds; "Not now" hides the card on the brief until the library adds more."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    own = "https://own.example.com/feed.xml"
+    tools = dict(pick["ai-tools"], feeds=[], topic_feeds=[])
+    nhl = dict(pick["nhl"], feeds=[own] + pick["nhl"]["feeds"][:1])
+    state = {"version": 1, "tab": "brief", "setup_done": True, "config": {"version": 1, "categories": [tools, nhl, pick["us-news"]]}}
+    want = len(pick["ai-tools"]["feeds"]) + len(pick["nhl"]["feeds"]) - 1
+    ctx, page, errors = open_page(browser, http_app, state=state)
+    card = page.locator("#feednotice")
+    card.wait_for()
+    assert "The library has %d newer feeds for 2 of your categories." % want in card.inner_text()
+    card.locator("summary:has-text('Which feeds')").click()
+    assert "AI Tools and Prompting: wired.com, rss.nytimes.com, moxie.foxnews.com, ciodive.com" in card.inner_text(), "each site once"
+    card.locator("button:has-text('Not now')").click()
+    assert page.locator("#feednotice").count() == 0
+    page.reload()
+    page.wait_for_selector(".todayhead")
+    assert page.locator("#feednotice").count() == 0, "Not now holds until the library adds more"
+    page.evaluate("DB_APP.show('categories')")
+    page.locator("#feednotice").wait_for()
+    page.click("#addfeeds")
+    cats = {c["id"]: c for c in page.evaluate("DB_APP.state().config.categories")}
+    assert cats["ai-tools"]["feeds"] == pick["ai-tools"]["feeds"]
+    assert cats["nhl"]["feeds"] == [own] + pick["nhl"]["feeds"], "the reader's own feed stays first"
+    assert cats["us-news"]["feeds"] == pick["us-news"]["feeds"]
+    assert page.locator("#feednotice").count() == 0
+    assert "Added %d feeds to 2 categories" % want in page.inner_text("#toast")
+    # A feed the library has that the reader later removed brings the card back on the brief.
+    page.evaluate("""() => { const st = JSON.parse(localStorage.getItem('db.state.v1'));
+        st.config.categories[2].feeds = st.config.categories[2].feeds.slice(1); st.tab = 'brief';
+        localStorage.setItem('db.state.v1', JSON.stringify(st)); }""")
+    page.reload()
+    page.locator("#feednotice").wait_for()
+    assert "1 newer feed for 1 of your categories" in page.inner_text("#feednotice")
+    assert errors == []
+    ctx.close()
 
 
 def local_feed():

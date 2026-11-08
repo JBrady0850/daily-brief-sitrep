@@ -173,6 +173,12 @@ A category may also name **on-topic feeds**, such as a tennis feed for the
 tennis category; their stories count as on topic without a must-mention word.
 See [docs/CATEGORIES.md](docs/CATEGORIES.md).
 
+Your categories keep the feeds they had when you chose them, and the library
+gains feeds over time. When it has newer feeds for your categories, Today's
+brief and Fine-tune categories show a card that lists them; **Add them** adds
+them and keeps your own feeds, and **Not now** hides the card on Today's brief
+until the library adds more.
+
 ## Privacy
 
 No account of ours and no tracking. Settings and the no-repeat history stay in

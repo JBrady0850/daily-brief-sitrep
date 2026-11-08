@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.14.1"
+VERSION = "0.15.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_COUNTDOWNS = 4
@@ -600,6 +600,57 @@ def category_from_library(lib: dict, cid: str) -> Optional[dict]:
             out.pop("group", None)
             return out
     return None
+
+
+def missing_feeds(cat: Any, lib: dict) -> Optional[dict]:
+    """Mirrors missingFeeds in app/js/engine.js: the library feeds one saved library
+    category lacks ({feeds, topic_feeds}; a feed already in either of its lists is never
+    offered), or None when it is not a library category."""
+    if not isinstance(cat, dict):
+        return None
+    lc = category_from_library(lib, cat.get("id"))
+    if not lc:
+        return None
+    have = [norm_url(u) for u in (cat.get("feeds") if isinstance(cat.get("feeds"), list) else [])
+            + (cat.get("topic_feeds") if isinstance(cat.get("topic_feeds"), list) else [])]
+
+    def fresh(lst: Any) -> list:
+        got = []
+        for u in lst if isinstance(lst, list) else []:
+            k = norm_url(u)
+            if k and k not in have:
+                have.append(k)
+                got.append(u)
+        return got
+    feeds = fresh(lc.get("feeds"))
+    return {"name": js_str(cat.get("name") or lc.get("name") or ""), "feeds": feeds, "topic_feeds": fresh(lc.get("topic_feeds"))}
+
+
+def feed_updates(cfg: Any, lib: dict) -> list:
+    """Mirrors feedUpdates: each saved library category with feeds to add, once per id."""
+    out: list = []
+    for cat in cfg.get("categories") if isinstance(cfg, dict) and isinstance(cfg.get("categories"), list) else []:
+        m = missing_feeds(cat, lib)
+        if m and (m["feeds"] or m["topic_feeds"]) and not any(u["id"] == cat.get("id") for u in out):
+            out.append({"id": cat.get("id"), "name": m["name"], "feeds": m["feeds"], "topic_feeds": m["topic_feeds"]})
+    return out
+
+
+def apply_feed_updates(cfg: dict, lib: dict) -> dict:
+    """Mirrors applyFeedUpdates: the reader's own feeds stay, in their order, and the new
+    ones follow. Returns {config, added, categories}; the config passed in is not changed."""
+    c = clone(cfg)
+    added = cats = 0
+    for cat in c.get("categories") if isinstance(c, dict) and isinstance(c.get("categories"), list) else []:
+        m = missing_feeds(cat, lib)
+        if not m or not (m["feeds"] or m["topic_feeds"]):
+            continue
+        cat["feeds"] = (cat.get("feeds") if isinstance(cat.get("feeds"), list) else []) + m["feeds"]
+        if m["topic_feeds"]:
+            cat["topic_feeds"] = (cat.get("topic_feeds") if isinstance(cat.get("topic_feeds"), list) else []) + m["topic_feeds"]
+        added += len(m["feeds"]) + len(m["topic_feeds"])
+        cats += 1
+    return {"config": c, "added": added, "categories": cats}
 
 
 def config_from_pack(lib: dict, pack_id: str, overrides: Optional[dict] = None) -> dict:

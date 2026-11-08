@@ -641,3 +641,37 @@ def test_several_countdowns_and_old_single_countdown_settings(sample_brief, samp
     py = E.normalize_config(twice)["countdowns"]
     assert got[0]["countdowns"] == py == got[1]["countdowns"] == E.upgrade_countdown(twice)["countdowns"]
     assert [c if isinstance(c, str) else c["label"] for c in py] == ["Days to Election Day", "Days to retirement", "x", "x"]
+
+
+def test_saved_categories_get_the_library_feeds_they_lack_the_same_way():
+    """Saved categories keep the feeds they were saved with; the library gains feeds. A
+    reader's AI Tools copy with no feeds read nothing from feeds (2026-11-08)."""
+    lib = library()
+    pick = {c["id"]: c for c in lib["categories"]}
+    tools, nhl, fed = pick["ai-tools"], pick["nhl"], pick["federal-workforce"]
+    own = "https://own.example.com/feed.xml"
+    cfg = {"version": 1, "categories": [
+        dict(E.clone(tools), feeds=[], topic_feeds=[]),                       # saved before feeds were added
+        dict(E.clone(nhl), feeds=[own] + nhl["feeds"][:1], topic_feeds=[]),   # the reader's own feed comes first
+        dict(E.clone(fed), feeds=[], topic_feeds=[fed["feeds"][0].replace("https://", "http://") + "/"]),  # one already kept elsewhere
+        E.clone(pick["us-news"]),                                             # already current
+        {"id": "custom-pets", "name": "Pets", "queries": ["pets"], "feeds": []},  # not from the library
+        "not a category", dict(E.clone(tools), feeds=[])]}                    # a second copy is not offered twice
+    py = E.feed_updates(cfg, lib)
+    js = js_calls([{"fn": "feedUpdates", "args": [cfg, lib]}])[0]
+    assert py == js
+    assert [u["id"] for u in py] == ["ai-tools", "nhl", "federal-workforce"]
+    assert py[0]["feeds"] == tools["feeds"] and py[0]["name"] == tools["name"]
+    assert py[1]["feeds"] == nhl["feeds"][1:]
+    assert fed["feeds"][0] not in py[2]["feeds"] and py[2]["feeds"] == fed["feeds"][1:]
+    before = json.dumps(cfg, sort_keys=True)
+    pa = E.apply_feed_updates(cfg, lib)
+    ja = js_calls([{"fn": "applyFeedUpdates", "args": [cfg, lib]}])[0]
+    assert pa == ja and json.dumps(cfg, sort_keys=True) == before, "the config passed in stays as it was"
+    assert pa["categories"] == 4, "both copies of a category are brought up to date"
+    assert pa["added"] == 2 * len(tools["feeds"]) + len(nhl["feeds"]) - 1 + len(fed["feeds"]) - 1
+    after = {c["id"]: c for c in pa["config"]["categories"] if isinstance(c, dict)}
+    assert after["nhl"]["feeds"][:2] == [own, nhl["feeds"][0]] and after["nhl"]["feeds"][2:] == nhl["feeds"][1:]
+    assert E.feed_updates(pa["config"], lib) == [], "nothing is left to add"
+    clean = dict(pa["config"], categories=[c for c in pa["config"]["categories"] if isinstance(c, dict)][:5])
+    assert E.validate_config(clean)["errors"] == []

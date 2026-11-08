@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.14.1";
+  const VERSION = "0.15.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_COUNTDOWNS = 4;
@@ -451,6 +451,53 @@
     const c = clone(hit);
     delete c.group;
     return c;
+  }
+
+  /* Saved categories keep the feeds they had when the reader chose them; the library
+     gains feeds over time. missingFeeds gives the library feeds one saved library
+     category lacks ({feeds, topic_feeds}; a feed already in either of its lists is never
+     offered), or null when it is not a library category. */
+  function missingFeeds(cat, lib) {
+    if (!isObj(cat)) return null;
+    const lc = categoryFromLibrary(lib, cat.id);
+    if (!lc) return null;
+    const have = [].concat(Array.isArray(cat.feeds) ? cat.feeds : [], Array.isArray(cat.topic_feeds) ? cat.topic_feeds : []).map(normUrl);
+    const fresh = list => (Array.isArray(list) ? list : []).filter(u => {
+      const k = normUrl(u);
+      if (!k || have.indexOf(k) >= 0) return false;
+      have.push(k);
+      return true;
+    });
+    const feeds = fresh(lc.feeds);
+    return { name: String(cat.name || lc.name || ""), feeds: feeds, topic_feeds: fresh(lc.topic_feeds) };
+  }
+
+  /* [{id, name, feeds, topic_feeds}] for each saved library category with feeds to add. */
+  function feedUpdates(cfg, lib) {
+    const out = [];
+    for (const cat of cfg && Array.isArray(cfg.categories) ? cfg.categories : []) {
+      const m = missingFeeds(cat, lib);
+      if (m && (m.feeds.length || m.topic_feeds.length) && !out.some(u => u.id === cat.id)) {
+        out.push({ id: cat.id, name: m.name, feeds: m.feeds, topic_feeds: m.topic_feeds });
+      }
+    }
+    return out;
+  }
+
+  /* Adds those feeds. The reader's own feeds stay, in their order, and the new ones
+     follow. Returns {config, added, categories}; the config passed in is not changed. */
+  function applyFeedUpdates(cfg, lib) {
+    const c = clone(cfg);
+    let added = 0, cats = 0;
+    for (const cat of c && Array.isArray(c.categories) ? c.categories : []) {
+      const m = missingFeeds(cat, lib);
+      if (!m || !(m.feeds.length || m.topic_feeds.length)) continue;
+      cat.feeds = (Array.isArray(cat.feeds) ? cat.feeds : []).concat(m.feeds);
+      if (m.topic_feeds.length) cat.topic_feeds = (Array.isArray(cat.topic_feeds) ? cat.topic_feeds : []).concat(m.topic_feeds);
+      added += m.feeds.length + m.topic_feeds.length;
+      cats += 1;
+    }
+    return { config: c, added: added, categories: cats };
   }
 
   function configFromPack(lib, packId, overrides) {
@@ -993,7 +1040,7 @@
     VERSION, SCHEMA, DEFAULTS, PALETTE, SOCIAL_HOSTS, MAX_CATEGORIES, MAX_COUNTDOWNS, MAX_LEDGER, MAX_RECENT, upgradeCountdown,
     clone, merge, collapse, parseIso, isoZ, isDateStr, daysBetween, validUrl, validImage, isNum, hostOf, round1, pad2,
     isAcronym, termHit, countHits, US_STATES, stateCode, isLocalCategory, areaTerms, areaQuery, resolveCategory, normalizeConfig, validateConfig,
-    categoryFromLibrary, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
+    categoryFromLibrary, feedUpdates, applyFeedUpdates, configFromPack, normUrl, stripOutlet, normTitle, titleTokens, nearDup,
     emptyLedger, cleanLedger, ledgerHas, ledgerAdd, ledgerSize, humanizeAge, classify, cutSummary,
     gateItem, cleanEvent, eventPast, cleanItem, selectBrief, filterSeen, checkBrief, buildPrompt, extractJson, googleNewsUrl, cronLines
   };

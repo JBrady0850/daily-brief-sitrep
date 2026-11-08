@@ -977,6 +977,8 @@
     add(sec, h("div", { class: "intro" }, h("button", { class: "link back", onclick: () => show("setup") }, "Back to your choices"),
       h("h1", { text: "Fine-tune your categories" }),
       h("p", { text: "Each category is a desk in the newsletter. Open one to change its searches and filters. A story must mention at least one term from every \"must mention\" line, and none of the \"leave out\" terms. Changes here are saved as you make them and apply to your next brief." })));
+    const feeds = feedNotice("categories");
+    if (feeds) add(sec, feeds);
     const msgs = h("div", { id: "catmsgs" });
     const refresh = () => { clear(msgs).append(msgList(E.validateConfig(c))); };
     add(sec, msgs);
@@ -1027,6 +1029,36 @@
       h("details", { "data-key": "cat-" + cat.id }, h("summary", { text: "Searches and filters" }), body));
   }
 
+  /* Saved categories keep the feeds they had when the reader chose them; the library
+     gains feeds over time. This card offers the new ones: on the brief until "Not now"
+     (it comes back when the library adds more), and always on the categories page. */
+  function feedSig(ups) { return ups.map(u => u.id + ":" + u.feeds.concat(u.topic_feeds).join(",")).join("|"); }
+  function addLibraryFeeds() {
+    const r = E.applyFeedUpdates(state.config, LIB);
+    if (!r.added) return;
+    state.config = r.config;
+    if (state.draft) state.draft = E.applyFeedUpdates(state.draft, LIB).config;
+    save();
+    toast("Added " + r.added + (r.added === 1 ? " feed to " : " feeds to ") + r.categories + (r.categories === 1 ? " category" : " categories") +
+      ". Your own feeds stay. The next brief reads them.");
+    rerender();
+  }
+  function feedNotice(where) {
+    const ups = E.feedUpdates(saved(), LIB);
+    if (!ups.length || (where === "brief" && state.feeds_dismissed === feedSig(ups))) return null;
+    const n = ups.reduce((a, u) => a + u.feeds.length + u.topic_feeds.length, 0);
+    const label = u => u.name.replace("({location})", "(your town)");
+    return h("div", { class: "card notice", id: "feednotice" }, ico("news", "ni"),
+      h("div", { class: "grow" },
+        h("b", { text: "The library has " + n + (n === 1 ? " newer feed" : " newer feeds") + " for " + ups.length + (ups.length === 1 ? " of your categories." : " of your categories.") }),
+        h("p", { class: "hint", text: "Your categories keep the feeds they had when you chose them. Adding these keeps your own feeds and changes nothing else." }),
+        h("details", null, h("summary", { text: "Which feeds" }),
+          h("ul", null, ups.map(u => h("li", { text: label(u) + ": " +
+            u.feeds.concat(u.topic_feeds).map(E.hostOf).filter((x, i, a) => x && a.indexOf(x) === i).join(", ") }))))),
+      h("div", { class: "row" }, h("button", { class: "btn", id: "addfeeds", onclick: addLibraryFeeds }, "Add them"),
+        where === "brief" ? h("button", { class: "btn ghost", onclick: () => { state.feeds_dismissed = feedSig(ups); save(); rerender(); } }, "Not now") : null));
+  }
+
   // ------------------------------------------------------------ 3 Today
   function renderBrief(sec) {
     const v = E.validateConfig(saved());
@@ -1046,6 +1078,8 @@
           h("p", { class: "hint", text: "Build a new brief to use them. Stories you have already seen stay out." })),
         h("button", { class: "btn", onclick: () => getToday(true) }, "Rebuild with my new choices")));
     }
+    const feeds = running ? null : feedNotice("brief");
+    if (feeds) add(sec, feeds);
     add(sec, running ? buildCard() : runCard(fresh, v));
     if (running) paintProgress();
     if (state.brief) add(sec, briefView());

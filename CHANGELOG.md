@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.15.0 (2026-11-08)
+
+- Saved categories can take the library's newer feeds. A category keeps the
+  feeds it had when you chose it, and the library has gained feeds since; a
+  reader's AI Tools and Prompting, saved before the library listed its feeds,
+  read nothing from feeds. When the library has feeds your saved categories lack,
+  Today's brief and Fine-tune categories show a card with the count and, under
+  "Which feeds", each category's sites. **Add them** adds those feeds after your
+  own (your own stay, in their order, and nothing else changes); **Not now**
+  hides the card on Today's brief until the library adds more. A feed already in
+  either of a category's lists is never offered.
+- The two engines share the rule (`feedUpdates` and `applyFeedUpdates` in
+  `app/js/engine.js`, `feed_updates` and `apply_feed_updates` in
+  `dailybrief/engine.py`), with a parity test.
+
 ## 0.14.1 (2026-11-08)
 
 - A brief no longer fails when the phone's screen goes dark while it is being
