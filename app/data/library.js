@@ -817,6 +817,10 @@ window.DB_LIBRARY = {
     "https://www.espn.com/espn/rss/nhl/news",
     "https://www.cbssports.com/rss/headlines/nhl/"
    ],
+   "server_feeds": [
+    "https://sports.yahoo.com/nhl/rss.xml",
+    "https://thehockeywriters.com/feed/"
+   ],
    "color": "#111111",
    "icon": "hockey",
    "skip_listicles": true,
@@ -1053,10 +1057,17 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
-    "https://www.bleepingcomputer.com/feed/",
-    "https://feeds.feedburner.com/TheHackersNews",
     "https://www.wired.com/feed/category/security/latest/rss",
     "https://www.cybersecuritydive.com/feeds/news/"
+   ],
+   "server_feeds": [
+    "https://www.bleepingcomputer.com/feed/",
+    "https://feeds.feedburner.com/TheHackersNews",
+    "https://www.securityweek.com/feed/",
+    "https://therecord.media/feed/",
+    "https://krebsonsecurity.com/feed/",
+    "https://www.helpnetsecurity.com/feed/",
+    "https://www.theregister.com/security/headlines.atom"
    ],
    "topic_feeds": [
     "https://www.darkreading.com/rss.xml"
@@ -1100,6 +1111,12 @@ window.DB_LIBRARY = {
     "https://www.wired.com/feed/category/security/latest/rss",
     "https://www.darkreading.com/rss.xml",
     "https://www.ciodive.com/feeds/news/"
+   ],
+   "server_feeds": [
+    "https://isc.sans.edu/rssfeed_full.xml",
+    "https://www.helpnetsecurity.com/feed/",
+    "https://www.networkworld.com/feed/",
+    "https://www.csoonline.com/feed/"
    ],
    "topic_feeds": [
     "https://www.cybersecuritydive.com/feeds/news/"
@@ -1194,6 +1211,11 @@ window.DB_LIBRARY = {
     "https://www.cnbc.com/id/19854910/device/rss/rss.html",
     "https://www.wired.com/feed/tag/ai/latest/rss"
    ],
+   "server_feeds": [
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://www.technologyreview.com/topic/artificial-intelligence/feed",
+    "https://www.zdnet.com/topic/artificial-intelligence/rss.xml"
+   ],
    "color": "#5b3485",
    "needs_location": false,
    "icon": "chip"
@@ -1259,7 +1281,13 @@ window.DB_LIBRARY = {
     "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
     "https://moxie.foxnews.com/google-publisher/tech.xml",
     "https://rss.nytimes.com/services/xml/rss/nyt/PersonalTech.xml",
-    "https://www.ciodive.com/feeds/news/"
+    "https://www.ciodive.com/feeds/news/",
+    "https://blog.google/technology/ai/rss/"
+   ],
+   "server_feeds": [
+    "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml",
+    "https://techcrunch.com/category/artificial-intelligence/feed/",
+    "https://www.zdnet.com/topic/artificial-intelligence/rss.xml"
    ],
    "color": "#a04000",
    "needs_location": false,
@@ -1488,6 +1516,9 @@ window.DB_LIBRARY = {
     "https://www.cnbc.com/id/21324812/device/rss/rss.html",
     "https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml"
    ],
+   "server_feeds": [
+    "https://www.kiplinger.com/feeds/all"
+   ],
    "color": "#922b21",
    "needs_location": false,
    "icon": "hourglass"
@@ -1527,7 +1558,8 @@ window.DB_LIBRARY = {
    "feeds": [
     "https://www.cnbc.com/id/20910258/device/rss/rss.html",
     "https://rss.nytimes.com/services/xml/rss/nyt/Business.xml",
-    "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+    "https://feeds.content.dowjones.io/public/rss/mw_topstories"
    ],
    "color": "#0f6e5c",
    "skip_listicles": false,
@@ -1648,6 +1680,12 @@ window.DB_LIBRARY = {
     "https://www.bankingdive.com/feeds/news/",
     "https://www.cnbc.com/id/15839069/device/rss/rss.html",
     "https://moxie.foxnews.com/google-publisher/tech.xml"
+   ],
+   "server_feeds": [
+    "https://www.coindesk.com/arc/outboundfeeds/rss/",
+    "https://cointelegraph.com/rss",
+    "https://decrypt.co/feed",
+    "https://www.theblock.co/rss.xml"
    ],
    "color": "#a2680c",
    "icon": "crypto",
@@ -2807,12 +2845,18 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
-    "https://www.defenseone.com/rss/all/",
     "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
     "https://moxie.foxnews.com/google-publisher/politics.xml",
     "https://moxie.foxnews.com/google-publisher/tech.xml",
     "https://moxie.foxnews.com/google-publisher/latest.xml",
     "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"
+   ],
+   "server_feeds": [
+    "https://www.defenseone.com/rss/all/",
+    "https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml",
+    "https://www.c4isrnet.com/arc/outboundfeeds/rss/?outputType=xml",
+    "https://breakingdefense.com/feed/",
+    "https://defensescoop.com/feed/"
    ],
    "color": "#1f3a5f",
    "skip_listicles": false,
@@ -2869,15 +2913,19 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
-    "https://federalnewsnetwork.com/feed/",
-    "https://www.fedweek.com/feed/",
-    "https://www.govexec.com/rss/workforce/",
-    "https://federalnewsnetwork.com/category/workforce/feed/",
     "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
     "https://moxie.foxnews.com/google-publisher/politics.xml",
     "https://moxie.foxnews.com/google-publisher/latest.xml",
     "https://www.hrdive.com/feeds/news/",
-    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml"
+    "https://rss.nytimes.com/services/xml/rss/nyt/US.xml",
+    "https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bagencies%5D%5B%5D=personnel-management-office"
+   ],
+   "server_feeds": [
+    "https://federalnewsnetwork.com/feed/",
+    "https://www.fedweek.com/feed/",
+    "https://www.govexec.com/rss/workforce/",
+    "https://federalnewsnetwork.com/category/workforce/feed/",
+    "https://www.federaltimes.com/arc/outboundfeeds/rss/?outputType=xml"
    ],
    "color": "#0b5e8f",
    "skip_listicles": false,
@@ -2941,13 +2989,17 @@ window.DB_LIBRARY = {
     "job opening"
    ],
    "feeds": [
+    "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
+    "https://moxie.foxnews.com/google-publisher/latest.xml",
+    "https://www.hrdive.com/feeds/news/",
+    "https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bagencies%5D%5B%5D=personnel-management-office"
+   ],
+   "server_feeds": [
     "https://federalnewsnetwork.com/feed/",
     "https://www.fedsmith.com/feed/",
     "https://www.fedweek.com/feed/",
     "https://www.govexec.com/rss/pay-benefits/",
-    "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
-    "https://moxie.foxnews.com/google-publisher/latest.xml",
-    "https://www.hrdive.com/feeds/news/"
+    "https://www.federaltimes.com/arc/outboundfeeds/rss/?outputType=xml"
    ],
    "color": "#1b6e3d",
    "skip_listicles": false,
@@ -3014,10 +3066,13 @@ window.DB_LIBRARY = {
     "sponsored content"
    ],
    "feeds": [
+    "https://www.myfederalretirement.com/feed/"
+   ],
+   "server_feeds": [
     "https://www.fedsmith.com/feed/",
-    "https://www.myfederalretirement.com/feed/",
     "https://www.fedimpact.com/feed/",
-    "https://federalnewsnetwork.com/category/retirement/feed/"
+    "https://federalnewsnetwork.com/category/retirement/feed/",
+    "https://www.federaltimes.com/arc/outboundfeeds/rss/?outputType=xml"
    ],
    "color": "#922b21",
    "skip_listicles": false,
@@ -3062,11 +3117,15 @@ window.DB_LIBRARY = {
    ],
    "exclude": [],
    "feeds": [
-    "https://www.nextgov.com/rss/all/",
     "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
     "https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml",
     "https://www.ciodive.com/feeds/news/",
     "https://www.cybersecuritydive.com/feeds/news/"
+   ],
+   "server_feeds": [
+    "https://www.nextgov.com/rss/all/",
+    "https://fedscoop.com/feed/",
+    "https://www.meritalk.com/feed/"
    ],
    "topic_feeds": [
     "https://www.smartcitiesdive.com/feeds/news/"
@@ -3116,7 +3175,13 @@ window.DB_LIBRARY = {
     "https://moxie.foxnews.com/google-publisher/politics.xml",
     "https://moxie.foxnews.com/google-publisher/latest.xml",
     "https://moxie.foxnews.com/google-publisher/world.xml",
-    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml"
+    "https://rss.nytimes.com/services/xml/rss/nyt/World.xml",
+    "https://news.va.gov/feed/"
+   ],
+   "server_feeds": [
+    "https://www.militarytimes.com/arc/outboundfeeds/rss/?outputType=xml",
+    "https://taskandpurpose.com/feed/",
+    "https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=10"
    ],
    "color": "#4a5c2a",
    "icon": "medal",

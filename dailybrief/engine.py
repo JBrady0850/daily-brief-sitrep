@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
-VERSION = "0.15.0"
+VERSION = "0.16.0"
 SCHEMA = "daily-brief/v1"
 MAX_CATEGORIES = 15
 MAX_COUNTDOWNS = 4
@@ -428,7 +428,7 @@ def normalize_config(cfg: Any) -> dict:
     norm = []
     for i, c in enumerate([c for c in cats if is_obj(c)]):
         base = {"id": "", "name": "", "description": "", "queries": [], "require": [], "exclude": [],
-                "feeds": [], "topic_feeds": [], "color": PALETTE[i % len(PALETTE)], "items": None,
+                "feeds": [], "topic_feeds": [], "server_feeds": [], "color": PALETTE[i % len(PALETTE)], "items": None,
                 "skip_listicles": False, "needs_location": False, "icon": ""}
         m = merge(base, c)
         if not is_str(m["color"]) or not _HEX.match(m["color"]):
@@ -523,6 +523,8 @@ def validate_config(cfg: Any) -> dict:
             errors.append(label + ": feeds must be a list of http or https links.")
         if not str_list(c["topic_feeds"]) or not all(valid_url(f) for f in c["topic_feeds"]):
             errors.append(label + ": topic_feeds must be a list of http or https links.")
+        if not str_list(c["server_feeds"]) or not all(valid_url(f) for f in c["server_feeds"]):
+            errors.append(label + ": server_feeds must be a list of http or https links.")
         if c["items"] is not None and (not is_int(c["items"]) or c["items"] < 1 or c["items"] > 10):
             errors.append(label + ": items must be a whole number from 1 to 10.")
         texts = [c["name"], c["description"]]
@@ -604,15 +606,16 @@ def category_from_library(lib: dict, cid: str) -> Optional[dict]:
 
 def missing_feeds(cat: Any, lib: dict) -> Optional[dict]:
     """Mirrors missingFeeds in app/js/engine.js: the library feeds one saved library
-    category lacks ({feeds, topic_feeds}; a feed already in either of its lists is never
-    offered), or None when it is not a library category."""
+    category lacks ({feeds, topic_feeds, server_feeds}; a feed already in any of its lists
+    is never offered), or None when it is not a library category."""
     if not isinstance(cat, dict):
         return None
     lc = category_from_library(lib, cat.get("id"))
     if not lc:
         return None
     have = [norm_url(u) for u in (cat.get("feeds") if isinstance(cat.get("feeds"), list) else [])
-            + (cat.get("topic_feeds") if isinstance(cat.get("topic_feeds"), list) else [])]
+            + (cat.get("topic_feeds") if isinstance(cat.get("topic_feeds"), list) else [])
+            + (cat.get("server_feeds") if isinstance(cat.get("server_feeds"), list) else [])]
 
     def fresh(lst: Any) -> list:
         got = []
@@ -623,7 +626,9 @@ def missing_feeds(cat: Any, lib: dict) -> Optional[dict]:
                 got.append(u)
         return got
     feeds = fresh(lc.get("feeds"))
-    return {"name": js_str(cat.get("name") or lc.get("name") or ""), "feeds": feeds, "topic_feeds": fresh(lc.get("topic_feeds"))}
+    topic = fresh(lc.get("topic_feeds"))
+    return {"name": js_str(cat.get("name") or lc.get("name") or ""), "feeds": feeds, "topic_feeds": topic,
+            "server_feeds": fresh(lc.get("server_feeds"))}
 
 
 def feed_updates(cfg: Any, lib: dict) -> list:
@@ -631,8 +636,9 @@ def feed_updates(cfg: Any, lib: dict) -> list:
     out: list = []
     for cat in cfg.get("categories") if isinstance(cfg, dict) and isinstance(cfg.get("categories"), list) else []:
         m = missing_feeds(cat, lib)
-        if m and (m["feeds"] or m["topic_feeds"]) and not any(u["id"] == cat.get("id") for u in out):
-            out.append({"id": cat.get("id"), "name": m["name"], "feeds": m["feeds"], "topic_feeds": m["topic_feeds"]})
+        if m and (m["feeds"] or m["topic_feeds"] or m["server_feeds"]) and not any(u["id"] == cat.get("id") for u in out):
+            out.append({"id": cat.get("id"), "name": m["name"], "feeds": m["feeds"], "topic_feeds": m["topic_feeds"],
+                        "server_feeds": m["server_feeds"]})
     return out
 
 
@@ -643,12 +649,14 @@ def apply_feed_updates(cfg: dict, lib: dict) -> dict:
     added = cats = 0
     for cat in c.get("categories") if isinstance(c, dict) and isinstance(c.get("categories"), list) else []:
         m = missing_feeds(cat, lib)
-        if not m or not (m["feeds"] or m["topic_feeds"]):
+        if not m or not (m["feeds"] or m["topic_feeds"] or m["server_feeds"]):
             continue
         cat["feeds"] = (cat.get("feeds") if isinstance(cat.get("feeds"), list) else []) + m["feeds"]
         if m["topic_feeds"]:
             cat["topic_feeds"] = (cat.get("topic_feeds") if isinstance(cat.get("topic_feeds"), list) else []) + m["topic_feeds"]
-        added += len(m["feeds"]) + len(m["topic_feeds"])
+        if m["server_feeds"]:
+            cat["server_feeds"] = (cat.get("server_feeds") if isinstance(cat.get("server_feeds"), list) else []) + m["server_feeds"]
+        added += len(m["feeds"]) + len(m["topic_feeds"]) + len(m["server_feeds"])
         cats += 1
     return {"config": c, "added": added, "categories": cats}
 

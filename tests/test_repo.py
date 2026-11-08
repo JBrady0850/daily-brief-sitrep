@@ -189,3 +189,20 @@ def test_news_index_searches_have_no_word_too_short_for_it():
              ("(ab OR cd) zero", "zero")]
     got = js_calls([{"fn": "collect.gdeltWords", "args": [q]} for q, _ in cases])
     assert got == [want for _, want in cases]
+
+
+def test_server_feeds_are_well_formed_and_never_also_read_by_the_page():
+    """server_feeds holds the library feeds web pages cannot read (checked from the
+    published page in Chrome on 2026-11-08: 12 library feeds refused it). The page skips
+    them; GitHub reads them for the backup collection."""
+    lib = library()
+    web = {E.norm_url(u) for c in lib["categories"] for u in c.get("feeds", []) + c.get("topic_feeds", [])}
+    server = [u for c in lib["categories"] for u in c.get("server_feeds", [])]
+    assert len(set(server)) >= 40
+    for c in lib["categories"]:
+        s = c.get("server_feeds", [])
+        assert len(s) == len(set(s)), c["id"]
+        assert all(u.startswith("https://") for u in s), c["id"]
+        assert not [u for u in s if E.norm_url(u) in web], (c["id"], "a server feed is also in a feed list the page reads")
+    for blocked in ("federalnewsnetwork.com", "govexec.com", "fedweek.com", "fedsmith.com", "nextgov.com", "defenseone.com", "bleepingcomputer.com"):
+        assert not [u for u in web if blocked in u], blocked

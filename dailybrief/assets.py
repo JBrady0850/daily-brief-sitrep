@@ -60,6 +60,8 @@ def library_markdown(lib: dict) -> str:
             out.append("- Publisher feeds: " + ", ".join(c["feeds"]))
         if c.get("topic_feeds"):
             out.append("- On-topic feeds (no must-mention term needed): " + ", ".join(c["topic_feeds"]))
+        if c.get("server_feeds"):
+            out.append("- Feeds read on GitHub and by the desktop app (web pages cannot read them): " + ", ".join(c["server_feeds"]))
         out.append("")
     return "\n".join(out).rstrip() + "\n"
 

@@ -263,6 +263,7 @@ Pro hockey: games, trades, injuries, standings and the Stanley Cup chase.
 - Must mention one of (group 1): NHL, hockey, Stanley Cup, goalie, power play, hat trick, Ducks, Bruins, Sabres, Flames, Hurricanes, Blackhawks, Avalanche, Blue Jackets, Dallas Stars, Red Wings, Oilers, Florida Panthers, LA Kings, Minnesota Wild, Canadiens, Predators, Devils, Islanders, Rangers, Senators, Flyers, Penguins, Sharks, Kraken, St. Louis Blues, Lightning, Maple Leafs, Canucks, Golden Knights, Capitals, Winnipeg Jets, Mammoth
 - Leave out: betting odds, best bets, sportsbook, promo code, field hockey, college hockey
 - Publisher feeds: https://www.espn.com/espn/rss/nhl/news, https://www.cbssports.com/rss/headlines/nhl/
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://sports.yahoo.com/nhl/rss.xml, https://thehockeywriters.com/feed/
 
 ### Soccer (`soccer`)
 
@@ -316,8 +317,9 @@ Breaches, vulnerabilities, ransomware, patches and security updates that affect 
 
 - Queries: `(cybersecurity OR "data breach" OR ransomware OR vulnerability) enterprise` / `("zero-day" OR CVE OR "security update" OR patch) (Microsoft OR Cisco OR Google OR Apple)`
 - Must mention one of (group 1): cybersecurity, cyber, breach, data breach, vulnerability, vulnerabilities, ransomware, malware, CVE, exploit, zero-day, hacker, hackers, hacking, phishing, patch, security update, cyberattack
-- Publisher feeds: https://www.bleepingcomputer.com/feed/, https://feeds.feedburner.com/TheHackersNews, https://www.wired.com/feed/category/security/latest/rss, https://www.cybersecuritydive.com/feeds/news/
+- Publisher feeds: https://www.wired.com/feed/category/security/latest/rss, https://www.cybersecuritydive.com/feeds/news/
 - On-topic feeds (no must-mention term needed): https://www.darkreading.com/rss.xml
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.bleepingcomputer.com/feed/, https://feeds.feedburner.com/TheHackersNews, https://www.securityweek.com/feed/, https://therecord.media/feed/, https://krebsonsecurity.com/feed/, https://www.helpnetsecurity.com/feed/, https://www.theregister.com/security/headlines.atom
 
 ### Network Security and Zero Trust (`network-security`)
 
@@ -327,6 +329,7 @@ Zero trust architecture, CISA and NSA guidance, firewall, VPN, identity and netw
 - Must mention one of (group 1): zero trust, CISA, NSA, network, networking, firewall, router, VPN, Active Directory, MFA, authentication, identity, advisory, hardening, segmentation, SASE
 - Publisher feeds: https://www.wired.com/feed/category/security/latest/rss, https://www.darkreading.com/rss.xml, https://www.ciodive.com/feeds/news/
 - On-topic feeds (no must-mention term needed): https://www.cybersecuritydive.com/feeds/news/
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://isc.sans.edu/rssfeed_full.xml, https://www.helpnetsecurity.com/feed/, https://www.networkworld.com/feed/, https://www.csoonline.com/feed/
 
 ### Cloud and Data Centers (`cloud-infrastructure`)
 
@@ -344,6 +347,7 @@ How companies deploy AI: adoption, results, spending and workforce effects.
 - Must mention one of (group 1): AI, A.I., artificial intelligence, machine learning, generative AI, GenAI, LLM, large language model, agentic, AI agent, AI agents, chatbot
 - Must mention one of (group 2): enterprise, corporate, company, companies, business, Fortune 500, CEO, CIO, CTO, ROI, adoption, deployment, workforce, firm, industry
 - Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://www.cnbc.com/id/19854910/device/rss/rss.html, https://www.wired.com/feed/tag/ai/latest/rss
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://techcrunch.com/category/artificial-intelligence/feed/, https://www.technologyreview.com/topic/artificial-intelligence/feed, https://www.zdnet.com/topic/artificial-intelligence/rss.xml
 
 ### AI Tools and Prompting (`ai-tools`)
 
@@ -352,7 +356,8 @@ New features in AI assistants, prompting techniques and practical AI productivit
 - Queries: `(ChatGPT OR Claude OR Gemini OR Copilot OR Grok) (feature OR launches OR update OR tips)` / `("prompt engineering" OR "AI assistant" OR "AI tools") (productivity OR workflow OR tips)`
 - Must mention one of (group 1): AI, A.I., artificial intelligence, machine learning, generative AI, GenAI, LLM, large language model, agentic, AI agent, AI agents, chatbot, Claude, ChatGPT, Gemini, Copilot, Grok, Anthropic, OpenAI
 - Must mention one of (group 2): prompt, prompting, prompt engineering, tool, tools, assistant, workflow, automation, productivity, app, feature, features, launch, launches, launched, release, released, plugin, extension, update
-- Publisher feeds: https://www.wired.com/feed/tag/ai/latest/rss, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://moxie.foxnews.com/google-publisher/tech.xml, https://rss.nytimes.com/services/xml/rss/nyt/PersonalTech.xml, https://www.ciodive.com/feeds/news/
+- Publisher feeds: https://www.wired.com/feed/tag/ai/latest/rss, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://moxie.foxnews.com/google-publisher/tech.xml, https://rss.nytimes.com/services/xml/rss/nyt/PersonalTech.xml, https://www.ciodive.com/feeds/news/, https://blog.google/technology/ai/rss/
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.theverge.com/rss/ai-artificial-intelligence/index.xml, https://techcrunch.com/category/artificial-intelligence/feed/, https://www.zdnet.com/topic/artificial-intelligence/rss.xml
 
 ### Open Source and Developer Tools (`open-source`)
 
@@ -399,6 +404,7 @@ Social Security, Medicare, 401(k) and IRA rule changes and retirement income pla
 - Must mention one of (group 1): Social Security, Medicare, 401(k), IRA, IRAs, Roth, retirement, retire, retirees, pension, annuity, required minimum distribution, RMD, COLA
 - Leave out: Bitcoin, crypto, sponsored content
 - Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/YourMoney.xml, https://www.cnbc.com/id/10001054/device/rss/rss.html, https://www.cnbc.com/id/21324812/device/rss/rss.html, https://rss.nytimes.com/services/xml/rss/nyt/Economy.xml
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.kiplinger.com/feeds/all
 
 ### Markets and the Economy (`markets-economy`)
 
@@ -407,7 +413,7 @@ Stock market moves, interest rates, inflation, jobs and growth reports.
 - Queries: `(stocks OR "S&P 500" OR Nasdaq OR Dow) (close OR rally OR selloff OR record)` / `(inflation OR "jobs report" OR GDP OR "Federal Reserve") economy`
 - Must mention one of (group 1): stocks, stock market, S&P 500, Nasdaq, Dow, Treasury, yields, inflation, jobs report, unemployment, GDP, Federal Reserve, economy, recession, earnings, interest rates
 - Leave out: sponsored content
-- Publisher feeds: https://www.cnbc.com/id/20910258/device/rss/rss.html, https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.cnbc.com/id/100003114/device/rss/rss.html
+- Publisher feeds: https://www.cnbc.com/id/20910258/device/rss/rss.html, https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.cnbc.com/id/100003114/device/rss/rss.html, https://feeds.content.dowjones.io/public/rss/mw_topstories
 
 ### Housing and Real Estate (`housing`)
 
@@ -437,6 +443,7 @@ Bitcoin and other digital assets: prices, regulation, ETFs and major hacks.
 - Must mention one of (group 1): bitcoin, ethereum, crypto, cryptocurrency, stablecoin, blockchain, digital assets, Coinbase, ETF
 - Leave out: sponsored content, promo code, airdrop, price prediction
 - Publisher feeds: https://www.cnbc.com/id/10000664/device/rss/rss.html, https://rss.nytimes.com/services/xml/rss/nyt/Business.xml, https://www.paymentsdive.com/feeds/news/, https://www.bankingdive.com/feeds/news/, https://www.cnbc.com/id/15839069/device/rss/rss.html, https://moxie.foxnews.com/google-publisher/tech.xml
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.coindesk.com/arc/outboundfeeds/rss/, https://cointelegraph.com/rss, https://decrypt.co/feed, https://www.theblock.co/rss.xml
 
 ### Energy and Gas Prices (`energy`)
 
@@ -662,7 +669,8 @@ Artificial intelligence across the Department of Defense and the military servic
 - Queries: `Pentagon military enterprise AI artificial intelligence deployment` / `(CDAO OR DISA OR DARPA OR Pentagon) AI strategy networks`
 - Must mention one of (group 1): AI, A.I., artificial intelligence, machine learning, generative AI, GenAI, LLM, large language model, agentic, AI agent, AI agents, chatbot, autonomous, autonomy, algorithm
 - Must mention one of (group 2): Pentagon, DoD, Department of War, Department of Defense, Army, Navy, Air Force, Marine Corps, Marines, Space Force, CDAO, DISA, DARPA, military, defense, warfighter, combatant command
-- Publisher feeds: https://www.defenseone.com/rss/all/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/tech.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/tech.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.defenseone.com/rss/all/, https://www.defensenews.com/arc/outboundfeeds/rss/?outputType=xml, https://www.c4isrnet.com/arc/outboundfeeds/rss/?outputType=xml, https://breakingdefense.com/feed/, https://defensescoop.com/feed/
 
 ### Federal Workforce Actions (RIF, VERA, VSIP) (`federal-workforce`)
 
@@ -671,7 +679,8 @@ Reductions in force, early retirement and buyout offers, hiring freezes and rest
 - Queries: `(RIF OR "reduction in force" OR VERA OR VSIP OR "deferred resignation" OR buyout OR layoffs) (federal OR agency OR OPM)` / `"federal employees" (layoffs OR RIF OR shutdown OR furlough OR "early retirement")`
 - Must mention one of (group 1): RIF, reduction in force, reductions in force, VERA, VSIP, early retirement, buyout, buyouts, deferred resignation, DRP, layoff, layoffs, furlough, workforce reduction, workforce cuts, job cuts, hiring freeze, restructuring, reorganization, downsizing, probationary, Schedule F, shutdown
 - Must mention one of (group 2): federal, civilian, civil service, OPM, agency, agencies, government, DoD, Pentagon, Department of War
-- Publisher feeds: https://federalnewsnetwork.com/feed/, https://www.fedweek.com/feed/, https://www.govexec.com/rss/workforce/, https://federalnewsnetwork.com/category/workforce/feed/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/, https://rss.nytimes.com/services/xml/rss/nyt/US.xml
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/, https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bagencies%5D%5B%5D=personnel-management-office
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://federalnewsnetwork.com/feed/, https://www.fedweek.com/feed/, https://www.govexec.com/rss/workforce/, https://federalnewsnetwork.com/category/workforce/feed/, https://www.federaltimes.com/arc/outboundfeeds/rss/?outputType=xml
 
 ### Federal Pay, Leave and Benefits (`federal-pay`)
 
@@ -681,7 +690,8 @@ Federal pay raises or freezes, locality pay, annual leave rules, Open Season and
 - Must mention one of (group 1): pay raise, pay freeze, pay increase, pay adjustment, locality pay, General Schedule, salary, wage, annual leave, sick leave, use-or-lose, use or lose, lump sum, lump-sum, leave year, pay period, Open Season, FEHB, FEGLI, FEDVIP, TSP, benefits, administrative leave, step increase, within-grade
 - Must mention one of (group 2): federal, feds, OPM, General Schedule, civil service, federal workforce, federal employees, federal workers, agency, agencies
 - Leave out: job seekers, apply now, job posting, job opening
-- Publisher feeds: https://federalnewsnetwork.com/feed/, https://www.fedsmith.com/feed/, https://www.fedweek.com/feed/, https://www.govexec.com/rss/pay-benefits/, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://www.hrdive.com/feeds/news/, https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bagencies%5D%5B%5D=personnel-management-office
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://federalnewsnetwork.com/feed/, https://www.fedsmith.com/feed/, https://www.fedweek.com/feed/, https://www.govexec.com/rss/pay-benefits/, https://www.federaltimes.com/arc/outboundfeeds/rss/?outputType=xml
 
 ### Federal Retirement (FERS, TSP, FEHB) (`federal-retirement`)
 
@@ -691,7 +701,8 @@ FERS annuities, the Thrift Savings Plan, retiree health coverage, COLA and OPM r
 - Must mention one of (group 1): FERS, TSP, Thrift Savings Plan, FEHB, PSHB, COLA, cost-of-living, annuity, annuitant, annuitants, pension, Medicare, FEGLI, retirement, retire, retirees, survivor benefit, FERS supplement, Open Season, G Fund, C Fund, L Fund, withdrawal, premium, premiums, retirement processing
 - Must mention one of (group 2): federal, feds, FERS, CSRS, TSP, FEHB, OPM, civil service, federal retirees, federal employees, federal workers, Thrift Savings Plan
 - Leave out: Bitcoin, crypto, meme stock, sponsored content
-- Publisher feeds: https://www.fedsmith.com/feed/, https://www.myfederalretirement.com/feed/, https://www.fedimpact.com/feed/, https://federalnewsnetwork.com/category/retirement/feed/
+- Publisher feeds: https://www.myfederalretirement.com/feed/
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.fedsmith.com/feed/, https://www.fedimpact.com/feed/, https://federalnewsnetwork.com/category/retirement/feed/, https://www.federaltimes.com/arc/outboundfeeds/rss/?outputType=xml
 
 ### Government Technology (`gov-tech`)
 
@@ -700,8 +711,9 @@ IT modernization, cloud, cybersecurity and AI programs in federal, state and loc
 - Queries: `("federal IT" OR "government technology" OR "agency CIO" OR "state CIO") (modernization OR cloud OR cybersecurity OR AI)` / `(agency OR agencies OR government) ("IT modernization" OR "digital services" OR "cloud migration")`
 - Must mention one of (group 1): federal, government, agency, agencies, state government, public sector, city, county, Pentagon, DoD
 - Must mention one of (group 2): technology, IT, modernization, cloud, cybersecurity, AI, software, digital, data, network, networks
-- Publisher feeds: https://www.nextgov.com/rss/all/, https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://www.ciodive.com/feeds/news/, https://www.cybersecuritydive.com/feeds/news/
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml, https://rss.nytimes.com/services/xml/rss/nyt/Politics.xml, https://www.ciodive.com/feeds/news/, https://www.cybersecuritydive.com/feeds/news/
 - On-topic feeds (no must-mention term needed): https://www.smartcitiesdive.com/feeds/news/
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.nextgov.com/rss/all/, https://fedscoop.com/feed/, https://www.meritalk.com/feed/
 
 ### Military and Veterans (`military-veterans`)
 
@@ -710,7 +722,8 @@ Service members, veterans benefits and the VA, deployments and defense budgets.
 - Queries: `(veterans OR "VA benefits" OR "Department of Veterans Affairs") (benefits OR claims OR care OR rule)` / `(Army OR Navy OR "Air Force" OR Marines OR "Space Force") (troops OR deployment OR budget OR "service members")`
 - Must mention one of (group 1): veterans, veteran, VA, Veterans Affairs, military, troops, service members, Army, Navy, Air Force, Marines, Marine Corps, Space Force, Coast Guard, Pentagon, deployment
 - Leave out: sponsored content, Swiss Army knife, army of fans
-- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://moxie.foxnews.com/google-publisher/world.xml, https://rss.nytimes.com/services/xml/rss/nyt/World.xml
+- Publisher feeds: https://rss.nytimes.com/services/xml/rss/nyt/US.xml, https://moxie.foxnews.com/google-publisher/us.xml, https://moxie.foxnews.com/google-publisher/politics.xml, https://moxie.foxnews.com/google-publisher/latest.xml, https://moxie.foxnews.com/google-publisher/world.xml, https://rss.nytimes.com/services/xml/rss/nyt/World.xml, https://news.va.gov/feed/
+- Feeds read on GitHub and by the desktop app (web pages cannot read them): https://www.militarytimes.com/arc/outboundfeeds/rss/?outputType=xml, https://taskandpurpose.com/feed/, https://www.defense.gov/DesktopModules/ArticleCS/RSS.ashx?ContentType=1&Site=945&max=10
 
 ### Career Growth and Skills (`career-skills`)
 

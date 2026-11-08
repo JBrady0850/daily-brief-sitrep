@@ -732,6 +732,30 @@ def test_saved_categories_can_take_the_librarys_newer_feeds(browser, http_app):
     ctx.close()
 
 
+def test_the_page_skips_feeds_the_library_reads_on_github_only(browser, http_app):
+    """A category saved before the library moved BleepingComputer to its server feeds
+    still lists it; the page no longer asks for it (it always failed, "not readable from
+    a web page"), and GitHub's backup collection carries its stories instead."""
+    lib = json.loads((ROOT / "app" / "data" / "library.js").read_text().split("= ", 1)[1].rstrip().rstrip(";"))
+    pick = {c["id"]: c for c in lib["categories"]}
+    old = "https://www.bleepingcomputer.com/feed/"
+    assert old in pick["cybersecurity"]["server_feeds"]
+    saved = dict(pick["cybersecurity"], feeds=[old] + pick["cybersecurity"]["feeds"])
+    saved.pop("server_feeds")
+    state = {"version": 1, "tab": "brief", "setup_done": True, "config": {"version": 1, "categories": [saved]}}
+    ctx, page, errors = open_page(browser, http_app, calls=[], gdelt_status=429, state=state)
+    asked = []
+    page.route("https://www.bleepingcomputer.com/**", lambda r: (asked.append(r.request.url), r.abort()))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    feeds = [f["url"] for f in page.evaluate("DB_APP.state().health")["cybersecurity"]["feeds"]]
+    assert asked == [] and old not in feeds, (asked, feeds)
+    c = pick["cybersecurity"]
+    assert feeds == c["feeds"] + [u for u in c.get("topic_feeds", []) if u not in c["feeds"]]
+    assert errors == []
+    ctx.close()
+
+
 def local_feed():
     now = datetime.now(timezone.utc)
     titles = ["Springfield council approves new park", "Sangamon County fair opens Friday", "State budget talks continue"]

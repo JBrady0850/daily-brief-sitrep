@@ -336,9 +336,11 @@ def collect(cfg: dict, now_iso: str, ledger: Optional[dict] = None, fetcher: Opt
     stations = local_station_feeds(E.state_code(region)) if town_ids else []
 
     def feeds_of(c: dict) -> list:
-        """A category's feeds plus its on-topic feeds (and, for a town category, the
-        state's local stations), each address once."""
+        """A category's feeds, its on-topic feeds and its server feeds (the ones web pages
+        cannot read; this collector runs on GitHub or a computer, so it reads them), and,
+        for a town category, the state's local stations; each address once."""
         out = list(c["feeds"]) + [u for u in c.get("topic_feeds") or [] if u not in c["feeds"]]
+        out += [u for u in c.get("server_feeds") or [] if u not in out]
         if c["id"] in town_ids:
             out += [u for u in stations if u not in out]
         return out

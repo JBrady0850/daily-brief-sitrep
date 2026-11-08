@@ -278,3 +278,16 @@ def test_town_categories_read_the_local_stations_of_the_readers_state(monkeypatc
     calls.clear()
     C.run_brief(cfg, NOW, "2026-10-23", None, fetcher=fetcher, pause=0)
     assert station not in calls, "outside the US there are no stations to read"
+
+
+def test_server_feeds_are_read_by_the_python_collector():
+    """Feeds web pages cannot read (server_feeds) are read on GitHub, by the desktop app
+    and by a GitHub copy, once each, like any other feed."""
+    calls = []
+    cfg = settings()
+    cfg["categories"][1]["server_feeds"] = ["https://server-only.example.com/feed", "https://federal.example.com/feed"]
+    candidates, health = C.collect(cfg, "2026-10-23T12:00:00Z", None, fake_fetcher(calls), pause=0)
+    urls = [f["url"] for f in health["fed"]["feeds"]]
+    assert urls == ["https://federal.example.com/feed", "https://server-only.example.com/feed"], "each address once"
+    assert calls.count("https://server-only.example.com/feed") == 1
+    assert not any(f["on_topic"] for f in health["fed"]["feeds"])

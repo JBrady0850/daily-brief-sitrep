@@ -140,7 +140,7 @@ email app with Email this brief; see [CHANGELOG.md](CHANGELOG.md).
 | Order | Source | When |
 |---|---|---|
 | 1 | Publisher feeds that allow web pages (The New York Times, Fox News, CNBC, ESPN, CBS Sports, Wired, NASA, Dark Reading, Industry Dive trade sites and others) | Every brief |
-| 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, published beside the app; recent stories from the last run stay, so a bad run cannot empty a category | When a category is still short |
+| 2 | The backup collection: a file this project's GitHub workflow rebuilds every four hours from Google News and every library feed, including about 40 topic feeds web pages cannot read (Federal News Network, Government Executive, Military Times, Defense News, Breaking Defense, SecurityWeek, Krebs on Security, CoinDesk and others), published beside the app; recent stories from the last run stay, so a bad run cannot empty a category | When a category is still short |
 | 3 | Local news for your state: the news feeds of about 400 local TV stations, which the same GitHub workflow reads every four hours and publishes as one file per state | For the categories about your town |
 | 4 | Event calendars: the community calendar of the nearest local TV station (145 station calendars in 39 states run on CitySpark), asked by your browser for the week's events in your town first, then within 20 miles of it | For Things to Do |
 | 5 | The GDELT news index | Only for what is still short, mostly topics you typed |

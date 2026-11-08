@@ -675,3 +675,23 @@ def test_saved_categories_get_the_library_feeds_they_lack_the_same_way():
     assert E.feed_updates(pa["config"], lib) == [], "nothing is left to add"
     clean = dict(pa["config"], categories=[c for c in pa["config"]["categories"] if isinstance(c, dict)][:5])
     assert E.validate_config(clean)["errors"] == []
+
+
+def test_server_feeds_come_along_and_are_checked_the_same_way():
+    lib = library()
+    pick = {c["id"]: c for c in lib["categories"]}
+    cyber = pick["cybersecurity"]
+    cfg = {"version": 1, "categories": [dict(E.clone(cyber), feeds=cyber["feeds"][:1], topic_feeds=[], server_feeds=[]),
+                                         dict(E.clone(pick["nhl"]), server_feeds=pick["nhl"]["server_feeds"][:1])]}
+    py = E.feed_updates(cfg, lib)
+    assert py == js_calls([{"fn": "feedUpdates", "args": [cfg, lib]}])[0]
+    by = {u["id"]: u for u in py}
+    assert by["cybersecurity"]["server_feeds"] == cyber["server_feeds"] and by["cybersecurity"]["feeds"] == cyber["feeds"][1:]
+    assert by["nhl"]["feeds"] == [] and by["nhl"]["server_feeds"] == pick["nhl"]["server_feeds"][1:]
+    pa = E.apply_feed_updates(cfg, lib)
+    assert pa == js_calls([{"fn": "applyFeedUpdates", "args": [cfg, lib]}])[0]
+    assert pa["config"]["categories"][0]["server_feeds"] == cyber["server_feeds"]
+    bad = {"version": 1, "categories": [dict(E.clone(cyber), server_feeds=["ftp://x.example.com"])]}
+    py_errs = E.validate_config(bad)["errors"]
+    js_errs = js_calls([{"fn": "validateConfig", "args": [bad]}])[0]["errors"]
+    assert py_errs == js_errs and any("server_feeds must be a list" in e for e in py_errs), py_errs

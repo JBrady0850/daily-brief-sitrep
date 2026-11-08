@@ -15,6 +15,7 @@ words your own category. Each category has:
 | Leave out | Stories that mention any of these are dropped | `webinar, sponsored content` |
 | On-topic feeds | Feeds about this topic and nothing else. Their stories count as on topic without a "must mention" term; the "leave out" terms and every other filter still apply | `https://rss.nytimes.com/services/xml/rss/nyt/Tennis.xml` |
 | Publisher feeds | RSS or Atom links also read for this desk. The web page can read only feeds that allow web pages (see docs/LIMITS.md). A saved library category keeps the feeds it had when chosen; the page offers feeds the library added since ("The library has newer feeds"), and adding them keeps your own | `https://www.espn.com/espn/rss/nfl/news` |
+| Server feeds (`server_feeds`, library only) | Feeds web pages cannot read. GitHub reads them for the backup collection every four hours, and the desktop app and a GitHub copy read them directly; the web page never asks for them, even when a saved category still lists one among its publisher feeds | `https://breakingdefense.com/feed/` |
 | Icon | The picture on the desk's heading, from `app/data/icons.js` | `football` |
 | Stories | How many stories this desk shows (default: the setting for all) | 3 |
 | Skip list articles | Drops "top 10" and "best of" pieces | on |

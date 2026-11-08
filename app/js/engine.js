@@ -9,7 +9,7 @@
 })(typeof self !== "undefined" ? self : this, function () {
   "use strict";
 
-  const VERSION = "0.15.0";
+  const VERSION = "0.16.0";
   const SCHEMA = "daily-brief/v1";
   const MAX_CATEGORIES = 15;
   const MAX_COUNTDOWNS = 4;
@@ -297,7 +297,7 @@
     const cats = Array.isArray(out.categories) ? out.categories : [];
     out.categories = cats.filter(isObj).map((c, i) => {
       const base = {
-        id: "", name: "", description: "", queries: [], require: [], exclude: [], feeds: [], topic_feeds: [],
+        id: "", name: "", description: "", queries: [], require: [], exclude: [], feeds: [], topic_feeds: [], server_feeds: [],
         color: PALETTE[i % PALETTE.length], items: null, skip_listicles: false, needs_location: false, icon: ""
       };
       const m = merge(base, c);
@@ -390,6 +390,7 @@
       if (!strList(c.exclude)) errors.push(label + ": exclude must be a list of text.");
       if (!strList(c.feeds) || !c.feeds.every(validUrl)) errors.push(label + ": feeds must be a list of http or https links.");
       if (!strList(c.topic_feeds) || !c.topic_feeds.every(validUrl)) errors.push(label + ": topic_feeds must be a list of http or https links.");
+      if (!strList(c.server_feeds) || !c.server_feeds.every(validUrl)) errors.push(label + ": server_feeds must be a list of http or https links.");
       if (c.items !== null && (!isInt(c.items) || c.items < 1 || c.items > 10)) {
         errors.push(label + ": items must be a whole number from 1 to 10.");
       }
@@ -455,13 +456,15 @@
 
   /* Saved categories keep the feeds they had when the reader chose them; the library
      gains feeds over time. missingFeeds gives the library feeds one saved library
-     category lacks ({feeds, topic_feeds}; a feed already in either of its lists is never
-     offered), or null when it is not a library category. */
+     category lacks ({feeds, topic_feeds, server_feeds}; a feed already in any of its
+     lists is never offered), or null when it is not a library category. Server feeds are
+     the ones web pages cannot read; GitHub, the desktop app and a GitHub copy read them. */
   function missingFeeds(cat, lib) {
     if (!isObj(cat)) return null;
     const lc = categoryFromLibrary(lib, cat.id);
     if (!lc) return null;
-    const have = [].concat(Array.isArray(cat.feeds) ? cat.feeds : [], Array.isArray(cat.topic_feeds) ? cat.topic_feeds : []).map(normUrl);
+    const have = [].concat(Array.isArray(cat.feeds) ? cat.feeds : [], Array.isArray(cat.topic_feeds) ? cat.topic_feeds : [],
+      Array.isArray(cat.server_feeds) ? cat.server_feeds : []).map(normUrl);
     const fresh = list => (Array.isArray(list) ? list : []).filter(u => {
       const k = normUrl(u);
       if (!k || have.indexOf(k) >= 0) return false;
@@ -469,16 +472,17 @@
       return true;
     });
     const feeds = fresh(lc.feeds);
-    return { name: String(cat.name || lc.name || ""), feeds: feeds, topic_feeds: fresh(lc.topic_feeds) };
+    const topic = fresh(lc.topic_feeds);
+    return { name: String(cat.name || lc.name || ""), feeds: feeds, topic_feeds: topic, server_feeds: fresh(lc.server_feeds) };
   }
 
-  /* [{id, name, feeds, topic_feeds}] for each saved library category with feeds to add. */
+  /* [{id, name, feeds, topic_feeds, server_feeds}] for each saved library category with feeds to add. */
   function feedUpdates(cfg, lib) {
     const out = [];
     for (const cat of cfg && Array.isArray(cfg.categories) ? cfg.categories : []) {
       const m = missingFeeds(cat, lib);
-      if (m && (m.feeds.length || m.topic_feeds.length) && !out.some(u => u.id === cat.id)) {
-        out.push({ id: cat.id, name: m.name, feeds: m.feeds, topic_feeds: m.topic_feeds });
+      if (m && (m.feeds.length || m.topic_feeds.length || m.server_feeds.length) && !out.some(u => u.id === cat.id)) {
+        out.push({ id: cat.id, name: m.name, feeds: m.feeds, topic_feeds: m.topic_feeds, server_feeds: m.server_feeds });
       }
     }
     return out;
@@ -491,10 +495,11 @@
     let added = 0, cats = 0;
     for (const cat of c && Array.isArray(c.categories) ? c.categories : []) {
       const m = missingFeeds(cat, lib);
-      if (!m || !(m.feeds.length || m.topic_feeds.length)) continue;
+      if (!m || !(m.feeds.length || m.topic_feeds.length || m.server_feeds.length)) continue;
       cat.feeds = (Array.isArray(cat.feeds) ? cat.feeds : []).concat(m.feeds);
       if (m.topic_feeds.length) cat.topic_feeds = (Array.isArray(cat.topic_feeds) ? cat.topic_feeds : []).concat(m.topic_feeds);
-      added += m.feeds.length + m.topic_feeds.length;
+      if (m.server_feeds.length) cat.server_feeds = (Array.isArray(cat.server_feeds) ? cat.server_feeds : []).concat(m.server_feeds);
+      added += m.feeds.length + m.topic_feeds.length + m.server_feeds.length;
       cats += 1;
     }
     return { config: c, added: added, categories: cats };

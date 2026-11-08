@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.16.0 (2026-11-08)
+
+More feeds, and none the page cannot read.
+
+- Library categories gain `server_feeds`: feeds web pages cannot read. GitHub
+  reads them for the backup collection every four hours, and the desktop app
+  and a GitHub copy read them directly. The web page never asks for them, even
+  when a category saved earlier still lists one, so they no longer show as "not
+  readable from a web page" under Sources and filters.
+- The 12 library feeds that refused the published page (checked from it in
+  Chrome on 2026-11-08: Federal News Network three times, Government Executive
+  twice, FedWeek, FedSmith, FedImpact, Nextgov, Defense One, BleepingComputer,
+  The Hacker News) move to server feeds.
+- 29 new server feeds, each read from a computer on 2026-11-08: Defense News,
+  C4ISRNET, Breaking Defense, DefenseScoop, Military Times, Task and Purpose,
+  DoD News, Federal Times, FedScoop, MeriTalk, Yahoo Sports NHL, The Hockey
+  Writers, The Verge AI, TechCrunch AI, ZDNET AI, MIT Technology Review AI,
+  SecurityWeek, The Record, Krebs on Security, Help Net Security, The Register
+  security, SANS Internet Storm Center, Network World, CSO Online, Kiplinger,
+  CoinDesk, Cointelegraph, Decrypt and The Block.
+- 4 new feeds the page reads itself: VA News (Military and Veterans), the
+  Google AI blog (AI Tools and Prompting), the Federal Register's OPM documents
+  (Federal Workforce Actions and Federal Pay, Leave and Benefits) and
+  MarketWatch top stories (Markets and the Economy). Saved categories get them
+  through "The library has newer feeds"; adding them also brings the server
+  feeds along for an exported GitHub copy.
+
 ## 0.15.0 (2026-11-08)
 
 - Saved categories can take the library's newer feeds. A category keeps the

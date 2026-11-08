@@ -1032,19 +1032,23 @@
   /* Saved categories keep the feeds they had when the reader chose them; the library
      gains feeds over time. This card offers the new ones: on the brief until "Not now"
      (it comes back when the library adds more), and always on the categories page. */
+  // Only feeds this page reads count here; server feeds (read on GitHub) come along when added.
+  function webUpdates() { return E.feedUpdates(saved(), LIB).filter(u => u.feeds.length || u.topic_feeds.length); }
   function feedSig(ups) { return ups.map(u => u.id + ":" + u.feeds.concat(u.topic_feeds).join(",")).join("|"); }
   function addLibraryFeeds() {
+    const ups = webUpdates();
+    const n = ups.reduce((a, u) => a + u.feeds.length + u.topic_feeds.length, 0);
     const r = E.applyFeedUpdates(state.config, LIB);
     if (!r.added) return;
     state.config = r.config;
     if (state.draft) state.draft = E.applyFeedUpdates(state.draft, LIB).config;
     save();
-    toast("Added " + r.added + (r.added === 1 ? " feed to " : " feeds to ") + r.categories + (r.categories === 1 ? " category" : " categories") +
+    toast("Added " + n + (n === 1 ? " feed to " : " feeds to ") + ups.length + (ups.length === 1 ? " category" : " categories") +
       ". Your own feeds stay. The next brief reads them.");
     rerender();
   }
   function feedNotice(where) {
-    const ups = E.feedUpdates(saved(), LIB);
+    const ups = webUpdates();
     if (!ups.length || (where === "brief" && state.feeds_dismissed === feedSig(ups))) return null;
     const n = ups.reduce((a, u) => a + u.feeds.length + u.topic_feeds.length, 0);
     const label = u => u.name.replace("({location})", "(your town)");

@@ -459,7 +459,17 @@
     let done = 0;
     let phase = "feeds";  // reported with every step, so the page can show which stage is running
     // A category's feeds plus its on-topic feeds, each address once.
-    const feedsOf = c => (c.feeds || []).concat((c.topic_feeds || []).filter(u => (c.feeds || []).indexOf(u) < 0));
+    // A category's feeds plus its on-topic feeds, each address once. Feeds the library marks
+    // as server feeds (web pages cannot read them) are left out wherever they appear, even
+    // in a category saved before the library moved them: GitHub reads them for the backup
+    // collection, so asking for them here would only fail.
+    const lib = opts.library || (root && root.DB_LIBRARY) || null;
+    const serverOnly = {};
+    for (const lc of lib && Array.isArray(lib.categories) ? lib.categories : []) {
+      for (const u of Array.isArray(lc.server_feeds) ? lc.server_feeds : []) serverOnly[E.normUrl(u)] = true;
+    }
+    const readable = u => !serverOnly[E.normUrl(u)];
+    const feedsOf = c => (c.feeds || []).concat((c.topic_feeds || []).filter(u => (c.feeds || []).indexOf(u) < 0)).filter(readable);
     const feedCount = cats.reduce((a, c) => a + feedsOf(c).length, 0);
     let total = feedCount + cats.filter(c => (c.queries || []).some(q => E.collapse(q))).length;
     const tick = label => { done += 1; progress(label, done, total, phase); };

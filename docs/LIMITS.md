@@ -5,7 +5,11 @@
   York Times, Fox News, CNBC and Wired. Google News and most other feeds do not
   allow it, so this project's GitHub workflow reads them instead and publishes
   what it finds beside the app (below). A feed that refuses shows as "not
-  readable from a web page" under Sources and filters.
+  readable from a web page" under Sources and filters. Library feeds that refuse
+  web pages are listed as server feeds (41 on 2026-11-08, among them Federal News
+  Network, Government Executive, FedWeek, FedSmith, Defense One, Military Times,
+  BleepingComputer, SecurityWeek and CoinDesk); the page never asks for them, and
+  their stories arrive through the backup collection.
 - The page reads, in order: the publisher feeds, then the backup collection,
   then (for town categories) your state's local station news, then the GDELT
   news index, and only for what is still short. The backup
