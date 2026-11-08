@@ -327,8 +327,45 @@ def test_the_brief_fills_a_phone_screen(browser):
         ctx.close()
 
 
+def test_event_stories_with_photos_keep_every_card_inside_a_phone_screen(browser):
+    """A reader's phone, 2026-11-08: every card ran past the right edge, so stories were cut
+    off. A grid column sized itself to the widest card's narrowest layout: an event story
+    (photo plus a date tag that never wrapped) was wider than the screen, and every card in
+    the column took that width. Cards now never grow past the screen."""
+    import copy
+    from dailybrief import render
+    brief = json.loads((ROOT / "examples" / "sample-brief.json").read_text(encoding="utf-8"))
+    settings = json.loads((ROOT / "examples" / "sample-settings.json").read_text(encoding="utf-8"))
+    ev = copy.deepcopy(brief["categories"][0]["items"][1])
+    ev.update(title="Harvest Night Market", image="https://images.example.com/market.jpg", source="mytownstation.example.com",
+              event={"start": "2026-11-20T19:00:00", "all_day": False, "venue": "Town Square Pavilion", "place": "Example City, FL"})
+    for c in brief["categories"]:
+        c["items"] = c["items"][:1] + [copy.deepcopy(ev)] + c["items"][1:]
+    html = render.render(brief, settings)["html"]
+    p, b = browser
+    for width in (320, 360):
+        page = b.new_page(viewport={"width": width, "height": 800})
+        page.route("https://images.example.com/**", lambda r: r.fulfill(status=200, body=(ROOT / "app" / "img" / "sample" / "markets.svg").read_bytes()
+                   if (ROOT / "app" / "img" / "sample" / "markets.svg").exists() else b"", headers={"content-type": "image/svg+xml"}))
+        page.set_content(html)
+        page.wait_for_timeout(200)
+        got = page.evaluate("""() => { const w = document.documentElement.clientWidth;
+            const cards = [...document.querySelectorAll('section.card')].map(c => c.getBoundingClientRect().right);
+            const past = [...document.querySelectorAll('body *')].filter(e => !e.closest('svg') && e.getBoundingClientRect().width && e.getBoundingClientRect().right > w + 0.5);
+            return [w, Math.max(...cards), past.length, getComputedStyle(document.querySelector('span.pill.ev')).whiteSpace]; }""")
+        assert got[1] <= got[0] and got[2] == 0 and got[3] == "normal", (width, got)
+        # Whatever one story holds (fonts differ from phone to phone), no card grows past the
+        # column, and the column never grows past the screen.
+        grown = page.evaluate("""() => { const li = document.querySelector('section.card li.it');
+            li.insertAdjacentHTML('beforeend', '<span style="display:inline-block;white-space:nowrap;width:600px">wide</span>');
+            const g = document.querySelector('div.grid').getBoundingClientRect();
+            return [g.right, Math.max(...[...document.querySelectorAll('section.card')].map(c => c.getBoundingClientRect().right))]; }""")
+        assert grown[1] <= grown[0] + 0.5, (width, grown)
+        page.close()
+
+
 def test_a_phone_cannot_swipe_the_page_sideways(browser):
-    """John, 2026-11-08: the phone app let him scroll from right to left. The page and the
+    """A reader, 2026-11-08: the phone app let them scroll from right to left. The page and the
     brief inside it never pan sideways, even with something wider than the screen in them,
     and a phone gets 12-pixel side margins."""
     ctx, page, errors = open_page(browser, APP, device="Galaxy S8", state=ready_state(welcome="2099-01-01"))
@@ -686,7 +723,7 @@ PAGE_GOES_AWAY = """(() => {
 
 
 def test_a_brief_broken_by_the_screen_going_dark_finishes_when_the_page_is_back(browser, http_app):
-    """John's phone, 2026-11-07 and 08: the feeds answered, then the backup collection
+    """A reader's phone, 2026-11-07 and 08: the feeds answered, then the backup collection
     gave "no answer in time" and every later source failed, so every desk read "Not
     checked today". A request broken while the page is out of view (or offline) now
     waits for the page to come back and is asked again."""

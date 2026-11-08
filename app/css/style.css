@@ -40,7 +40,7 @@
     --soft: #202b36;}
 
 * { box-sizing: border-box; }
-/* Nothing moves the page sideways (a phone let John swipe it from right to left, 2026-11-08):
+/* Nothing moves the page sideways (a phone let a reader swipe it from right to left, 2026-11-08):
    the root's hidden overflow passes to the window, so a box wider than the screen can never
    be panned to. */
 html { -webkit-text-size-adjust: 100%; overflow-x: hidden; }

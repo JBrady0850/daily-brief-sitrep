@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.16.2 (2026-11-08)
+
+- Story cards in the brief now fit a phone screen, so every story reads in
+  full. 0.16.1 stopped the sideways swipe but left the cards wider than the
+  screen, with their right edge cut off. The cause: the single phone column took
+  the width of the widest card's narrowest layout, and a "Things to Do" story
+  with a photo and a date tag that never wrapped needed more than the screen.
+  Every card on the page took that width (353 pixels on a 345-pixel screen with
+  a real brief). The column now shrinks to the screen, a card may be narrower
+  than its contents' widest word run, and the event date tag wraps.
+- Narrower brief margins on a phone: 8 pixels at the page sides (10 before) and
+  10 pixels inside cards, the countdown, forecast and summary boxes (12 before).
+- Notes in the code and tests no longer name the person who reported a problem.
+
 ## 0.16.1 (2026-11-08)
 
 - The app on a phone can no longer be swiped sideways. A reader could scroll
