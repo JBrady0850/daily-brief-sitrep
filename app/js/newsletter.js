@@ -20,6 +20,7 @@
   /*CSS-START*/
   const CSS = `
 *{box-sizing:border-box;}
+html{overflow-x:hidden;}
 body{margin:0;background:#eef1f5;font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;font-size:15px;line-height:1.5;color:#1a1a1a;overflow-wrap:break-word;}
 .in{max-width:1180px;margin:0 auto;padding:0 20px;}
 nav.site{background:#0a1c33;font-size:13px;}

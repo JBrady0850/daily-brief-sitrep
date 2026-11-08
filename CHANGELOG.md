@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.16.1 (2026-11-08)
+
+- The app on a phone can no longer be swiped sideways. A reader could scroll
+  it from right to left; the cause did not show in phone tests at eight screen
+  widths from 240 to 412 pixels with his kind of choices, so the page and the
+  brief inside it now hide anything wider than the screen instead of letting it
+  be panned to.
+- Narrower side margins on a phone: 12 pixels for the page and its header (16
+  before), 12 inside cards and notices (14 before); the brief still runs from
+  edge to edge.
+- Form fields never grow wider than the screen (a settings field reached 284
+  pixels on a 280-pixel screen, as with a large page zoom).
+
 ## 0.16.0 (2026-11-08)
 
 More feeds, and none the page cannot read.

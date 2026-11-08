@@ -327,6 +327,32 @@ def test_the_brief_fills_a_phone_screen(browser):
         ctx.close()
 
 
+def test_a_phone_cannot_swipe_the_page_sideways(browser):
+    """John, 2026-11-08: the phone app let him scroll from right to left. The page and the
+    brief inside it never pan sideways, even with something wider than the screen in them,
+    and a phone gets 12-pixel side margins."""
+    ctx, page, errors = open_page(browser, APP, device="Galaxy S8", state=ready_state(welcome="2099-01-01"))
+    page.click("button:has-text(\"Get today's brief\")")
+    page.wait_for_selector("iframe.page", timeout=60000)
+    pads = page.evaluate("""() => [parseFloat(getComputedStyle(document.querySelector('main')).paddingLeft),
+        parseFloat(getComputedStyle(document.querySelector('main .card')).paddingLeft)]""")
+    assert pads == [12, 12], pads
+    # The root's hidden overflow passes to the window, which then cannot be panned sideways
+    # by touch, even when something inside is wider than the screen.
+    roots = page.evaluate("""() => [getComputedStyle(document.documentElement).overflowX,
+        getComputedStyle(document.querySelector('iframe.page').contentDocument.documentElement).overflowX]""")
+    assert roots == ["hidden", "hidden"], roots
+    assert page.evaluate("document.documentElement.scrollWidth <= window.innerWidth")
+    page.evaluate("DB_APP.show('settings')")
+    page.set_viewport_size({"width": 280, "height": 700})
+    page.wait_for_timeout(300)
+    wide = page.evaluate("""() => [...document.querySelectorAll('main input, main select, main textarea')]
+        .filter(e => e.getBoundingClientRect().right > document.documentElement.clientWidth + 0.5).length""")
+    assert wide == 0, "no form field is wider than a narrow screen"
+    assert errors == []
+    ctx.close()
+
+
 def test_the_brief_page_fits_a_narrow_window(browser):
     """The page itself, opened alone or from an email, fits a 280-pixel window."""
     from dailybrief import render

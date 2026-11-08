@@ -40,7 +40,11 @@
     --soft: #202b36;}
 
 * { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; }
+/* Nothing moves the page sideways (a phone let John swipe it from right to left, 2026-11-08):
+   the root's hidden overflow passes to the window, so a box wider than the screen can never
+   be panned to. */
+html { -webkit-text-size-adjust: 100%; overflow-x: hidden; }
+input, select, textarea { max-width: 100%; }
 body { margin: 0; background: var(--page); color: var(--ink); font: 16px/1.5 "Segoe UI", Roboto, Arial, Helvetica, sans-serif; }
 a { color: var(--accent); }
 code { font-family: Consolas, Menlo, monospace; font-size: .9em; background: var(--soft); padding: 1px 5px; border-radius: 4px; word-break: break-all; }
@@ -239,7 +243,14 @@ iframe.page { display: block; width: 100%; min-height: 600px; height: 1400px; bo
 #briefview { padding: 16px 0 0; background: transparent; border: 0; }
 #briefview > h2, #briefview > .hint, #briefview > .actions, #briefview > details { margin-left: 4px; margin-right: 4px; }
 /* On a phone the brief runs from edge to edge: the page keeps its own narrow margins. */
-@media (max-width: 640px) { iframe.page { width: calc(100% + 32px); margin-left: -16px; margin-right: -16px; border-radius: 0; box-shadow: none; } }
+/* Narrower side margins on a phone (12 pixels for the page, 12 inside a card). */
+@media (max-width: 640px) {
+  main { padding-left: 12px; padding-right: 12px; }
+  .top { padding-left: 12px; padding-right: 12px; }
+  .card, .welcome, .notice { padding: 12px; }
+  .modebar { margin-left: 12px; margin-right: 12px; }
+  iframe.page { width: calc(100% + 24px); margin-left: -12px; margin-right: -12px; border-radius: 0; box-shadow: none; }
+}
 @media (max-width: 760px) {
   .hero { grid-template-columns: 1fr; padding: 20px; }
   .hero h1 { font-size: 26px; }
@@ -302,7 +313,7 @@ ol.stages li.now .sm { border-color: var(--gold); color: var(--warn); box-shadow
 .pastebox textarea { margin-top: 4px; }
 @media (max-width: 640px) {
   .status { font-size: 14px; }
-  .welcome, .notice { padding: 14px; }
+  .welcome, .notice { padding: 12px; }
 }
 
 /* Put them in order: one row per category with up, down and to-the-top buttons. */
